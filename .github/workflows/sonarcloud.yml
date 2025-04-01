@@ -39,3 +39,6 @@ jobs:
           args: > 
             -Dsonar.organization=papikos-a15
             -Dsonar.projectKey=Papikos-a15_papikos-be
+            -Dsonar.java.binaries=.
+            -Dsonar.sources=src/main/java
+            -Dsonar.tests=src/test/java

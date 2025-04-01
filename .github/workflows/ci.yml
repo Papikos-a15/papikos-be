@@ -3,7 +3,7 @@ name: Continuous Integration (CI)
 ## Run CI jobs on all branches by default
 on:
   push:
-  pull request:
+  pull_request:
 
 jobs:
   test:

@@ -37,5 +37,5 @@ jobs:
           SONAR_HOST_URl: 'https://sonarcloud.io'
         with:
           args: > 
-            -Dsonar.organization=Papikos-a15
+            -Dsonar.organization=papikos-a15
             -Dsonar.projectKey=Papikos-a15_papikos-be

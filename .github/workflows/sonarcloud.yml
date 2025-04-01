@@ -31,11 +31,11 @@ jobs:
           chmod +x gradlew
           ./gradlew test jacocoTestReport
       - name: SonarQube Scan
-        uses: sonarsource/sonarcloud-github-action@v5
+        uses: sonarsource/sonarqube-scan-action@v4
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URl: 'https://sonarcloud.io'
         with:
           args: > 
             -Dsonar.organization=Papikos-a15
-            -Dsonar.projectKey=papikos-a15
+            -Dsonar.projectKey=Papikos-a15_papikos-be

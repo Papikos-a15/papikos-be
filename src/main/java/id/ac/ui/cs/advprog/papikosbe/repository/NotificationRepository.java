@@ -1,28 +1,37 @@
 package id.ac.ui.cs.advprog.papikosbe.repository;
 
 import id.ac.ui.cs.advprog.papikosbe.model.Notification;
+import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
+@Repository
 public class NotificationRepository {
 
+    private final Map<UUID, Notification> storage = new HashMap<>();
+
     public Notification save(Notification notification) {
-        return null;
+        storage.put(notification.getId(), notification);
+        return notification;
     }
 
     public Notification findById(UUID id) {
-        return null;
+        return storage.get(id);
     }
 
     public List<Notification> findAll() {
-        return null;
+        return new ArrayList<>(storage.values());
     }
 
     public void deleteById(UUID id) {
+        storage.remove(id);
     }
 
     public List<Notification> findByUserId(UUID userId) {
-        return null;
+        return storage.values()
+                .stream()
+                .filter(n -> n.getUserId().equals(userId))
+                .collect(Collectors.toList());
     }
 }

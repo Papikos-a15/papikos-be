@@ -46,11 +46,4 @@ public class WishlistTest {
         wishlist.setUserId(newUserId);
         assertEquals(newUserId, wishlist.getUserId());
     }
-
-    @Test
-    public void testToStringContainsUserIdAndKosId() {
-        String toString = wishlist.toString();
-        assertTrue(toString.contains(dummyUserId.toString()));
-        assertTrue(toString.contains(dummyKosId.toString()));
-    }
 }

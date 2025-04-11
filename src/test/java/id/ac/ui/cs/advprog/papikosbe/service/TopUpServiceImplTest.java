@@ -9,6 +9,7 @@ import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -19,15 +20,16 @@ class TopUpServiceImplTest {
     @InjectMocks
     TopUpServiceImpl topUpService;
 
-    TopUp topUp;
+    private TopUp topUp;
 
     @BeforeEach
     void setUp() {
-        topUp = new TopUp();
-        topUp.setId(UUID.randomUUID());
-        topUp.setUserId(UUID.randomUUID());
-        topUp.setAmount(new BigDecimal("100.00"));
-        topUp.setType(TransactionType.TOP_UP);
+        UUID id = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        BigDecimal amount = new BigDecimal("100.00");
+        LocalDateTime now = LocalDateTime.now();
+
+        topUp = new TopUp(id, userId, amount, now);
     }
 
     @Test

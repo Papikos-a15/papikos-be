@@ -9,6 +9,7 @@ import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,11 +25,13 @@ class TransactionServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        transaction = new Transaction();
-        transaction.setId(UUID.randomUUID());
-        transaction.setUserId(UUID.randomUUID());
-        transaction.setAmount(new BigDecimal("75.00"));
-        transaction.setType(TransactionType.PAYMENT);
+        UUID id = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        BigDecimal amount = new BigDecimal("75.00");
+        TransactionType type = TransactionType.PAYMENT;
+        LocalDateTime date = LocalDateTime.now();
+
+        transaction = new Transaction(id, userId, amount, type, date);
     }
 
     @Test

@@ -22,10 +22,7 @@ class WalletServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        wallet = new Wallet();
-        wallet.setId(UUID.randomUUID());
-        wallet.setUserId(UUID.randomUUID());
-        wallet.setBalance(BigDecimal.ZERO);
+        wallet = new Wallet(UUID.randomUUID(), UUID.randomUUID(), new BigDecimal("500.00"));
     }
 
     @Test
@@ -48,7 +45,8 @@ class WalletServiceImplTest {
     @Test
     void testEditWallet() {
         walletService.create(wallet);
-        Wallet updatedWallet = new Wallet();
+        Wallet updatedWallet = new Wallet(UUID.randomUUID(), UUID.randomUUID(), new BigDecimal("500.00"));
+
         updatedWallet.setBalance(new BigDecimal("500.00"));
 
         assertEquals(updatedWallet.getBalance(), walletService.edit(wallet.getId(), updatedWallet).getBalance());

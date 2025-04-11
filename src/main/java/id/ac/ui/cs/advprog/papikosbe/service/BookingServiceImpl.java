@@ -4,14 +4,17 @@ import id.ac.ui.cs.advprog.papikosbe.model.Booking;
 import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class BookingServiceImpl implements BookingService {
 
     private static BookingServiceImpl instance;
+    private Map<UUID, Booking> bookingStore;
 
-    // Constructor private untuk Singleton
+    // Private constructor dengan inisialisasi bookingStore
     private BookingServiceImpl() {
-        // TODO: Inisialisasi state internal jika diperlukan
+        bookingStore = new ConcurrentHashMap<>();
     }
 
     public static synchronized BookingServiceImpl getInstance() {
@@ -23,18 +26,21 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public Booking createBooking(Booking booking) {
-        // TODO: Implementasikan pembuatan booking
-        return null;
+        // Simpan booking ke dalam store
+        bookingStore.put(booking.getBookingId(), booking);
+        return booking;
     }
 
     @Override
     public Optional<Booking> findBookingById(UUID bookingId) {
-        // TODO: Implementasikan pencarian booking berdasarkan bookingId
-        return Optional.empty();
+        return Optional.ofNullable(bookingStore.get(bookingId));
     }
 
     @Override
     public void cancelBooking(UUID bookingId) {
-        // TODO: Implementasikan pembatalan booking
+        Booking booking = bookingStore.get(bookingId);
+        if (booking != null) {
+            booking.setStatus(BookingStatus.CANCELLED);
+        }
     }
 }

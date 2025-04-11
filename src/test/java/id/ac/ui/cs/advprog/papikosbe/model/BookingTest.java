@@ -17,14 +17,14 @@ public class BookingTest {
         // Pastikan checkInDate adalah minimal besok
         LocalDate checkIn = LocalDate.now().plusDays(1);
         
-        // Pembuatan objek Booking (menggunakan skeleton model yang belum lengkap)
+        // Pembuatan objek Booking dengan status awal PENDING_PAYMENT
         booking = new Booking(
             UUID.randomUUID(), 
             dummyUserId,
             dummyKosId, 
             checkIn, 
             3,        // durasi 3 bulan 
-            BookingStatus.WAITING
+            BookingStatus.PENDING_PAYMENT
         );
     }
     
@@ -37,7 +37,7 @@ public class BookingTest {
         // checkInDate harus setidaknya sama dengan atau setelah hari ini
         assertTrue(booking.getCheckInDate().isAfter(LocalDate.now()) || booking.getCheckInDate().isEqual(LocalDate.now()));
         assertTrue(booking.getDuration() >= 1);
-        assertEquals(BookingStatus.WAITING, booking.getStatus());
+        assertEquals(BookingStatus.PENDING_PAYMENT, booking.getStatus());
     }
     
     @Test
@@ -52,7 +52,7 @@ public class BookingTest {
     public void testInvalidDuration() {
         // Pembuatan booking dengan durasi kurang dari 1 bulan harus mengeluarkan Exception
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            new Booking(UUID.randomUUID(), dummyUserId, dummyKosId, LocalDate.now().plusDays(1), 0, BookingStatus.WAITING);
+            new Booking(UUID.randomUUID(), dummyUserId, dummyKosId, LocalDate.now().plusDays(1), 0, BookingStatus.PENDING_PAYMENT);
         });
         String expectedMessage = "Duration must be at least 1 month";
         String actualMessage = exception.getMessage();
@@ -63,7 +63,7 @@ public class BookingTest {
     public void testInvalidCheckInDate() {
         // Check-in date sebelum hari ini harus mengeluarkan Exception
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            new Booking(UUID.randomUUID(), dummyUserId, dummyKosId, LocalDate.now().minusDays(1), 2, BookingStatus.WAITING);
+            new Booking(UUID.randomUUID(), dummyUserId, dummyKosId, LocalDate.now().minusDays(1), 2, BookingStatus.PENDING_PAYMENT);
         });
         String expectedMessage = "Check-in date cannot be in the past";
         String actualMessage = exception.getMessage();
@@ -76,5 +76,28 @@ public class BookingTest {
         BookingRepository instanceOne = BookingRepository.getInstance();
         BookingRepository instanceTwo = BookingRepository.getInstance();
         assertSame(instanceOne, instanceTwo, "BookingRepository harus menggunakan singleton");
+    }
+    
+    // Test tambahan untuk transisi status
+    @Test
+    public void testStatusTransitionToPaid() {
+        // Simulasi perubahan status booking dari PENDING_PAYMENT ke PAID
+        booking.setStatus(BookingStatus.PAID);
+        assertEquals(BookingStatus.PAID, booking.getStatus());
+    }
+
+    @Test
+    public void testStatusTransitionToActive() {
+        // Simulasi perubahan status booking dari PAID ke ACTIVE
+        booking.setStatus(BookingStatus.PAID);
+        booking.setStatus(BookingStatus.ACTIVE);
+        assertEquals(BookingStatus.ACTIVE, booking.getStatus());
+    }
+    
+    @Test
+    public void testStatusTransitionToCancelled() {
+        // Simulasi pembatalan booking
+        booking.setStatus(BookingStatus.CANCELLED);
+        assertEquals(BookingStatus.CANCELLED, booking.getStatus());
     }
 }

@@ -6,7 +6,6 @@ import lombok.Getter;
 public enum NotificationType {
     BOOKING("BOOKING"),
     PAYMENT("PAYMENT"),
-    PROMOTION("PROMOTION"),
     SYSTEM("SYSTEM"),
     OTHER("OTHER");
 

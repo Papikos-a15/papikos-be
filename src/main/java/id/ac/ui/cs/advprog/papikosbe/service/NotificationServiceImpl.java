@@ -1,6 +1,8 @@
 package id.ac.ui.cs.advprog.papikosbe.service;
 
 import id.ac.ui.cs.advprog.papikosbe.enums.NotificationType;
+import id.ac.ui.cs.advprog.papikosbe.factory.NotificationFactory;
+import id.ac.ui.cs.advprog.papikosbe.factory.NotificationFactoryProvider;
 import id.ac.ui.cs.advprog.papikosbe.model.Notification;
 import id.ac.ui.cs.advprog.papikosbe.repository.NotificationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,15 +26,8 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public Notification createNotification(UUID userId, String title, String message, NotificationType type) {
-        Notification notification = new Notification(
-                UUID.randomUUID(),
-                userId,
-                title,
-                message,
-                LocalDateTime.now(),
-                type,
-                false // default unread
-        );
+        NotificationFactory factory = NotificationFactoryProvider.getFactory(type, userId);
+        Notification notification = factory.createNotification(title, message);
         return notificationRepository.save(notification);
     }
 

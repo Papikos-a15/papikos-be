@@ -1,6 +1,7 @@
+package id.ac.ui.cs.advprog.papikosbe.model;
 import java.time.LocalDate;
 import java.util.UUID;
-
+import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
 public class Booking {
     private final UUID bookingId;
     private final UUID userId;

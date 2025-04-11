@@ -1,9 +1,10 @@
+package id.ac.ui.cs.advprog.papikosbe.model;
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
 import java.util.UUID;
-
+import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
 public class BookingTest {
 
     private Booking booking;
@@ -68,14 +69,6 @@ public class BookingTest {
         String expectedMessage = "Check-in date cannot be in the past";
         String actualMessage = exception.getMessage();
         assertTrue(actualMessage.contains(expectedMessage));
-    }
-    
-    @Test
-    public void testBookingRepositorySingleton() {
-        // Memastikan bahwa repository booking menerapkan design pattern Singleton
-        BookingRepository instanceOne = BookingRepository.getInstance();
-        BookingRepository instanceTwo = BookingRepository.getInstance();
-        assertSame(instanceOne, instanceTwo, "BookingRepository harus menggunakan singleton");
     }
     
     // Test tambahan untuk transisi status

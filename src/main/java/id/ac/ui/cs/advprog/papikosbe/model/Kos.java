@@ -6,9 +6,8 @@ import lombok.Getter;
 @Getter
 public class Kos {
 
-    // Getters
-    private Long id;
-
+    @Setter
+    private String id;
     @Setter
     private String name;
     @Setter

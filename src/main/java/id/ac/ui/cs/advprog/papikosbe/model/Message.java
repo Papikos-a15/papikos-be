@@ -17,5 +17,11 @@ public class Message {
     private boolean isEdited;
 
     public Message(UUID roomChatId, UUID senderId, String content) {
+        this.id = UUID.randomUUID();
+        this.roomChatId = roomChatId;
+        this.senderId = senderId;
+        this.content = content;
+        this.timestamp = LocalDateTime.now();
+        this.isEdited = false;
     }
 }

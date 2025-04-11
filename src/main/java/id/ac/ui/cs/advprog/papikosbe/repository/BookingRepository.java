@@ -9,48 +9,51 @@ import java.util.ArrayList;
 import java.util.UUID;
 
 public class BookingRepository {
-    // Instance untuk pola Singleton
     private static BookingRepository instance;
-
-    // Data store sementara (dummy store)
     private Map<UUID, Booking> bookingStore;
 
-    // Constructor private untuk Singleton
+    // Konstruktor private, inisialisasi bookingStore
     private BookingRepository() {
-        // TODO: Inisialisasi bookingStore
+        bookingStore = new HashMap<>();
     }
 
-    // Method untuk mengembalikan instance singleton
+    // Implementasi pola Singleton
     public static synchronized BookingRepository getInstance() {
-        // TODO: Inisialisasi instance jika belum ada
+        if (instance == null) {
+            instance = new BookingRepository();
+        }
         return instance;
     }
 
-    // Method untuk menyimpan booking, (dummy return null)
+    // Menyimpan booking ke dalam store dan mengembalikan objek yang sama
     public Booking save(Booking booking) {
-        // TODO: Implementasikan penyimpanan booking ke dalam bookingStore
-        return null;
+        bookingStore.put(booking.getBookingId(), booking);
+        return booking;
     }
 
-    // Method untuk mencari booking berdasarkan bookingId, (dummy return Optional.empty())
+    // Mencari booking berdasarkan bookingId
     public Optional<Booking> findById(UUID bookingId) {
-        // TODO: Implementasikan pencarian booking berdasarkan bookingId
-        return Optional.empty();
+        return Optional.ofNullable(bookingStore.get(bookingId));
     }
 
-    // Method untuk mencari booking berdasarkan userId, (dummy return list kosong)
+    // Mencari dan mengembalikan daftar booking berdasarkan userId
     public List<Booking> findByUserId(UUID userId) {
-        // TODO: Implementasikan pencarian booking berdasarkan userId
-        return new ArrayList<>();
+        List<Booking> results = new ArrayList<>();
+        for (Booking booking : bookingStore.values()) {
+            if (booking.getUserId().equals(userId)) {
+                results.add(booking);
+            }
+        }
+        return results;
     }
 
-    // Method untuk menghapus booking berdasarkan bookingId
+    // Menghapus booking berdasarkan bookingId
     public void deleteById(UUID bookingId) {
-        // TODO: Implementasikan penghapusan booking dari bookingStore
+        bookingStore.remove(bookingId);
     }
 
-    // Metode tambahan untuk keperluan testing: Membersihkan bookingStore
+    // Membersihkan semua data di bookingStore untuk keperluan pengujian
     public void clearStore() {
-        // TODO: Implementasikan pembersihan semua data di bookingStore
+        bookingStore.clear();
     }
 }

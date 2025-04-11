@@ -35,18 +35,20 @@ public class RoomChatServiceImplTest {
 
     @Test
     void testCreateRoomChatIfAlreadyExistsShouldReturnFalse() {
-        RoomChat existing = new RoomChat(UUID.randomUUID(), UUID.randomUUID());
+        UUID penyewaId = UUID.randomUUID();
+        UUID pemilikKosId = UUID.randomUUID();
+
+        RoomChat existing = new RoomChat(penyewaId, pemilikKosId);
         List<RoomChat> mockChats = List.of(existing);
 
-        when(roomChatRepository.getRoomChatsByUser(any())).thenReturn(mockChats);
+        when(roomChatRepository.getRoomChatsByUser(penyewaId)).thenReturn(mockChats);
 
-        RoomChat newAttempt = new RoomChat(UUID.randomUUID(), UUID.randomUUID());
+        RoomChat newAttempt = new RoomChat(penyewaId, pemilikKosId);
         boolean result = roomChatService.createRoomChatIfNotExists(newAttempt);
 
         assertFalse(result);
         verify(roomChatRepository, never()).createRoomChat(any());
     }
-
     @Test
     void testGetRoomChatById() {
         UUID id = UUID.randomUUID();

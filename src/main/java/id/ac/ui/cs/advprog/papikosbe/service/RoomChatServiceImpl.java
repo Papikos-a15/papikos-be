@@ -18,16 +18,27 @@ public class RoomChatServiceImpl implements RoomChatService {
 
     @Override
     public boolean createRoomChatIfNotExists(RoomChat roomChat) {
-        return false;
+        List<RoomChat> existingChats = roomChatRepository.getRoomChatsByUser(roomChat.getPenyewaId());
+
+        boolean alreadyExists = existingChats.stream().anyMatch(chat ->
+                chat.getPenyewaId().equals(roomChat.getPenyewaId()) &&
+                        chat.getPemilikKosId().equals(roomChat.getPemilikKosId()));
+
+        if (alreadyExists) {
+            return false;
+        }
+
+        roomChatRepository.createRoomChat(roomChat);
+        return true;
     }
 
     @Override
     public RoomChat getRoomChatById(UUID id) {
-        return null;
+        return roomChatRepository.getRoomChatById(id);
     }
 
     @Override
     public List<RoomChat> getRoomChatsByUser(UUID userId) {
-        return null;
+        return roomChatRepository.getRoomChatsByUser(userId);
     }
 }

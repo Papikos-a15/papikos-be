@@ -33,13 +33,12 @@ public class MessageServiceImplTest {
     }
 
     @Test
-    void testEditMessageShouldReturnTrueIfEdited() {
+    void testEditMessageShouldCallRepository() {
         Message message = new Message(UUID.randomUUID(), UUID.randomUUID(), "Edited");
-        when(messageRepository.editMessage(message)).thenReturn(true);
+        doNothing().when(messageRepository).editMessage(message);
 
-        boolean result = messageService.editMessage(message);
+        messageService.editMessage(message);
 
-        assertTrue(result);
         verify(messageRepository, times(1)).editMessage(message);
     }
 
@@ -57,13 +56,13 @@ public class MessageServiceImplTest {
     @Test
     void testGetMessagesByRoomIdShouldReturnMessages() {
         UUID roomId = UUID.randomUUID();
-        List<Message> messages = List.of(new Message(roomId, UUID.randomUUID(), "Hey"));
+        List<Message> messages = List.of(new Message(UUID.randomUUID(), roomId, "Hey"));
 
-        when(messageRepository.getMessagesByRoomId(roomId)).thenReturn(messages.toArray(new Message[0]));
+        when(messageRepository.getMessagesByRoomId(roomId)).thenReturn(messages);
 
-        Message[] result = messageService.getMessagesByRoomId(roomId);
+        List<Message> result = messageService.getMessagesByRoomId(roomId);
 
-        assertArrayEquals(messages.toArray(new Message[0]), result);
+        assertEquals(messages, result);
         verify(messageRepository, times(1)).getMessagesByRoomId(roomId);
     }
 }

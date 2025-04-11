@@ -17,7 +17,7 @@ public class RoomChatRepositoryTest {
 
     @BeforeEach
     public void setUp() {
-        repository = new InMemoryRoomChatRepository();
+        repository = new RoomChatRepository();
 
         room1 = new RoomChat(UUID.randomUUID(), UUID.randomUUID());
         room2 = new RoomChat(UUID.randomUUID(), UUID.randomUUID());
@@ -46,7 +46,7 @@ public class RoomChatRepositoryTest {
 
     @Test
     public void testGetRoomChatById_NotFound() {
-        RoomChat found = repository.getRoomChatById("non-existent-id");
+        RoomChat found = repository.getRoomChatById(UUID.randomUUID());
         assertNull(found);
     }
 

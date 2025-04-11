@@ -1,5 +1,5 @@
 package id.ac.ui.cs.advprog.papikosbe.service;
-
+import org.springframework.stereotype.Service;
 import id.ac.ui.cs.advprog.papikosbe.model.Booking;
 import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
 import java.util.Optional;
@@ -7,6 +7,7 @@ import java.util.UUID;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Service
 public class BookingServiceImpl implements BookingService {
 
     private static BookingServiceImpl instance;

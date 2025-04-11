@@ -13,13 +13,25 @@ public class RoomChatRepository {
     private List<RoomChat> roomChatData = new ArrayList<>();
 
     public void createRoomChat(RoomChat roomChat) {
+        roomChatData.add(roomChat);
     }
 
     public RoomChat getRoomChatById(UUID id) {
+        for (RoomChat chat : roomChatData) {
+            if (chat.getId().equals(id)) {
+                return chat;
+            }
+        }
         return null;
     }
 
     public List<RoomChat> getRoomChatsByUser(UUID userId) {
-        return new ArrayList<>();
+        List<RoomChat> result = new ArrayList<>();
+        for (RoomChat chat : roomChatData) {
+            if (chat.getPenyewaId().equals(userId) || chat.getPemilikKosId().equals(userId)) {
+                result.add(chat);
+            }
+        }
+        return result;
     }
 }

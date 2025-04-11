@@ -20,12 +20,20 @@ public class WishlistRepositoryTest {
     public void setUp() {
         wishlistRepository = new WishlistRepository();
 
-        wishlist1 = new Wishlist();
+        UUID wishlistId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        UUID kosId = UUID.randomUUID();
+
+        UUID wishlist2Id = UUID.randomUUID();
+        UUID user2Id = UUID.randomUUID();
+        UUID kos2Id = UUID.randomUUID();
+
+        wishlist1 = new Wishlist(wishlistId, userId, kosId);
         wishlist1.setWishlistId(UUID.randomUUID());
         wishlist1.setUserId(UUID.randomUUID());
         wishlist1.setKosId(UUID.randomUUID());
 
-        wishlist2 = new Wishlist();
+        wishlist2 = new Wishlist(wishlist2Id, user2Id, kos2Id);
         wishlist2.setWishlistId(UUID.randomUUID());
         wishlist2.setUserId(UUID.randomUUID());
         wishlist2.setKosId(UUID.randomUUID());
@@ -44,7 +52,7 @@ public class WishlistRepositoryTest {
 
     @Test
     public void testFindByIdSuccess() {
-        Optional<Wishlist> found = wishlistRepository.findById(wishlist1.getWishlistId());
+        Optional<Wishlist> found = wishlistRepository.findById(wishlist1.getId());
         assertTrue(found.isPresent());
         assertEquals(wishlist1.getUserId(), found.get().getUserId());
     }
@@ -57,8 +65,8 @@ public class WishlistRepositoryTest {
 
     @Test
     public void testDeleteById() {
-        wishlistRepository.deleteById(wishlist1.getWishlistId());
-        Optional<Wishlist> deleted = wishlistRepository.findById(wishlist1.getWishlistId());
+        wishlistRepository.deleteById(wishlist1.getId());
+        Optional<Wishlist> deleted = wishlistRepository.findById(wishlist1.getId());
         assertFalse(deleted.isPresent());
     }
 

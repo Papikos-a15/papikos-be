@@ -12,8 +12,8 @@ public class RoomChatTest {
 
     @Test
     public void testCreateRoomChat() {
-        String pemilikKosId = UUID.randomUUID().toString();
-        String penyewaId = UUID.randomUUID().toString();
+        UUID pemilikKosId = UUID.randomUUID();
+        UUID penyewaId = UUID.randomUUID();
 
         RoomChat roomChat = new RoomChat(penyewaId, pemilikKosId);
 
@@ -24,11 +24,11 @@ public class RoomChatTest {
 
     @Test
     public void testRoomChatSetterGetter() {
-        RoomChat roomChat = new RoomChat();
+        RoomChat roomChat = new RoomChat(UUID.randomUUID(), UUID.randomUUID());
 
-        String id = UUID.randomUUID().toString();
-        String penyewaId = UUID.randomUUID().toString();
-        String pemilikKosId = UUID.randomUUID().toString();
+        UUID id = UUID.randomUUID();
+        UUID penyewaId = UUID.randomUUID();
+        UUID pemilikKosId = UUID.randomUUID();
         LocalDateTime now = LocalDateTime.now();
 
         roomChat.setId(id);

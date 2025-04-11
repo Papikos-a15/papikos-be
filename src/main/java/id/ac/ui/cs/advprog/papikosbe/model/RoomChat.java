@@ -11,13 +11,15 @@ import java.util.UUID;
 @Setter
 public class RoomChat {
 
-    private String id;
-    private String penyewaId;
-    private String pemilikKosId;
+    private UUID id;
+    private UUID penyewaId;
+    private UUID pemilikKosId;
     private LocalDateTime createdAt;
 
-    public RoomChat(String penyewaId, String pemilikKosId) {
+    public RoomChat(UUID penyewaId, UUID pemilikKosId) {
+        this.id = UUID.randomUUID();
+        this.penyewaId = penyewaId;
+        this.pemilikKosId = pemilikKosId;
+        this.createdAt = LocalDateTime.now();
     }
-
-    public RoomChat() {}
 }

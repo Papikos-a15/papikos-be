@@ -1,6 +1,9 @@
 package id.ac.ui.cs.advprog.papikosbe.service;
 
+import id.ac.ui.cs.advprog.papikosbe.factory.WalletFactory;
 import id.ac.ui.cs.advprog.papikosbe.model.Wallet;
+import id.ac.ui.cs.advprog.papikosbe.repository.WalletRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -8,27 +11,31 @@ import java.util.*;
 @Service
 public class WalletServiceImpl implements WalletService {
 
-    private final Map<UUID, Wallet> walletRepository = new HashMap<>();
+    @Autowired
+    private WalletRepository walletRepository;
 
     @Override
-    public Wallet create(Wallet wallet) {
-        walletRepository.put(wallet.getId(), wallet);
-        return wallet;
+    public Wallet create(UUID userId) {
+        Wallet wallet = WalletFactory.createWallet(userId);
+        return walletRepository.create(wallet);
     }
 
     @Override
     public List<Wallet> findAll() {
-        return new ArrayList<>(walletRepository.values());
+        Iterator<Wallet> iterator = walletRepository.findAll();
+        List<Wallet> wallets = new ArrayList<>();
+        iterator.forEachRemaining(wallets::add);
+        return wallets;
     }
 
     @Override
     public Wallet findById(UUID id) {
-        return walletRepository.get(id);
+        return walletRepository.findById(id).orElse(null);
     }
 
     @Override
     public Wallet edit(UUID id, Wallet wallet) {
-        Wallet existing = walletRepository.get(id);
+        Wallet existing = walletRepository.findById(id).orElse(null);
         if (existing != null) {
             existing.setBalance(wallet.getBalance());
             return existing;
@@ -38,6 +45,6 @@ public class WalletServiceImpl implements WalletService {
 
     @Override
     public void delete(UUID id) {
-        walletRepository.remove(id);
+        walletRepository.delete(id);
     }
 }

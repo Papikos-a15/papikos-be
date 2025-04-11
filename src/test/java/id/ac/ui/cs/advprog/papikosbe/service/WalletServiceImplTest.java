@@ -1,16 +1,24 @@
 package id.ac.ui.cs.advprog.papikosbe.service;
 
+import id.ac.ui.cs.advprog.papikosbe.factory.WalletFactory;
 import id.ac.ui.cs.advprog.papikosbe.model.Wallet;
+import id.ac.ui.cs.advprog.papikosbe.repository.WalletRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class WalletServiceImplTest {
@@ -18,44 +26,69 @@ class WalletServiceImplTest {
     @InjectMocks
     WalletServiceImpl walletService;
 
+    @Mock
+    WalletRepository walletRepository;
+
     Wallet wallet;
+    UUID userId;
 
     @BeforeEach
     void setUp() {
-        wallet = new Wallet(UUID.randomUUID(), UUID.randomUUID(), new BigDecimal("500.00"));
+        userId = UUID.randomUUID();
+        wallet = WalletFactory.createWallet(userId); // Pakai factory
     }
 
     @Test
     void testCreateWallet() {
-        assertEquals(wallet, walletService.create(wallet));
+        when(walletRepository.create(any(Wallet.class))).thenReturn(wallet);
+
+        Wallet createdWallet = walletService.create(wallet.getUserId());
+
+        assertNotNull(createdWallet);
+        assertEquals(wallet.getUserId(), createdWallet.getUserId());
     }
 
     @Test
     void testFindAllWallets() {
-        walletService.create(wallet);
-        assertEquals(wallet, walletService.findAll().getFirst());
+        Iterator<Wallet> walletIterator = Collections.singletonList(wallet).iterator();
+        when(walletRepository.findAll()).thenReturn(walletIterator);
+
+        var wallets = walletService.findAll();
+
+        assertNotNull(wallets);
+        assertEquals(1, wallets.size());
+        assertEquals(wallet, wallets.getFirst());
     }
 
     @Test
     void testFindWalletById() {
-        walletService.create(wallet);
-        assertEquals(wallet, walletService.findById(wallet.getId()));
+        when(walletRepository.findById(wallet.getId())).thenReturn(Optional.of(wallet));
+
+        Wallet foundWallet = walletService.findById(wallet.getId());
+
+        assertNotNull(foundWallet);
+        assertEquals(wallet.getId(), foundWallet.getId());
     }
 
     @Test
     void testEditWallet() {
-        walletService.create(wallet);
-        Wallet updatedWallet = new Wallet(UUID.randomUUID(), UUID.randomUUID(), new BigDecimal("500.00"));
-
+        when(walletRepository.findById(wallet.getId())).thenReturn(Optional.of(wallet));
+        Wallet updatedWallet = WalletFactory.createWallet(userId);
         updatedWallet.setBalance(new BigDecimal("500.00"));
 
-        assertEquals(updatedWallet.getBalance(), walletService.edit(wallet.getId(), updatedWallet).getBalance());
+        Wallet editedWallet = walletService.edit(wallet.getId(), updatedWallet);
+
+        assertNotNull(editedWallet);
+        assertEquals(new BigDecimal("500.00"), editedWallet.getBalance());
     }
 
     @Test
     void testDeleteWallet() {
-        walletService.create(wallet);
-        walletService.delete(wallet.getId());
-        assertTrue(walletService.findAll().isEmpty());
+        UUID walletId = wallet.getId();
+        doNothing().when(walletRepository).delete(walletId);
+
+        walletService.delete(walletId);
+
+        verify(walletRepository, times(1)).delete(walletId);
     }
 }

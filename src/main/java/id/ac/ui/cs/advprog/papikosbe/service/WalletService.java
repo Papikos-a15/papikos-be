@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface WalletService {
-    Wallet create(Wallet wallet);
+    Wallet create(UUID userId);
     List<Wallet> findAll();
     Wallet findById(UUID id);
     Wallet edit(UUID id, Wallet wallet);

@@ -15,12 +15,14 @@ public class WishlistServiceImpl implements WishlistService {
     }
 
     public void addWishlist(Wishlist wishlist) {
+        wishlistRepository.save(wishlist);
     }
 
     public void removeWishlist(UUID wishlistId) {
+        wishlistRepository.deleteById(wishlistId);
     }
 
     public List<Wishlist> getAllWishlists() {
-        return null;
+        return wishlistRepository.findAll();
     }
 }

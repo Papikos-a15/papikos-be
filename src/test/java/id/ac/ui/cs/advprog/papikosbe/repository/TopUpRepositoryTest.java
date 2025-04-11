@@ -27,7 +27,6 @@ class TopUpRepositoryTest {
     void setUp() {
         topUpRepository = Mockito.mock(TopUpRepository.class);
 
-        // Prepare shared test data
         topUpId = UUID.randomUUID();
         userId = UUID.randomUUID();
 

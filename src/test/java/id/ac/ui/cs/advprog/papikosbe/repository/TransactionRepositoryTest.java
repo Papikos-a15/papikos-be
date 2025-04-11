@@ -24,9 +24,9 @@ class TransactionRepositoryTest {
     @BeforeEach
     void setUp() {
         transactionRepository = Mockito.mock(TransactionRepository.class);
-        UUID userId = UUID.randomUUID();
-        Transaction topUp = new Transaction(UUID.randomUUID(), userId, new BigDecimal("500.00"), TransactionType.TOP_UP, LocalDateTime.now());
-        Transaction payment = new Transaction(UUID.randomUUID(), userId, new BigDecimal("200.00"), TransactionType.PAYMENT, LocalDateTime.now());
+        userId = UUID.randomUUID();
+        topUp = new Transaction(UUID.randomUUID(), userId, new BigDecimal("500.00"), TransactionType.TOP_UP, LocalDateTime.now());
+        payment = new Transaction(UUID.randomUUID(), userId, new BigDecimal("200.00"), TransactionType.PAYMENT, LocalDateTime.now());
     }
 
     @Test

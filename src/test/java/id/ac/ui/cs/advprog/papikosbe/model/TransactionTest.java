@@ -4,22 +4,26 @@ import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 class TransactionTest {
-
+    UUID transactionId = UUID.randomUUID();
+    UUID transactionId2 = UUID.randomUUID();
+    UUID userId = UUID.randomUUID();
+    
     @Test
     void testCreateTransactionSuccess() {
         Transaction transaction = new Transaction(
-                1L,
-                10L,
+                transactionId,
+                userId,
                 new BigDecimal("500.00"),
                 "TOP_UP",
                 LocalDateTime.now()
         );
 
         assertNotNull(transaction);
-        assertEquals(1L, transaction.getId());
-        assertEquals(10L, transaction.getUserId());
+        assertEquals(transactionId, transaction.getId());
+        assertEquals(userId, transaction.getUserId());
         assertEquals(new BigDecimal("500.00"), transaction.getAmount());
         assertEquals("TOP_UP", transaction.getType());
         assertNotNull(transaction.getTimestamp());
@@ -30,13 +34,13 @@ class TransactionTest {
         LocalDateTime now = LocalDateTime.now();
 
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            new Transaction(1L, 10L, new BigDecimal("-100.00"), "PAYMENT", now);
+            new Transaction(transactionId, userId, new BigDecimal("-100.00"), "PAYMENT", now);
         });
 
         assertEquals("Transaction amount must be positive", exception.getMessage());
 
         exception = assertThrows(IllegalArgumentException.class, () -> {
-            new Transaction(2L, 10L, BigDecimal.ZERO, "TOP_UP", now);
+            new Transaction(transactionId2, userId, BigDecimal.ZERO, "TOP_UP", now);
         });
 
         assertEquals("Transaction amount must be positive", exception.getMessage());
@@ -47,13 +51,13 @@ class TransactionTest {
         LocalDateTime now = LocalDateTime.now();
 
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            new Transaction(1L, 10L, new BigDecimal("100.00"), null, now);
+            new Transaction(transactionId, userId, new BigDecimal("100.00"), null, now);
         });
 
         assertEquals("Transaction type cannot be null or empty", exception.getMessage());
 
         exception = assertThrows(IllegalArgumentException.class, () -> {
-            new Transaction(2L, 10L, new BigDecimal("100.00"), "", now);
+            new Transaction(transactionId2, userId, new BigDecimal("100.00"), "", now);
         });
 
         assertEquals("Transaction type cannot be null or empty", exception.getMessage());
@@ -62,7 +66,7 @@ class TransactionTest {
     @Test
     void testCreateTransactionNullTimestamp() {
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            new Transaction(1L, 10L, new BigDecimal("100.00"), "TOP_UP", null);
+            new Transaction(transactionId, userId, new BigDecimal("100.00"), "TOP_UP", null);
         });
 
         assertEquals("Timestamp cannot be null", exception.getMessage());

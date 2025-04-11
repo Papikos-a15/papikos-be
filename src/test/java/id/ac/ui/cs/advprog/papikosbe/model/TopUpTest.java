@@ -4,16 +4,19 @@ import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 class TopUpTest {
+    UUID topUpId = UUID.randomUUID();
+    UUID userId = UUID.randomUUID();
 
     @Test
     void testCreateTopUpSuccess() {
         LocalDateTime now = LocalDateTime.now();
-        TopUp topUp = new TopUp(1L, 10L, new BigDecimal("50.00"), now);
+        TopUp topUp = new TopUp(topUpId, userId, new BigDecimal("50.00"), now);
 
-        assertEquals(1L, topUp.getId());
-        assertEquals(10L, topUp.getUserId());
+        assertEquals(topUpId, topUp.getId());
+        assertEquals(userId, topUp.getUserId());
         assertEquals(new BigDecimal("50.00"), topUp.getAmount());
         assertEquals(now, topUp.getTimestamp());
     }
@@ -23,7 +26,7 @@ class TopUpTest {
         LocalDateTime now = LocalDateTime.now();
 
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            new TopUp(1L, 10L, new BigDecimal("-50.00"), now);
+            new TopUp(topUpId, userId, new BigDecimal("-50.00"), now);
         });
 
         assertEquals("Top-up amount must be positive", exception.getMessage());

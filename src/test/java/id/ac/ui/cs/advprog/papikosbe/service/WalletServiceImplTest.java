@@ -29,23 +29,27 @@ class WalletServiceImplTest {
     @Mock
     WalletRepository walletRepository;
 
+    @Mock
+    WalletFactory walletFactory;
+
     Wallet wallet;
     UUID userId;
 
     @BeforeEach
     void setUp() {
         userId = UUID.randomUUID();
-        wallet = WalletFactory.createWallet(userId); // Pakai factory
+        wallet = new Wallet(UUID.randomUUID(), userId, BigDecimal.ZERO); // manual, bukan dari factory
     }
 
     @Test
     void testCreateWallet() {
+        when(walletFactory.createWallet(userId)).thenReturn(wallet);
         when(walletRepository.create(any(Wallet.class))).thenReturn(wallet);
 
-        Wallet createdWallet = walletService.create(wallet.getUserId());
+        Wallet createdWallet = walletService.create(userId);
 
         assertNotNull(createdWallet);
-        assertEquals(wallet.getUserId(), createdWallet.getUserId());
+        assertEquals(userId, createdWallet.getUserId());
     }
 
     @Test
@@ -73,8 +77,8 @@ class WalletServiceImplTest {
     @Test
     void testEditWallet() {
         when(walletRepository.findById(wallet.getId())).thenReturn(Optional.of(wallet));
-        Wallet updatedWallet = WalletFactory.createWallet(userId);
-        updatedWallet.setBalance(new BigDecimal("500.00"));
+
+        Wallet updatedWallet = new Wallet(wallet.getId(), userId, new BigDecimal("500.00"));
 
         Wallet editedWallet = walletService.edit(wallet.getId(), updatedWallet);
 

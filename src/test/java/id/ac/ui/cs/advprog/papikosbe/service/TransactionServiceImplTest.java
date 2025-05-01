@@ -1,11 +1,13 @@
 package id.ac.ui.cs.advprog.papikosbe.service;
 
+import id.ac.ui.cs.advprog.papikosbe.factory.TransactionFactory;
 import id.ac.ui.cs.advprog.papikosbe.model.Transaction;
 import id.ac.ui.cs.advprog.papikosbe.enums.TransactionType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
@@ -14,48 +16,87 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class TransactionServiceImplTest {
+
+    @Mock
+    TransactionFactory transactionFactory;
 
     @InjectMocks
     TransactionServiceImpl transactionService;
 
     Transaction transaction;
+    UUID userId;
+    BigDecimal amount;
+    TransactionType type;
 
     @BeforeEach
     void setUp() {
-        UUID id = UUID.randomUUID();
-        UUID userId = UUID.randomUUID();
-        BigDecimal amount = new BigDecimal("75.00");
-        TransactionType type = TransactionType.PAYMENT;
-        LocalDateTime date = LocalDateTime.now();
+        userId = UUID.randomUUID();
+        amount = new BigDecimal("75.00");
+        type = TransactionType.PAYMENT;
 
-        transaction = new Transaction(id, userId, amount, type, date);
+        transaction = new Transaction(UUID.randomUUID(), userId, amount, type, LocalDateTime.now());
     }
 
     @Test
     void testCreateTransaction() {
-        assertEquals(transaction, transactionService.create(transaction));
+        when(transactionFactory.createTransaction(userId, amount, type)).thenReturn(transaction);
+
+        Transaction result = transactionService.createTransaction(userId, amount, type);
+
+        assertNotNull(result);
+        assertEquals(transaction.getUserId(), result.getUserId());
+        assertEquals(transaction.getAmount(), result.getAmount());
+        verify(transactionFactory).createTransaction(userId, amount, type);
     }
 
     @Test
     void testFindAllTransactions() {
-        transactionService.create(transaction);
-        assertEquals(transaction, transactionService.findAll().getFirst());
+        when(transactionFactory.createTransaction(userId, amount, type)).thenReturn(transaction);
+        transactionService.createTransaction(userId, amount, type);
+
+        List<Transaction> allTransactions = transactionService.findAll();
+        assertEquals(1, allTransactions.size());
+        assertEquals(transaction, allTransactions.getFirst());
     }
 
     @Test
     void testFindTransactionById() {
-        transactionService.create(transaction);
-        assertEquals(transaction, transactionService.findById(transaction.getId()));
+        when(transactionFactory.createTransaction(userId, amount, type)).thenReturn(transaction);
+        transactionService.createTransaction(userId, amount, type);
+
+        Transaction found = transactionService.findById(transaction.getId());
+        assertEquals(transaction, found);
     }
 
     @Test
     void testFindAllTransactionsByUserId() {
-        transactionService.create(transaction);
-        List<Transaction> transactions = transactionService.findAllByUserId(transaction.getUserId());
-        assertFalse(transactions.isEmpty());
-        assertEquals(transaction.getUserId(), transactions.getFirst().getUserId());
+        when(transactionFactory.createTransaction(userId, amount, type)).thenReturn(transaction);
+        transactionService.createTransaction(userId, amount, type);
+
+        List<Transaction> userTransactions = transactionService.findAllByUserId(userId);
+        assertFalse(userTransactions.isEmpty());
+        assertEquals(userId, userTransactions.getFirst().getUserId());
+    }
+
+    @Test
+    void testFindTransactionByType(){
+        when(transactionFactory.createTransaction(userId, amount, type)).thenReturn(transaction);
+        transactionService.createTransaction(userId, amount, type);
+
+        List<Transaction> paymentTransactions = transactionService.findByType(type);
+        assertFalse(paymentTransactions.isEmpty());
+        assertEquals(type, paymentTransactions.getFirst().getType());
+    }
+
+    @Test
+    void testFindTransactionByDate(){
+        when(transactionFactory.createTransaction(userId, amount, type)).thenReturn(transaction);
+        transactionService.createTransaction(userId, amount, type);
+
+        assertTrue(transactionService.findByDate(transaction.getTimestamp()).contains(transaction));
     }
 }

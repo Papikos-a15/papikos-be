@@ -27,6 +27,16 @@ repositories {
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
     implementation("org.springframework.boot:spring-boot-starter-web")
+    // ───────────────────────────────────────────────────────────────
+    // Tambahkan ini untuk JPA & PostgreSQL:
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    // Jika kamu memang perlu override versi Spring Data JPA:
+    implementation("org.springframework.data:spring-data-jpa:3.4.2")
+    // JDBC driver PostgreSQL:
+    implementation("org.postgresql:postgresql:42.6.0")
+    // 1) Spring Data JPA starter (brings in jakarta.persistence)
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    // ───────────────────────────────────────────────────────────────
     compileOnly("org.projectlombok:lombok")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")

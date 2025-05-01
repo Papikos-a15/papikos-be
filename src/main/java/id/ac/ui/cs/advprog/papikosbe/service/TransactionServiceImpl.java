@@ -1,9 +1,12 @@
 package id.ac.ui.cs.advprog.papikosbe.service;
 
+import id.ac.ui.cs.advprog.papikosbe.enums.TransactionType;
 import id.ac.ui.cs.advprog.papikosbe.factory.TransactionFactory;
 import id.ac.ui.cs.advprog.papikosbe.model.Transaction;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -14,6 +17,11 @@ public class TransactionServiceImpl implements TransactionService {
 
     public TransactionServiceImpl(TransactionFactory transactionFactory) {
         this.transactionFactory = transactionFactory;
+    }
+
+    public Transaction createTransaction(UUID userId, BigDecimal amount, TransactionType type) {
+        Transaction transaction = transactionFactory.createTransaction(userId, amount, type);
+        return create(transaction);
     }
 
     @Override
@@ -46,5 +54,19 @@ public class TransactionServiceImpl implements TransactionService {
             }
         }
         return result;
+    }
+
+    @Override
+    public List<Transaction> findByType(TransactionType type) {
+        return transactionRepository.values().stream()
+                .filter(transaction -> transaction.getType().equals(type))
+                .toList();
+    }
+
+    @Override
+    public List<Transaction> findByDate(LocalDateTime date){
+        return transactionRepository.values().stream()
+                .filter(transaction -> transaction.getTimestamp().toLocalDate().equals(date.toLocalDate()))
+                .toList();
     }
 }

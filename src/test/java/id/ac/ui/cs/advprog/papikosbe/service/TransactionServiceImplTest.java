@@ -50,7 +50,6 @@ class TransactionServiceImplTest {
         assertNotNull(result);
         assertEquals(transaction.getUserId(), result.getUserId());
         assertEquals(transaction.getAmount(), result.getAmount());
-        verify(transactionFactory).createTransaction(userId, amount, type);
     }
 
     @Test

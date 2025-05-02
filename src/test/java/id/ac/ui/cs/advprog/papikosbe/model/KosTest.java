@@ -34,10 +34,10 @@ public class KosTest {
     @Test
     public void testParameterizedConstructor() {
         // Create a new instance using the parameterized constructor.
-        Kos kos = new Kos("Kos Param", "Param Address", "Param Description", 90000.0);
+        Kos kos = new Kos("1234567890", "Kos Param", "Param Address", "Param Description", 90000.0);
 
         // The fields should be set as provided
-        assertNull(kos.getId(), "ID should be null when not explicitly set");
+        assertNotNull(kos.getId(), "ID should be not null when explicitly set");
         assertEquals("Kos Param", kos.getName(), "Name should match constructor argument");
         assertEquals("Param Address", kos.getAddress(), "Address should match constructor argument");
         assertEquals("Param Description", kos.getDescription(), "Description should match constructor argument");

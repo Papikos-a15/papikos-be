@@ -3,18 +3,14 @@ package id.ac.ui.cs.advprog.papikosbe.model;
 import lombok.Setter;
 import lombok.Getter;
 
+@Setter
 @Getter
 public class Kos {
 
-    @Setter
     private String id;
-    @Setter
     private String name;
-    @Setter
     private String address;
-    @Setter
     private String description;
-    @Setter
     private Double price;
 
 

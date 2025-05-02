@@ -14,19 +14,26 @@ public class KosServiceImpl implements KosService {
     private KosRepository kosRepository;
 
     @Override
-    public boolean addKos(Kos kos) {
+    public Kos addKos(Kos kos) {
+        if (kos != null) {
+            return kosRepository.save(kos);
+        }
+        return null;
     }
 
     @Override
     public List<Kos> getAllKos() {
+        return kosRepository.getAllKos();
     }
 
     @Override
     public Kos getKosById(String id) {
+        return kosRepository.getKosById(id);
     }
 
     @Override
     public Kos updateKos(String id, Kos updatedKos) {
+        return kosRepository.updateKos(id, updatedKos);
     }
 
     @Override

@@ -38,5 +38,6 @@ public class KosServiceImpl implements KosService {
 
     @Override
     public void deleteKos(String id) {
+        kosRepository.deleteKos(id);
     }
 }

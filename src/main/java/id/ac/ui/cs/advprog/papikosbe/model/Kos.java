@@ -17,7 +17,8 @@ public class Kos {
     // Constructors
     public Kos() {}
 
-    public Kos(String name, String address, String description, Double price) {
+    public Kos(String id, String name, String address, String description, Double price) {
+        this.id = id;
         this.name = name;
         this.address = address;
         this.description = description;

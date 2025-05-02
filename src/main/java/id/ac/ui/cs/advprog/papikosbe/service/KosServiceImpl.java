@@ -10,8 +10,12 @@ import java.util.List;
 @Service
 public class KosServiceImpl implements KosService {
 
+    private final KosRepository kosRepository;
+
     @Autowired
-    private KosRepository kosRepository;
+    public KosServiceImpl(KosRepository kosRepository) {
+        this.kosRepository = kosRepository;
+    }
 
     @Override
     public Kos addKos(Kos kos) {

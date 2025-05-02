@@ -14,7 +14,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/wishlists")
+@RequestMapping("/v1/api/wishlists")
 public class WishlistController {
 
     @Autowired

@@ -1,12 +1,13 @@
 package id.ac.ui.cs.advprog.papikosbe.repository;
 
 import id.ac.ui.cs.advprog.papikosbe.model.Payment;
+import id.ac.ui.cs.advprog.papikosbe.factory.DefaultPaymentFactory;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -24,6 +25,8 @@ class PaymentRepositoryTest {
     private Payment payment1;
     private Payment payment2;
 
+    private DefaultPaymentFactory paymentFactory;
+
     @BeforeEach
     void setUp() {
         paymentRepository = Mockito.mock(PaymentRepository.class);
@@ -32,8 +35,9 @@ class PaymentRepositoryTest {
         userId = UUID.randomUUID();
         ownerId = UUID.randomUUID();
 
-        payment1 = new Payment(paymentId, userId, ownerId, new BigDecimal("250.00"), LocalDateTime.now());
-        payment2 = new Payment(UUID.randomUUID(), userId, UUID.randomUUID(), new BigDecimal("300.00"), LocalDateTime.now());
+        paymentFactory = new DefaultPaymentFactory();
+        payment1 = new Payment(paymentId, userId, ownerId, new BigDecimal("250.00"), java.time.LocalDateTime.now());
+        payment2 = paymentFactory.createPayment(userId, UUID.randomUUID(), new BigDecimal("300.00"));
     }
 
     @Test

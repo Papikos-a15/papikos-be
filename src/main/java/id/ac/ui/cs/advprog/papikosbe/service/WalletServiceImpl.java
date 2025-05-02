@@ -14,9 +14,12 @@ public class WalletServiceImpl implements WalletService {
     @Autowired
     private WalletRepository walletRepository;
 
+    @Autowired
+    private WalletFactory walletFactory;
+
     @Override
     public Wallet create(UUID userId) {
-        Wallet wallet = WalletFactory.createWallet(userId);
+        Wallet wallet = walletFactory.createWallet(userId);
         return walletRepository.create(wallet);
     }
 

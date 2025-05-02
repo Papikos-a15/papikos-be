@@ -62,4 +62,22 @@ public class BookingServiceImplTest {
         assertTrue(cancelledBooking.isPresent(), "Booking should be found after cancellation");
         assertEquals(BookingStatus.CANCELLED, cancelledBooking.get().getStatus(), "Booking status should be CANCELLED after cancellation");
     }
+
+    @Test
+    public void testFindAllBookings() {
+        Booking b1 = new Booking(
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                LocalDate.now().plusDays(1), 1, BookingStatus.PENDING_PAYMENT);
+        Booking b2 = new Booking(
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                LocalDate.now().plusDays(2), 2, BookingStatus.PENDING_PAYMENT);
+
+        bookingService.createBooking(b1);
+        bookingService.createBooking(b2);
+
+        List<Booking> all = bookingService.findAllBookings(); // <--- method belum ada
+        assertEquals(2, all.size(), "Seharusnya ada 2 booking total");
+        assertTrue(all.contains(b1), "Harus mengandung booking pertama");
+        assertTrue(all.contains(b2), "Harus mengandung booking kedua");
+    }
 }

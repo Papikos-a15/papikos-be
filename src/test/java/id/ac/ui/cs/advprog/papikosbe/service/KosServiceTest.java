@@ -22,7 +22,7 @@ public class KosServiceTest {
     private KosRepository kosRepository;
 
     @InjectMocks
-    private KosService kosService;
+    private KosServiceImpl kosService;
 
     private Kos kos1;
     private Kos kos2;

@@ -1,8 +1,10 @@
 package id.ac.ui.cs.advprog.papikosbe.service;
 
+import id.ac.ui.cs.advprog.papikosbe.factory.DefaultTransactionFactory;
 import id.ac.ui.cs.advprog.papikosbe.factory.PaymentFactory;
 import id.ac.ui.cs.advprog.papikosbe.factory.TransactionFactory;
 import id.ac.ui.cs.advprog.papikosbe.model.Payment;
+import id.ac.ui.cs.advprog.papikosbe.model.Transaction;
 import org.springframework.stereotype.Service;
 
 import id.ac.ui.cs.advprog.papikosbe.enums.TransactionType;
@@ -16,10 +18,10 @@ public class PaymentServiceImpl implements PaymentService {
 
     private final Map<UUID, Payment> paymentRepository = new HashMap<>();
     private final PaymentFactory paymentFactory;
-    private final TransactionFactory transactionFactory;
+    private final DefaultTransactionFactory transactionFactory;
     private final TransactionService transactionService;
 
-    public PaymentServiceImpl(PaymentFactory paymentFactory, TransactionFactory transactionFactory, TransactionService transactionService) {
+    public PaymentServiceImpl(PaymentFactory paymentFactory, DefaultTransactionFactory transactionFactory, TransactionService transactionService) {
         this.paymentFactory = paymentFactory;
         this.transactionFactory = transactionFactory;
         this.transactionService = transactionService;
@@ -28,7 +30,7 @@ public class PaymentServiceImpl implements PaymentService {
     public Payment createPayment(UUID userId, UUID ownerId, BigDecimal amount) {
         Payment payment = paymentFactory.createPayment(userId, ownerId, amount);
 
-        var transaction = transactionFactory.createTransaction(
+        Transaction transaction = transactionFactory.createTransaction(
                 userId, amount, TransactionType.PAYMENT
         );
         transactionService.create(transaction);

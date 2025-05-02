@@ -11,11 +11,11 @@ public class KosRepository {
     private final Map<String, Kos> store = new HashMap<>();
 
     public Kos save(Kos kos) {
-        String id = kos.getId();
-        if (id == null) {
-            String uuid = UUID.randomUUID().toString();
+        if (kos.getId() == null) {
+            String uuid= UUID.randomUUID().toString();
             kos.setId(uuid);
         }
+        String id = kos.getId();
         store.put(id, kos);
         return store.get(id);
     }

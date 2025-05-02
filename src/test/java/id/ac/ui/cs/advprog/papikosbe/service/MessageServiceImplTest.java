@@ -65,4 +65,17 @@ public class MessageServiceImplTest {
         assertEquals(messages, result);
         verify(messageRepository, times(1)).getMessagesByRoomId(roomId);
     }
+
+    @Test
+    void testGetMessageByIdShouldReturnMessage() {
+        UUID messageId = UUID.randomUUID();
+        Message expectedMessage = new Message(UUID.randomUUID(), UUID.randomUUID(), "Isi Pesan");
+
+        when(messageRepository.getMessageById(messageId)).thenReturn(expectedMessage);
+
+        Message result = messageService.getMessageById(messageId);
+
+        assertEquals(expectedMessage, result);
+        verify(messageRepository, times(1)).getMessageById(messageId);
+    }
 }

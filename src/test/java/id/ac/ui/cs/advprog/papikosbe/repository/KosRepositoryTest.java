@@ -59,7 +59,7 @@ public class KosRepositoryTest {
         // Save a Kos entry.
         Kos kos = kosList.get(1);
         Kos savedKos = kosRepository.save(kos);
-        Long id = savedKos.getId();
+        String id = savedKos.getId();
 
         // Retrieve the Kos by its ID.
         Kos foundKos = kosRepository.getKosById(id);
@@ -86,7 +86,7 @@ public class KosRepositoryTest {
         // Save a Kos entry.
         Kos kos = kosList.get(0);
         Kos savedKos = kosRepository.save(kos);
-        Long id = savedKos.getId();
+        String id = savedKos.getId();
 
         // Create an updated object.
         Kos updatedKos = new Kos();
@@ -112,7 +112,7 @@ public class KosRepositoryTest {
         // Save a Kos entry.
         Kos kos = kosList.get(0);
         Kos savedKos = kosRepository.save(kos);
-        Long id = savedKos.getId();
+        String id = savedKos.getId();
 
         // Delete the Kos entry.
         boolean deleted = kosRepository.deleteKos(id);

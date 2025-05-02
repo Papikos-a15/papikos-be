@@ -35,4 +35,9 @@ public class MessageServiceImpl implements MessageService {
     public List<Message> getMessagesByRoomId(UUID roomId) {
         return messageRepository.getMessagesByRoomId(roomId);
     }
+
+    @Override
+    public Message getMessageById(UUID id) {
+        return messageRepository.getMessageById(id);
+    }
 }

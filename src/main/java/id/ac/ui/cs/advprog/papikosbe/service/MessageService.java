@@ -10,4 +10,5 @@ public interface MessageService {
     void editMessage(Message message);
     boolean deleteMessage(UUID id);
     List<Message> getMessagesByRoomId(UUID roomId);
+    Message getMessageById(UUID id);
 }

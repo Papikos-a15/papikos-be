@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.List;
 import id.ac.ui.cs.advprog.papikosbe.model.Booking;
 import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
 
@@ -75,7 +76,7 @@ public class BookingServiceImplTest {
         bookingService.createBooking(b1);
         bookingService.createBooking(b2);
 
-        List<Booking> all = bookingService.findAllBookings(); // <--- method belum ada
+        List<Booking> all = bookingService.findAllBookings();
         assertEquals(2, all.size(), "Seharusnya ada 2 booking total");
         assertTrue(all.contains(b1), "Harus mengandung booking pertama");
         assertTrue(all.contains(b2), "Harus mengandung booking kedua");

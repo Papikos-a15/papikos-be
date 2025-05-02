@@ -109,7 +109,7 @@ public class BookingRepositoryTest {
         repository.save(b1);
         repository.save(b2);
 
-        List<Booking> all = repository.findAll(); // <--- method belum ada
+        List<Booking> all = repository.findAll();
         assertEquals(2, all.size(), "Seharusnya ada 2 booking total");
         assertTrue(all.contains(b1), "Harus mengandung booking pertama");
         assertTrue(all.contains(b2), "Harus mengandung booking kedua");

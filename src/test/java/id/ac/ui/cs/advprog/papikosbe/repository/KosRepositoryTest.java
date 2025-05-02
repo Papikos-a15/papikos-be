@@ -43,7 +43,7 @@ public class KosRepositoryTest {
     @Test
     public void testAddKos() {
         // Add the first Kos from our sample list.
-        Kos kos = kosList.get(0);
+        Kos kos = kosList.getFirst();
         Kos savedKos = kosRepository.save(kos);
 
         // Verify that an ID was assigned and that the stored values are correct.
@@ -84,7 +84,7 @@ public class KosRepositoryTest {
     @Test
     public void testUpdateKos() {
         // Save a Kos entry.
-        Kos kos = kosList.get(0);
+        Kos kos = kosList.getFirst();
         Kos savedKos = kosRepository.save(kos);
         String id = savedKos.getId();
 
@@ -110,7 +110,7 @@ public class KosRepositoryTest {
     @Test
     public void testDeleteKos() {
         // Save a Kos entry.
-        Kos kos = kosList.get(0);
+        Kos kos = kosList.getFirst();
         Kos savedKos = kosRepository.save(kos);
         String id = savedKos.getId();
 

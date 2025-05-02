@@ -10,4 +10,5 @@ public interface BookingService {
     Optional<Booking> findBookingById(UUID bookingId);
     List<Booking> findAllBookings();
     void cancelBooking(UUID bookingId);
+    public void clearStore();
 }

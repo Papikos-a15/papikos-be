@@ -18,6 +18,7 @@ public class BookingServiceImplTest {
     public void setUp() {
         // Mengambil instance service dengan pola Singleton
         bookingService = BookingServiceImpl.getInstance();
+        bookingService.clearStore();  // ← reset state sebelum tiap test
     }
 
     @Test

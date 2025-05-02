@@ -7,6 +7,7 @@ import lombok.*;
 import java.util.UUID;
 
 @Entity
+@Table(name = "\"user\"")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -26,5 +27,5 @@ public class User {
     @Enumerated(EnumType.STRING)
     private Role role;
 
-    private boolean verified = false;
+    private boolean verified;
 }

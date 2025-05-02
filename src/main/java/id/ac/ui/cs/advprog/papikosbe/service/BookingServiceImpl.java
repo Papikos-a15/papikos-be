@@ -8,7 +8,9 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
+import org.springframework.stereotype.Service;
 
+@Service
 public class BookingServiceImpl implements BookingService {
 
     private static BookingServiceImpl instance;

@@ -19,25 +19,26 @@ public class BookingController {
 
     @PostMapping
     public ResponseEntity<Booking> createBooking(@RequestBody Booking booking) {
-        // TODO: implement
-        return ResponseEntity.status(201).body(null);
+        Booking created = bookingService.createBooking(booking);
+        return ResponseEntity.status(201).body(created);
     }
 
     @GetMapping
     public ResponseEntity<List<Booking>> getAllBookings() {
-        // TODO: implement
-        return ResponseEntity.ok(null);
+        List<Booking> list = bookingService.findAllBookings();
+        return ResponseEntity.ok(list);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Booking> getBookingById(@PathVariable UUID id) {
-        // TODO: implement
-        return ResponseEntity.ok(null);
+        Optional<Booking> b = bookingService.findBookingById(id);
+        return b.map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancelBooking(@PathVariable UUID id) {
-        // TODO: implement
+        bookingService.cancelBooking(id);
         return ResponseEntity.noContent().build();
     }
 }

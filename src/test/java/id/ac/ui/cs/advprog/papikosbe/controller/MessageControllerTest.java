@@ -68,4 +68,19 @@ public class MessageControllerTest {
                         .param("roomId", roomId.toString()))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    void testEditMessage_shouldReturnOk() throws Exception {
+        UUID messageId = UUID.randomUUID();
+        Message existingMessage = new Message(UUID.randomUUID(), UUID.randomUUID(), "Pesan lama");
+        when(messageService.getMessagesByRoomId(existingMessage.getRoomChatId())).thenReturn(List.of(existingMessage));
+
+        String newContent = "Pesan baru";
+        String requestBody = "\"" + newContent + "\"";
+
+        mockMvc.perform(put("/api/v1/messages/" + messageId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk());
+    }
 }

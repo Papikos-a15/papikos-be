@@ -10,12 +10,14 @@ public class KosRepository {
     // In‑memory store for Kos objects.
     private final Map<String, Kos> store = new HashMap<>();
 
-
     public Kos save(Kos kos) {
-        String uuid = UUID.randomUUID().toString();
-        kos.setId(uuid);
-        store.put(uuid, kos);
-        return kos;
+        if (kos.getId() == null) {
+            String uuid= UUID.randomUUID().toString();
+            kos.setId(uuid);
+        }
+        String id = kos.getId();
+        store.put(id, kos);
+        return store.get(id);
     }
 
     public Kos getKosById(String id) {

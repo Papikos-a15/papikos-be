@@ -35,4 +35,18 @@ class AdminTest {
                         .build()
         );
     }
+
+    @Test
+    void testGettersAndSetters() {
+        Admin admin = new Admin();
+        admin.setId(42L);
+        admin.setEmail("setter@admin.com");
+        admin.setPassword("setterpass");
+
+        assertAll("admin setters/getters",
+                () -> assertEquals(42L, admin.getId()),
+                () -> assertEquals("setter@admin.com", admin.getEmail()),
+                () -> assertEquals("setterpass",       admin.getPassword())
+        );
+    }
 }

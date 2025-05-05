@@ -56,4 +56,20 @@ class OwnerTest {
                         .build()
         );
     }
+
+    @Test
+    void testGettersAndSetters() {
+        Owner owner = new Owner();
+        owner.setId(99L);
+        owner.setEmail("set@owner.com");
+        owner.setPassword("setowner");
+        owner.setApproved(true);
+
+        assertAll("owner setters/getters",
+                () -> assertEquals(99L,                owner.getId()),
+                () -> assertEquals("set@owner.com",   owner.getEmail()),
+                () -> assertEquals("setowner",        owner.getPassword()),
+                () -> assertTrue(owner.isApproved())
+        );
+    }
 }

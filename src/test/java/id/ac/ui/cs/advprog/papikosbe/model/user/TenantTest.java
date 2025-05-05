@@ -35,4 +35,18 @@ class TenantTest {
                         .build()
         );
     }
+
+    @Test
+    void testGettersAndSetters() {
+        Tenant tenant = new Tenant();
+        tenant.setId(7L);
+        tenant.setEmail("set@tenant.com");
+        tenant.setPassword("setpass");
+
+        assertAll("tenant setters/getters",
+                () -> assertEquals(7L,                  tenant.getId()),
+                () -> assertEquals("set@tenant.com",   tenant.getEmail()),
+                () -> assertEquals("setpass",          tenant.getPassword())
+        );
+    }
 }

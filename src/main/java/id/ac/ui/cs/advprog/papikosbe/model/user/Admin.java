@@ -8,19 +8,22 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.Objects;
+
 @Entity
 @DiscriminatorValue("ADMIN")
-@Getter @Setter @NoArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
 public class Admin extends User {
 
     /**
-     * Builder constructor, akan dipanggil oleh Lombok-generated builder()
-     * • validasi non-null di sini
+     * Builder constructor: memastikan email & password non-null.
      */
     @Builder
     public Admin(String email, String password) {
-        // TODO: Objects.requireNonNull(email);
-        // TODO: Objects.requireNonNull(password);
+        Objects.requireNonNull(email,    "email must not be null");
+        Objects.requireNonNull(password, "password must not be null");
         super.setEmail(email);
         super.setPassword(password);
     }

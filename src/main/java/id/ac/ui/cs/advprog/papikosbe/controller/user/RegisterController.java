@@ -3,10 +3,12 @@ package id.ac.ui.cs.advprog.papikosbe.controller.user;
 
 import id.ac.ui.cs.advprog.papikosbe.controller.user.dto.ApiError;
 import id.ac.ui.cs.advprog.papikosbe.controller.user.dto.LoginRequest;
+import id.ac.ui.cs.advprog.papikosbe.exception.DuplicateEmailException;
 import id.ac.ui.cs.advprog.papikosbe.model.user.Owner;
 import id.ac.ui.cs.advprog.papikosbe.model.user.Tenant;
 import id.ac.ui.cs.advprog.papikosbe.service.user.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,23 +19,24 @@ public class RegisterController {
 
     private final UserService userService;
 
-    /* ----------- SKELETON / placeholder ----------- */
-
+    /* ---------- REGISTER TENANT ---------- */
     @PostMapping("/tenant")
     public ResponseEntity<Tenant> registerTenant(@RequestBody LoginRequest body) {
-        // TODO: implementasi supaya test hijau
-        return ResponseEntity.status(501).build(); // 501 Not Implemented
+        Tenant tenant = userService.registerTenant(body.email(), body.password());
+        return ResponseEntity.status(HttpStatus.CREATED).body(tenant);
     }
 
+    /* ---------- REGISTER OWNER ---------- */
     @PostMapping("/owner")
     public ResponseEntity<Owner> registerOwner(@RequestBody LoginRequest body) {
-        // TODO: implementasi supaya test hijau
-        return ResponseEntity.status(501).build();
+        Owner owner = userService.registerOwner(body.email(), body.password());
+        return ResponseEntity.status(HttpStatus.CREATED).body(owner);
     }
 
-    @ExceptionHandler
-    public ResponseEntity<ApiError> handleDuplicate(Exception ex) {
-        // TODO: mapping DuplicateEmailException -> 409
-        return ResponseEntity.status(501).body(new ApiError("not implemented"));
+    /* ---------- ERROR HANDLER ---------- */
+    @ExceptionHandler(DuplicateEmailException.class)
+    public ResponseEntity<ApiError> handleDuplicate(DuplicateEmailException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ApiError(ex.getMessage()));
     }
 }

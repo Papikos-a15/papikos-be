@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
+import static org.mockito.Mockito.lenient;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -30,7 +30,9 @@ class UserServiceTest {
 
     @BeforeEach
     void setUp() {
-        when(passwordEncoder.encode(any())).thenReturn("hashedPwd"); // stub hashing
+        lenient()                                 //  ⬅️  tambahkan ini
+                .when(passwordEncoder.encode(any()))
+                .thenReturn("hashedPwd");
     }
 
     /* ---------- register tenant ---------- */

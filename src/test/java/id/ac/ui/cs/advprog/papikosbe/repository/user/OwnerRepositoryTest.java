@@ -6,6 +6,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import jakarta.persistence.PersistenceException;
 
 import java.util.Optional;
 
@@ -77,4 +78,22 @@ class OwnerRepositoryTest {
         Optional<Owner> found = ownerRepo.findByEmail("no-such@owner.com");
         assertThat(found).isEmpty();
     }
+
+    @Test
+    @DisplayName("duplicate email among owners should throw PersistenceException")
+    void testDuplicateEmailThrowsForOwners() {
+        Owner o1 = Owner.builder()
+                .email("dup@owner.com")
+                .password("p").build();
+        Owner o2 = Owner.builder()
+                .email("dup@owner.com")
+                .password("q").build();
+
+        ownerRepo.saveAndFlush(o1);
+
+        // ini akan gagal karena UNIQUE constraint pada kolom email di tabel users
+        assertThatThrownBy(() -> ownerRepo.saveAndFlush(o2))
+                .isInstanceOf(PersistenceException.class);
+    }
+
 }

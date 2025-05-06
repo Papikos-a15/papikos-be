@@ -18,7 +18,7 @@ import static org.mockito.Mockito.*;
 class OwnerServiceTest {
 
     @Mock OwnerRepository ownerRepo;
-    @InjectMocks AuthServiceImpl ownerService;
+    @InjectMocks OwnerServiceImpl ownerService;
 
     @Test
     void testApproveOwnerSuccess() {

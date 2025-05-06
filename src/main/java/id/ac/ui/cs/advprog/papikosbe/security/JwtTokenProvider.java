@@ -8,6 +8,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.security.core.Authentication;
 
 import jakarta.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
@@ -97,5 +98,13 @@ public class JwtTokenProvider {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    /**
+     * TODO: parse the token’s claims and build a Spring Security Authentication
+     * object (e.g. UsernamePasswordAuthenticationToken with UserDetails and roles).
+     */
+    public Authentication getAuthentication(String token) {
+        throw new UnsupportedOperationException("getAuthentication not implemented");
     }
 }

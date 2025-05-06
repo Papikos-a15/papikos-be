@@ -6,7 +6,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import jakarta.persistence.PersistenceException;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.Optional;
 
@@ -80,7 +80,7 @@ class OwnerRepositoryTest {
     }
 
     @Test
-    @DisplayName("duplicate email among owners should throw PersistenceException")
+    @DisplayName("duplicate email among owners should throw DataIntegrityViolationException")
     void testDuplicateEmailThrowsForOwners() {
         Owner o1 = Owner.builder()
                 .email("dup@owner.com")
@@ -90,10 +90,8 @@ class OwnerRepositoryTest {
                 .password("q").build();
 
         ownerRepo.saveAndFlush(o1);
-
-        // ini akan gagal karena UNIQUE constraint pada kolom email di tabel users
         assertThatThrownBy(() -> ownerRepo.saveAndFlush(o2))
-                .isInstanceOf(PersistenceException.class);
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 
 }

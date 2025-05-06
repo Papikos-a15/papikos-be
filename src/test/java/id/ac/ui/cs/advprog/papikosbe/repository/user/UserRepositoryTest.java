@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import java.util.List;
-import jakarta.persistence.PersistenceException;
+import org.springframework.dao.DataIntegrityViolationException;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -54,7 +54,7 @@ class UserRepositoryTest {
     }
 
     @Test
-    @DisplayName("duplicate email should throw PersistenceException")
+    @DisplayName("duplicate email should throw DataIntegrityViolationException")
     void testDuplicateEmailThrows() {
         Tenant t1 = Tenant.builder()
                 .email("dup@mail.com")
@@ -65,6 +65,6 @@ class UserRepositoryTest {
 
         userRepo.saveAndFlush(t1);
         assertThatThrownBy(() -> userRepo.saveAndFlush(t2))
-                .isInstanceOf(PersistenceException.class);
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 }

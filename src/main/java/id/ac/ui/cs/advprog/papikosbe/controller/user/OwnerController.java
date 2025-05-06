@@ -1,7 +1,7 @@
 // src/main/java/id/ac/ui/cs/advprog/papikosbe/controller/user/OwnerController.java
 package id.ac.ui.cs.advprog.papikosbe.controller.user;
 
-import id.ac.ui.cs.advprog.papikosbe.controller.dto.ApiError;
+import id.ac.ui.cs.advprog.papikosbe.controller.user.dto.ApiError;
 import id.ac.ui.cs.advprog.papikosbe.model.user.Owner;
 import id.ac.ui.cs.advprog.papikosbe.service.user.OwnerService;
 import jakarta.persistence.EntityNotFoundException;

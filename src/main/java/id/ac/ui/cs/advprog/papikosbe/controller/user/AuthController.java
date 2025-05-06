@@ -1,9 +1,9 @@
 // src/main/java/id/ac/ui/cs/advprog/papikosbe/controller/user/AuthController.java
 package id.ac.ui.cs.advprog.papikosbe.controller.user;
 
-import id.ac.ui.cs.advprog.papikosbe.controller.dto.ApiError;
-import id.ac.ui.cs.advprog.papikosbe.controller.dto.LoginRequest;
-import id.ac.ui.cs.advprog.papikosbe.controller.dto.TokenResponse;
+import id.ac.ui.cs.advprog.papikosbe.controller.user.dto.ApiError;
+import id.ac.ui.cs.advprog.papikosbe.controller.user.dto.LoginRequest;
+import id.ac.ui.cs.advprog.papikosbe.controller.user.dto.TokenResponse;
 import id.ac.ui.cs.advprog.papikosbe.exception.BadCredentialsException;
 import id.ac.ui.cs.advprog.papikosbe.service.user.AuthService;
 import lombok.RequiredArgsConstructor;

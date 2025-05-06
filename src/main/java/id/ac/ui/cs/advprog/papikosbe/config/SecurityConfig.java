@@ -1,60 +1,73 @@
-// src/main/java/id/ac/ui/cs/advprog/papikosbe/config/SecurityConfig.java
 package id.ac.ui.cs.advprog.papikosbe.config;
 
+import id.ac.ui.cs.advprog.papikosbe.security.JwtAuthenticationFilter;
+import id.ac.ui.cs.advprog.papikosbe.security.JwtTokenProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
-@EnableMethodSecurity          // untuk @PreAuthorize dsb.
+@EnableMethodSecurity
 public class SecurityConfig {
 
-    /* ------------------------------------------------------------------
-     * Password hashing
-     * ------------------------------------------------------------------ */
+    private final JwtTokenProvider jwtProvider;
+
+    public SecurityConfig(JwtTokenProvider jwtProvider) {
+        this.jwtProvider = jwtProvider;
+    }
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    /* ------------------------------------------------------------------
-     * HTTP‑security rules
-     * ------------------------------------------------------------------ */
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
-        http
-                /* 1. API stateless → tidak pakai session */
-                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        // Buat instance filter JWT
+        JwtAuthenticationFilter jwtFilter = new JwtAuthenticationFilter(jwtProvider);
 
-                /* 2. CSRF tidak diperlukan karena autentikasi via JWT header */
+        http
+                // 1. Stateless: tidak pakai session
+                .sessionManagement(sm -> sm
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+
+                // 2. Disable CSRF karena API pakai JWT di header
                 .csrf(csrf -> csrf.disable())
 
-                /* 3. (Opsional) CORS: izinkan frontend lain origin */
+                // 3. CORS default (boleh disetup lebih lanjut jika perlu)
                 .cors(Customizer.withDefaults())
 
-                /* 4. Autorisasi endpoint */
+                // 4. Atur endpoint publik vs yang butuh auth
                 .authorizeHttpRequests(auth -> auth
-                        // register, login, logout bebas
                         .requestMatchers("/auth/**").permitAll()
-                        // approve owner hanya ADMIN (ganti jika perlu)
                         .requestMatchers(HttpMethod.PATCH, "/owners/*/approve").hasRole("ADMIN")
-                        // endpoint lain butuh autentikasi
-                        .anyRequest().authenticated())
+                        .anyRequest().authenticated()
+                )
 
-                /* 5. Matikan mekanisme form‑login & basic auth default */
+                // 5. Non-aktifkan form login & basic auth
                 .formLogin(form -> form.disable())
-                .httpBasic(basic -> basic.disable());
+                .httpBasic(basic -> basic.disable())
 
-        /* 6. Tambahkan filter JWT milik Anda di sini
-              (mis. http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)); */
+                // 6. Tangani semua authentication failures dengan 401
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+                )
+
+                // 7. Pasang JWT filter sebelum UsernamePasswordAuthenticationFilter
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+        ;
 
         return http.build();
     }

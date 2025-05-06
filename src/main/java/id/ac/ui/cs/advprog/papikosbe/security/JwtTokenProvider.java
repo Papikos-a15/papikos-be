@@ -3,12 +3,18 @@ package id.ac.ui.cs.advprog.papikosbe.security;
 
 import id.ac.ui.cs.advprog.papikosbe.model.user.Owner;
 import id.ac.ui.cs.advprog.papikosbe.model.user.User;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.security.core.Authentication;
+
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import java.util.List;
+import java.util.Collection;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 
 import jakarta.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
@@ -100,11 +106,23 @@ public class JwtTokenProvider {
         }
     }
 
-    /**
-     * TODO: parse the token’s claims and build a Spring Security Authentication
-     * object (e.g. UsernamePasswordAuthenticationToken with UserDetails and roles).
-     */
     public Authentication getAuthentication(String token) {
-        throw new UnsupportedOperationException("getAuthentication not implemented");
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(signingKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+
+        String email = claims.getSubject();
+        String role = claims.get("role", String.class);
+        Collection<SimpleGrantedAuthority> authorities =
+                List.of(new SimpleGrantedAuthority("ROLE_" + role));
+
+        var auth = new UsernamePasswordAuthenticationToken(email, null, authorities);
+        // simpan flag approved (jika ada) ke details
+        if (claims.containsKey("approved")) {
+            auth.setDetails(claims.get("approved", Boolean.class));
+        }
+        return auth;
     }
 }

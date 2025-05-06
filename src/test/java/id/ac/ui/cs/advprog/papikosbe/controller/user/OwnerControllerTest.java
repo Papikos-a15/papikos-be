@@ -1,30 +1,29 @@
-// src/test/java/id/ac/ui/cs/advprog/papikosbe/controller/OwnerControllerTest.java
+// src/test/java/id/ac/ui/cs/advprog/papikosbe/controller/user/OwnerControllerTest.java
 package id.ac.ui.cs.advprog.papikosbe.controller.user;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import id.ac.ui.cs.advprog.papikosbe.model.user.Owner;
-import id.ac.ui.cs.advprog.papikosbe.service.user.OwnerServiceImpl;
+import id.ac.ui.cs.advprog.papikosbe.service.user.OwnerService;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import jakarta.persistence.EntityNotFoundException;
-
+import static org.mockito.ArgumentMatchers.eq;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.mockito.ArgumentMatchers.eq;
 
 @WebMvcTest(OwnerController.class)
+@AutoConfigureMockMvc(addFilters = false)          // ⬅ nonaktifkan filter Security
 class OwnerControllerTest {
 
     @Autowired private MockMvc mvc;
-    @Autowired private ObjectMapper mapper;
 
-    @MockBean private OwnerServiceImpl ownerService;
+    @MockBean private OwnerService ownerService;   // ⬅ mock interface‑nya
 
     @Test
     void approveOwnerSuccessReturns200() throws Exception {

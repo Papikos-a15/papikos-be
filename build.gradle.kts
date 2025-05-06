@@ -44,7 +44,8 @@ dependencies {
     // 1) Spring Data JPA starter (brings in jakarta.persistence)
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     // ───────────────────────────────────────────────────────────────
-
+    // untuk embedded DB waktu test
+    testImplementation("com.h2database:h2")
 
     compileOnly("org.projectlombok:lombok")
     developmentOnly("org.springframework.boot:spring-boot-devtools")

@@ -18,7 +18,7 @@ import java.util.Objects;
 @NoArgsConstructor
 public class Owner extends User {
 
-    @Column(nullable = false)
+    @Column(columnDefinition = "boolean default false")
     private boolean approved = false;
 
     /**

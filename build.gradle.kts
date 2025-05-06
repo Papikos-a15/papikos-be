@@ -46,6 +46,8 @@ dependencies {
     // ───────────────────────────────────────────────────────────────
     // untuk embedded DB waktu test
     testImplementation("com.h2database:h2")
+    // bring in Mockito’s JUnit 5 extension
+    testImplementation("org.mockito:mockito-junit-jupiter:5.4.0")
 
     compileOnly("org.projectlombok:lombok")
     developmentOnly("org.springframework.boot:spring-boot-devtools")

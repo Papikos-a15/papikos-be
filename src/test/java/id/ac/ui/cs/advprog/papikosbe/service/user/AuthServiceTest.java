@@ -25,7 +25,7 @@ class AuthServiceTest {
     @Mock UserRepository userRepo;
     @Mock PasswordEncoder passwordEncoder;
     @Mock JwtTokenProvider jwtProvider;
-    @InjectMocks AuthService authService;
+    @InjectMocks AuthServiceImpl  authService;
 
     private Tenant tenant;
     private Owner ownerUnapproved, ownerApproved;

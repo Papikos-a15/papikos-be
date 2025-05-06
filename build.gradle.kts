@@ -49,6 +49,8 @@ dependencies {
     // bring in Mockito’s JUnit 5 extension
     testImplementation("org.mockito:mockito-junit-jupiter:5.4.0")
 
+    implementation("org.springframework.boot:spring-boot-starter-security")
+
     compileOnly("org.projectlombok:lombok")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")

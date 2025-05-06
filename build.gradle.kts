@@ -27,6 +27,32 @@ repositories {
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
     implementation("org.springframework.boot:spring-boot-starter-web")
+
+    // --- Tambahan untuk Security & JWT ---
+    implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("io.jsonwebtoken:jjwt-api:0.11.5")
+    runtimeOnly  ("io.jsonwebtoken:jjwt-impl:0.11.5")      // implementasi JJWT
+    runtimeOnly  ("io.jsonwebtoken:jjwt-jackson:0.11.5")    // untuk serialisasi JSON
+
+    // ───────────────────────────────────────────────────────────────
+    // Tambahkan ini untuk JPA & PostgreSQL:
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    // Jika kamu memang perlu override versi Spring Data JPA:
+    implementation("org.springframework.data:spring-data-jpa:3.4.2")
+    // JDBC driver PostgreSQL:
+    implementation("org.postgresql:postgresql:42.6.0")
+    // 1) Spring Data JPA starter (brings in jakarta.persistence)
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    // ───────────────────────────────────────────────────────────────
+    // untuk embedded DB waktu test
+    testImplementation("com.h2database:h2")
+    // bring in Mockito’s JUnit 5 extension
+    testImplementation("org.mockito:mockito-junit-jupiter:5.4.0")
+
+    implementation("org.springframework.boot:spring-boot-starter-security")
+
+    testImplementation("org.springframework.security:spring-security-test")
+
     compileOnly("org.projectlombok:lombok")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")

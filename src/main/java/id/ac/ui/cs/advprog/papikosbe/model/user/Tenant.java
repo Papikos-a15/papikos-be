@@ -1,5 +1,6 @@
 // src/main/java/id/ac/ui/cs/advprog/papikosbe/model/Tenant.java
 package id.ac.ui.cs.advprog.papikosbe.model.user;
+import id.ac.ui.cs.advprog.papikosbe.enums.Role;
 
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
@@ -26,5 +27,6 @@ public class Tenant extends User {
         Objects.requireNonNull(password, "password must not be null");
         super.setEmail(email);
         super.setPassword(password);
+        super.setRole(Role.TENANT);       // <<< set role
     }
 }

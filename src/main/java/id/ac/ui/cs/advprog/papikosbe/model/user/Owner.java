@@ -1,5 +1,6 @@
 // src/main/java/id/ac/ui/cs/advprog/papikosbe/model/Owner.java
 package id.ac.ui.cs.advprog.papikosbe.model.user;
+import id.ac.ui.cs.advprog.papikosbe.enums.Role;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
@@ -31,6 +32,7 @@ public class Owner extends User {
         Objects.requireNonNull(password, "password must not be null");
         super.setEmail(email);
         super.setPassword(password);
+        super.setRole(Role.OWNER);        // <<< set role
         this.approved = false;
     }
 }

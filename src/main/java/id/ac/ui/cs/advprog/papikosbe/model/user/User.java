@@ -1,6 +1,7 @@
 // src/main/java/id/ac/ui/cs/advprog/papikosbe/model/User.java
 package id.ac.ui.cs.advprog.papikosbe.model.user;
 
+import id.ac.ui.cs.advprog.papikosbe.enums.Role;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -29,5 +30,7 @@ public abstract class User {
     @Column(nullable = false)
     private String password;
 
-    // subclass‐specific fields & behavior follow...
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", insertable = false, updatable = false)
+    private Role role;
 }

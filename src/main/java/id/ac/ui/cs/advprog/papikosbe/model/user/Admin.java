@@ -1,6 +1,7 @@
 // src/main/java/id/ac/ui/cs/advprog/papikosbe/model/Admin.java
 package id.ac.ui.cs.advprog.papikosbe.model.user;
 
+import id.ac.ui.cs.advprog.papikosbe.enums.Role;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import lombok.Builder;
@@ -26,5 +27,6 @@ public class Admin extends User {
         Objects.requireNonNull(password, "password must not be null");
         super.setEmail(email);
         super.setPassword(password);
+        super.setRole(Role.ADMIN);        // <<< set role
     }
 }

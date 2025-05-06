@@ -6,10 +6,29 @@ import id.ac.ui.cs.advprog.papikosbe.model.user.Tenant;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.BeforeEach;
+
+import java.lang.reflect.Method;
 
 class JwtTokenProviderTest {
+    private JwtTokenProvider jwtProvider;
 
-    private final JwtTokenProvider jwtProvider = new JwtTokenProvider();
+    @BeforeEach
+    void setUp() throws Exception {
+        // gunakan key minimal 256-bit (32 karakter) untuk HMAC-SHA256
+        String testSecret = "testsecretkeytestsecretkeytestsec";
+        long testValidity = 3600_000L;  // 1 jam
+        jwtProvider = new JwtTokenProvider(testSecret, testValidity);
+
+        // inisialisasi signingKey dari secret
+        // init() di JwtTokenProvider sebaiknya public,
+        // atau panggil via reflection jika masih private:
+        Method init = JwtTokenProvider.class.getDeclaredMethod("init");
+        init.setAccessible(true);
+        init.invoke(jwtProvider);
+    }
+
+
 
     @Test
     void testCreateTokenGeneratesNonNullJwt() {

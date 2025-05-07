@@ -1,12 +1,14 @@
-package id.ac.ui.cs.advprog.papikosbe.service;
+package id.ac.ui.cs.advprog.papikosbe.service.booking;
 
 import static org.junit.jupiter.api.Assertions.*;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
-import id.ac.ui.cs.advprog.papikosbe.model.Booking;
+import java.util.List;
+import id.ac.ui.cs.advprog.papikosbe.model.booking.Booking;
 import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
 
 public class BookingServiceImplTest {
@@ -17,6 +19,7 @@ public class BookingServiceImplTest {
     public void setUp() {
         // Mengambil instance service dengan pola Singleton
         bookingService = BookingServiceImpl.getInstance();
+        bookingService.clearStore();  // ← reset state sebelum tiap test
     }
 
     @Test
@@ -61,5 +64,23 @@ public class BookingServiceImplTest {
         // Setelah cancel, status harus berubah menjadi CANCELLED
         assertTrue(cancelledBooking.isPresent(), "Booking should be found after cancellation");
         assertEquals(BookingStatus.CANCELLED, cancelledBooking.get().getStatus(), "Booking status should be CANCELLED after cancellation");
+    }
+
+    @Test
+    public void testFindAllBookings() {
+        Booking b1 = new Booking(
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                LocalDate.now().plusDays(1), 1, BookingStatus.PENDING_PAYMENT);
+        Booking b2 = new Booking(
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                LocalDate.now().plusDays(2), 2, BookingStatus.PENDING_PAYMENT);
+
+        bookingService.createBooking(b1);
+        bookingService.createBooking(b2);
+
+        List<Booking> all = bookingService.findAllBookings();
+        assertEquals(2, all.size(), "Seharusnya ada 2 booking total");
+        assertTrue(all.contains(b1), "Harus mengandung booking pertama");
+        assertTrue(all.contains(b2), "Harus mengandung booking kedua");
     }
 }

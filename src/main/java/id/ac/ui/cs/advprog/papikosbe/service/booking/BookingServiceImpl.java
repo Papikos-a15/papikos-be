@@ -1,6 +1,6 @@
-package id.ac.ui.cs.advprog.papikosbe.service;
+package id.ac.ui.cs.advprog.papikosbe.service.booking;
 
-import id.ac.ui.cs.advprog.papikosbe.model.Booking;
+import id.ac.ui.cs.advprog.papikosbe.model.booking.Booking;
 import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
 import java.util.Optional;
 import java.util.UUID;

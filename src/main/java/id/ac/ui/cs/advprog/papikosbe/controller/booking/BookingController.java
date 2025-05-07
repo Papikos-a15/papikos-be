@@ -1,7 +1,7 @@
-package id.ac.ui.cs.advprog.papikosbe.controller;
+package id.ac.ui.cs.advprog.papikosbe.controller.booking;
 
-import id.ac.ui.cs.advprog.papikosbe.model.Booking;
-import id.ac.ui.cs.advprog.papikosbe.service.BookingService;
+import id.ac.ui.cs.advprog.papikosbe.model.booking.Booking;
+import id.ac.ui.cs.advprog.papikosbe.service.booking.BookingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

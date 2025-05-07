@@ -1,13 +1,14 @@
-package id.ac.ui.cs.advprog.papikosbe.service;
+package id.ac.ui.cs.advprog.papikosbe.service.booking;
 
 import static org.junit.jupiter.api.Assertions.*;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.List;
-import id.ac.ui.cs.advprog.papikosbe.model.Booking;
+import id.ac.ui.cs.advprog.papikosbe.model.booking.Booking;
 import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
 
 public class BookingServiceImplTest {

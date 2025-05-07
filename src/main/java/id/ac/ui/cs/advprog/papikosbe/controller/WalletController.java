@@ -23,6 +23,7 @@ public class WalletController {
     public ResponseEntity<Wallet> createWallet(@RequestBody Map<String, Object> payload) {
         UUID userId = UUID.fromString(payload.get("userId").toString());
         Wallet wallet = walletService.create(userId);
+        System.out.println("WALLET: " + wallet);
         return ResponseEntity.ok(wallet);
     }
 

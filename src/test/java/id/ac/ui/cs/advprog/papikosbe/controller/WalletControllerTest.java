@@ -18,6 +18,7 @@ import java.util.UUID;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class WalletControllerTest {
@@ -43,10 +44,12 @@ class WalletControllerTest {
         when(walletService.create(userId)).thenReturn(wallet);
 
         mockMvc.perform(post("/api/wallets")
-                        .param("userId", userId.toString()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"userId\": \"" + userId.toString() + "\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.userId").value(userId.toString()));
     }
+
 
     @Test
     void testFindAllWallets() throws Exception {

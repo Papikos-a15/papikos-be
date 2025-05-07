@@ -1,6 +1,6 @@
-package id.ac.ui.cs.advprog.papikosbe.repository;
+package id.ac.ui.cs.advprog.papikosbe.repository.booking;
 
-import id.ac.ui.cs.advprog.papikosbe.model.Booking;
+import id.ac.ui.cs.advprog.papikosbe.model.booking.Booking;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

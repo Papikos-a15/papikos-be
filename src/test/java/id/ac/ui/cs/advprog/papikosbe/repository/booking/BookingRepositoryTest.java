@@ -1,8 +1,7 @@
 package id.ac.ui.cs.advprog.papikosbe.repository.booking;
 
 import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
-import id.ac.ui.cs.advprog.papikosbe.model.Booking;
-import id.ac.ui.cs.advprog.papikosbe.repository.BookingRepository;
+import id.ac.ui.cs.advprog.papikosbe.model.booking.Booking;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

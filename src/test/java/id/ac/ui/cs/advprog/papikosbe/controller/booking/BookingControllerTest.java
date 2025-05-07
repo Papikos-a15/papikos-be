@@ -1,7 +1,8 @@
-package id.ac.ui.cs.advprog.papikosbe.controller;
+package id.ac.ui.cs.advprog.papikosbe.controller.booking;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import id.ac.ui.cs.advprog.papikosbe.config.SecurityConfig;
+import id.ac.ui.cs.advprog.papikosbe.controller.BookingController;
 import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
 import id.ac.ui.cs.advprog.papikosbe.model.Booking;
 import id.ac.ui.cs.advprog.papikosbe.service.BookingService;

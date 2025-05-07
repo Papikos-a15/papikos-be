@@ -8,17 +8,19 @@ import java.util.*;
 @Repository
 public class KosRepository {
     // In‑memory store for Kos objects.
-    private final Map<Long, Kos> store = new HashMap<>();
-
+    private final Map<String, Kos> store = new HashMap<>();
 
     public Kos save(Kos kos) {
-        String uuid = UUID.randomUUID().toString();
-        kos.setId(uuid);
-        store.put(Long.parseLong(uuid), kos);
-        return kos;
+        if (kos.getId() == null) {
+            String uuid= UUID.randomUUID().toString();
+            kos.setId(uuid);
+        }
+        String id = kos.getId();
+        store.put(id, kos);
+        return store.get(id);
     }
 
-    public Kos getKosById(Long id) {
+    public Kos getKosById(String id) {
         return store.get(id);
     }
 
@@ -26,7 +28,7 @@ public class KosRepository {
         return new ArrayList<>(store.values());
     }
 
-    public Kos updateKos(Long id, Kos updatedKos) {
+    public Kos updateKos(String id, Kos updatedKos) {
         if (store.containsKey(id)) {
             Kos existingKos = store.get(id);
             existingKos.setName(updatedKos.getName());
@@ -40,7 +42,7 @@ public class KosRepository {
         return null;
     }
 
-    public boolean deleteKos(Long id) {
+    public boolean deleteKos(String id) {
         return store.remove(id) != null;
     }
 }

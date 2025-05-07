@@ -4,9 +4,13 @@ import id.ac.ui.cs.advprog.papikosbe.model.Booking;
 import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.List;
+import org.springframework.stereotype.Service;
 
+@Service
 public class BookingServiceImpl implements BookingService {
 
     private static BookingServiceImpl instance;
@@ -37,10 +41,19 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    public List<Booking> findAllBookings() {
+        return new ArrayList<>(bookingStore.values());
+    }
+
+    @Override
     public void cancelBooking(UUID bookingId) {
         Booking booking = bookingStore.get(bookingId);
         if (booking != null) {
             booking.setStatus(BookingStatus.CANCELLED);
         }
+    }
+    // Utility for tests
+    public void clearStore() {
+        bookingStore.clear();
     }
 }

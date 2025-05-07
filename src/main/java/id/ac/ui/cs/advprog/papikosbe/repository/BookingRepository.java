@@ -47,6 +47,10 @@ public class BookingRepository {
         return results;
     }
 
+    public List<Booking> findAll() {
+        return new ArrayList<>(bookingStore.values());
+    }
+    
     // Menghapus booking berdasarkan bookingId
     public void deleteById(UUID bookingId) {
         bookingStore.remove(bookingId);

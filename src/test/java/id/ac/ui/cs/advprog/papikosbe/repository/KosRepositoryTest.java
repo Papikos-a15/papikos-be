@@ -11,7 +11,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
 public class KosRepositoryTest {
 
     private KosRepository kosRepository;
@@ -43,7 +42,7 @@ public class KosRepositoryTest {
     @Test
     public void testAddKos() {
         // Add the first Kos from our sample list.
-        Kos kos = kosList.get(0);
+        Kos kos = kosList.getFirst();
         Kos savedKos = kosRepository.save(kos);
 
         // Verify that an ID was assigned and that the stored values are correct.
@@ -59,7 +58,7 @@ public class KosRepositoryTest {
         // Save a Kos entry.
         Kos kos = kosList.get(1);
         Kos savedKos = kosRepository.save(kos);
-        Long id = savedKos.getId();
+        String id = savedKos.getId();
 
         // Retrieve the Kos by its ID.
         Kos foundKos = kosRepository.getKosById(id);
@@ -84,9 +83,9 @@ public class KosRepositoryTest {
     @Test
     public void testUpdateKos() {
         // Save a Kos entry.
-        Kos kos = kosList.get(0);
+        Kos kos = kosList.getFirst();
         Kos savedKos = kosRepository.save(kos);
-        Long id = savedKos.getId();
+        String id = savedKos.getId();
 
         // Create an updated object.
         Kos updatedKos = new Kos();
@@ -110,9 +109,9 @@ public class KosRepositoryTest {
     @Test
     public void testDeleteKos() {
         // Save a Kos entry.
-        Kos kos = kosList.get(0);
+        Kos kos = kosList.getFirst();
         Kos savedKos = kosRepository.save(kos);
-        Long id = savedKos.getId();
+        String id = savedKos.getId();
 
         // Delete the Kos entry.
         boolean deleted = kosRepository.deleteKos(id);

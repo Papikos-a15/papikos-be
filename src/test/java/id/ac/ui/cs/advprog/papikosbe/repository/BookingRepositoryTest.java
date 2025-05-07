@@ -96,4 +96,23 @@ public class BookingRepositoryTest {
         // Pastikan booking sudah tidak ada
         assertFalse(repository.findById(sampleBooking.getBookingId()).isPresent());
     }
+
+    @Test
+    public void testFindAllBookings() {
+        Booking b1 = new Booking(
+                UUID.randomUUID(), dummyUserId, dummyKosId,
+                LocalDate.now().plusDays(1), 1, BookingStatus.PENDING_PAYMENT);
+        Booking b2 = new Booking(
+                UUID.randomUUID(), dummyUserId, dummyKosId,
+                LocalDate.now().plusDays(2), 2, BookingStatus.PENDING_PAYMENT);
+
+        repository.save(b1);
+        repository.save(b2);
+
+        List<Booking> all = repository.findAll();
+        assertEquals(2, all.size(), "Seharusnya ada 2 booking total");
+        assertTrue(all.contains(b1), "Harus mengandung booking pertama");
+        assertTrue(all.contains(b2), "Harus mengandung booking kedua");
+    }
+
 }

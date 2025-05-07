@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -19,10 +20,12 @@ public class WalletController {
     }
 
     @PostMapping
-    public ResponseEntity<Wallet> createWallet(@RequestParam UUID userId) {
+    public ResponseEntity<Wallet> createWallet(@RequestBody Map<String, Object> payload) {
+        UUID userId = UUID.fromString(payload.get("userId").toString());
         Wallet wallet = walletService.create(userId);
         return ResponseEntity.ok(wallet);
     }
+
 
     @GetMapping
     public ResponseEntity<List<Wallet>> findAllWallets() {

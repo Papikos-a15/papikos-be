@@ -3,6 +3,7 @@ package id.ac.ui.cs.advprog.papikosbe.service;
 import id.ac.ui.cs.advprog.papikosbe.factory.WalletFactory;
 import id.ac.ui.cs.advprog.papikosbe.model.Wallet;
 import id.ac.ui.cs.advprog.papikosbe.repository.WalletRepository;
+import id.ac.ui.cs.advprog.papikosbe.service.transaction.WalletServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

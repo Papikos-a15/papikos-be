@@ -2,7 +2,7 @@ package id.ac.ui.cs.advprog.papikosbe.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import id.ac.ui.cs.advprog.papikosbe.model.Payment;
-import id.ac.ui.cs.advprog.papikosbe.service.PaymentServiceImpl;
+import id.ac.ui.cs.advprog.papikosbe.service.transaction.PaymentServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;

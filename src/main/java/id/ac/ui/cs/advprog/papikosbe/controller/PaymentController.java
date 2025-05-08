@@ -1,7 +1,7 @@
 package id.ac.ui.cs.advprog.papikosbe.controller;
 
 import id.ac.ui.cs.advprog.papikosbe.model.Payment;
-import id.ac.ui.cs.advprog.papikosbe.service.PaymentServiceImpl;
+import id.ac.ui.cs.advprog.papikosbe.service.transaction.PaymentServiceImpl;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

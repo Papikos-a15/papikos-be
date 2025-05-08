@@ -3,6 +3,7 @@ package id.ac.ui.cs.advprog.papikosbe.repository;
 import id.ac.ui.cs.advprog.papikosbe.model.TopUp;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -13,14 +14,6 @@ import java.util.UUID;
 public class TopUpRepository {
     private final List<TopUp> topUpData = new ArrayList<>();
 
-    public TopUp create(TopUp topUp) {
-        if (topUp.getId() == null) {
-            topUp.setId(UUID.randomUUID());
-        }
-        topUpData.add(topUp);
-        return topUp;
-    }
-
     public TopUp save(TopUp topUp) {
         // Save = update or create
         Optional<TopUp> existing = findById(topUp.getId());
@@ -29,27 +22,26 @@ public class TopUpRepository {
         return topUp;
     }
 
-    public Iterator<TopUp> findAll() {
-        return topUpData.iterator();
+    public List<TopUp> findAll() {
+        return new ArrayList<>(topUpData);
     }
 
     public Optional<TopUp> findById(UUID topUpId) {
-        for (TopUp topUp : topUpData) {
-            if (topUp.getId().equals(topUpId)) {
-                return Optional.of(topUp);
-            }
-        }
-        return Optional.empty();
+        return topUpData.stream()
+                .filter(topUp -> topUp.getId().equals(topUpId))
+                .findFirst();
     }
 
     public List<TopUp> findByUserId(UUID userId) {
-        List<TopUp> result = new ArrayList<>();
-        for (TopUp topUp : topUpData) {
-            if (topUp.getUserId().equals(userId)) {
-                result.add(topUp);
-            }
-        }
-        return result;
+        return topUpData.stream()
+                .filter(topUp -> topUp.getUserId().equals(userId))
+                .toList();
+    }
+
+    public List<TopUp> findByDate(LocalDateTime date) {
+        return topUpData.stream()
+                .filter(payment -> payment.getTimestamp().toLocalDate().equals(date.toLocalDate()))
+                .toList();
     }
 
     public void delete(UUID topUpId) {

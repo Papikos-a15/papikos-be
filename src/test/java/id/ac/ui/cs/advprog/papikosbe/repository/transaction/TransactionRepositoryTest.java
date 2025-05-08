@@ -8,8 +8,7 @@ import org.mockito.Mockito;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -23,52 +22,81 @@ class TransactionRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        transactionRepository = Mockito.mock(TransactionRepository.class);
+        transactionRepository = new TransactionRepository(); // Gunakan implementasi nyata, bukan mock
         userId = UUID.randomUUID();
+
         topUp = new Transaction(UUID.randomUUID(), userId, new BigDecimal("500.00"), TransactionType.TOP_UP, LocalDateTime.now());
         payment = new Transaction(UUID.randomUUID(), userId, new BigDecimal("200.00"), TransactionType.PAYMENT, LocalDateTime.now());
+
+        transactionRepository.save(topUp);
+        transactionRepository.save(payment);
+    }
+
+    @Test
+    void testSaveAndFindById() {
+        Transaction transaction = new Transaction(UUID.randomUUID(), userId, new BigDecimal("100.00"), TransactionType.PAYMENT, LocalDateTime.now());
+        transactionRepository.save(transaction);
+
+        Optional<Transaction> found = transactionRepository.findById(transaction.getId());
+
+        assertTrue(found.isPresent());
+        assertEquals(transaction.getAmount(), found.get().getAmount());
+    }
+
+    @Test
+    void testFindAll() {
+        Iterator<Transaction> all = transactionRepository.findAll();
+        List<Transaction> resultList = new ArrayList<>();
+        all.forEachRemaining(resultList::add);
+
+        assertEquals(2, resultList.size());
+    }
+
+    @Test
+    void testFindByIdNotFound() {
+        Optional<Transaction> result = transactionRepository.findById(UUID.randomUUID());
+        assertFalse(result.isPresent());
     }
 
     @Test
     void testFindAllByUserIdSuccess() {
-        when(transactionRepository.findAllByUserId(userId)).thenReturn(List.of(topUp, payment));
-
         List<Transaction> transactions = transactionRepository.findAllByUserId(userId);
 
         assertFalse(transactions.isEmpty());
         assertEquals(2, transactions.size());
-        assertEquals(userId, transactions.get(0).getUserId());
-        assertEquals(TransactionType.TOP_UP, transactions.get(0).getType());
     }
 
     @Test
     void testFindAllByUserIdEmpty() {
-        UUID userId = UUID.randomUUID();
-
-        when(transactionRepository.findAllByUserId(userId)).thenReturn(List.of());
-
-        List<Transaction> transactions = transactionRepository.findAllByUserId(userId);
-
+        List<Transaction> transactions = transactionRepository.findAllByUserId(UUID.randomUUID());
         assertTrue(transactions.isEmpty());
     }
 
     @Test
     void testFindAllByUserIdAndTypeSuccess() {
-        when(transactionRepository.findAllByUserIdAndTransactionType(userId, TransactionType.PAYMENT)).thenReturn(List.of(payment));
+        List<Transaction> transactions = transactionRepository.findAllByUserIdAndTransactionType(userId, TransactionType.TOP_UP);
 
-        List<Transaction> transactions = transactionRepository.findAllByUserIdAndTransactionType(userId, TransactionType.PAYMENT);
-
-        assertFalse(transactions.isEmpty());
         assertEquals(1, transactions.size());
-        assertEquals(TransactionType.PAYMENT, transactions.get(0).getType());
+        assertEquals(TransactionType.TOP_UP, transactions.get(0).getType());
     }
 
     @Test
     void testFindAllByUserIdAndTypeEmpty() {
-        when(transactionRepository.findAllByUserIdAndTransactionType(userId, TransactionType.TOP_UP)).thenReturn(List.of());
-
-        List<Transaction> transactions = transactionRepository.findAllByUserIdAndTransactionType(userId, TransactionType.TOP_UP);
-
+        List<Transaction> transactions = transactionRepository.findAllByUserIdAndTransactionType(UUID.randomUUID(), TransactionType.TOP_UP);
         assertTrue(transactions.isEmpty());
+    }
+
+    @Test
+    void testDeleteTransaction() {
+        transactionRepository.delete(topUp.getId());
+
+        Optional<Transaction> result = transactionRepository.findById(topUp.getId());
+        assertFalse(result.isPresent());
+    }
+
+    @Test
+    void testDeleteTransactionNotFound() {
+        // No exception should be thrown even if ID not found
+        transactionRepository.delete(UUID.randomUUID());
     }
 }

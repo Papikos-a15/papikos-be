@@ -5,15 +5,12 @@ import id.ac.ui.cs.advprog.papikosbe.factory.DefaultPaymentFactory;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.time.LocalDateTime;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 class PaymentRepositoryTest {
 
@@ -29,65 +26,109 @@ class PaymentRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        paymentRepository = Mockito.mock(PaymentRepository.class);
+        paymentRepository = new PaymentRepository();
 
         paymentId = UUID.randomUUID();
         userId = UUID.randomUUID();
         ownerId = UUID.randomUUID();
 
         paymentFactory = new DefaultPaymentFactory();
-        payment1 = new Payment(paymentId, userId, ownerId, new BigDecimal("250.00"), java.time.LocalDateTime.now());
+        payment1 = new Payment(paymentId, userId, ownerId, new BigDecimal("250.00"), LocalDateTime.now());
         payment2 = paymentFactory.createPayment(userId, UUID.randomUUID(), new BigDecimal("300.00"));
     }
 
     @Test
-    void testSavePaymentSuccess() {
-        when(paymentRepository.save(payment1)).thenReturn(payment1);
+    void testCreatePaymentWithNullId() {
+        Payment newPayment = new Payment(null, userId, ownerId, new BigDecimal("500.00"), LocalDateTime.now());
 
-        Payment savedPayment = paymentRepository.save(payment1);
+        Payment created = paymentRepository.create(newPayment);
 
-        assertNotNull(savedPayment);
-        assertEquals(payment1.getAmount(), savedPayment.getAmount());
+        assertNotNull(created.getId());
+        assertEquals(new BigDecimal("500.00"), created.getAmount());
     }
 
     @Test
-    void testFindPaymentByIdSuccess() {
-        when(paymentRepository.findById(paymentId)).thenReturn(Optional.of(payment1));
+    void testSaveNewPayment() {
+        Payment saved = paymentRepository.save(payment1);
 
-        Optional<Payment> found = paymentRepository.findById(paymentId);
+        assertNotNull(saved);
+        assertEquals(payment1.getId(), saved.getId());
+    }
+
+    @Test
+    void testSaveOverwriteExistingPayment() {
+        paymentRepository.save(payment1);
+        Payment updated = new Payment(payment1.getId(), userId, ownerId, new BigDecimal("1000.00"), payment1.getTimestamp());
+
+        Payment saved = paymentRepository.save(updated);
+
+        Optional<Payment> found = paymentRepository.findById(payment1.getId());
+        assertTrue(found.isPresent());
+        assertEquals(new BigDecimal("1000.00"), found.get().getAmount());
+    }
+
+    @Test
+    void testFindByIdSuccess() {
+        paymentRepository.save(payment1);
+
+        Optional<Payment> found = paymentRepository.findById(payment1.getId());
 
         assertTrue(found.isPresent());
-        assertEquals(paymentId, found.get().getId());
+        assertEquals(payment1.getId(), found.get().getId());
     }
 
     @Test
-    void testFindPaymentByIdNotFound() {
-        UUID unknownPaymentId = UUID.randomUUID();
-        when(paymentRepository.findById(unknownPaymentId)).thenReturn(Optional.empty());
-
-        Optional<Payment> found = paymentRepository.findById(unknownPaymentId);
+    void testFindByIdNotFound() {
+        Optional<Payment> found = paymentRepository.findById(UUID.randomUUID());
 
         assertFalse(found.isPresent());
     }
 
     @Test
     void testFindByUserIdSuccess() {
-        when(paymentRepository.findByUserId(userId)).thenReturn(List.of(payment1, payment2));
+        paymentRepository.save(payment1);
+        paymentRepository.save(payment2);
 
         List<Payment> payments = paymentRepository.findByUserId(userId);
 
-        assertFalse(payments.isEmpty());
         assertEquals(2, payments.size());
-        assertEquals(userId, payments.get(0).getUserId());
+        assertTrue(payments.stream().allMatch(p -> p.getUserId().equals(userId)));
     }
 
     @Test
     void testFindByUserIdNotFound() {
-        UUID unknownUserId = UUID.randomUUID();
-        when(paymentRepository.findByUserId(unknownUserId)).thenReturn(List.of());
-
-        List<Payment> payments = paymentRepository.findByUserId(unknownUserId);
+        List<Payment> payments = paymentRepository.findByUserId(UUID.randomUUID());
 
         assertTrue(payments.isEmpty());
     }
+
+    @Test
+    void testFindAll() {
+        paymentRepository.save(payment1);
+        paymentRepository.save(payment2);
+
+        Iterator<Payment> iterator = paymentRepository.findAll();
+
+        List<Payment> all = new ArrayList<>();
+        iterator.forEachRemaining(all::add);
+
+        assertEquals(2, all.size());
+    }
+
+    @Test
+    void testDeleteExistingPayment() {
+        paymentRepository.save(payment1);
+
+        paymentRepository.delete(payment1.getId());
+
+        Optional<Payment> found = paymentRepository.findById(payment1.getId());
+        assertFalse(found.isPresent());
+    }
+
+    @Test
+    void testDeleteNonExistentPayment() {
+        // Should not throw any error
+        paymentRepository.delete(UUID.randomUUID());
+    }
 }
+

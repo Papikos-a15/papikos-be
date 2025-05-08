@@ -1,6 +1,5 @@
-package id.ac.ui.cs.advprog.papikosbe.model;
+package id.ac.ui.cs.advprog.papikosbe.model.chat;
 
-import id.ac.ui.cs.advprog.papikosbe.model.chat.Message;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;

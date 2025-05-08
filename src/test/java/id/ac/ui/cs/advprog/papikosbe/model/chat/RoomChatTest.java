@@ -1,7 +1,6 @@
-package id.ac.ui.cs.advprog.papikosbe.model;
+package id.ac.ui.cs.advprog.papikosbe.model.chat;
 
 
-import id.ac.ui.cs.advprog.papikosbe.model.chat.RoomChat;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;

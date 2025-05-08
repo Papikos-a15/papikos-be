@@ -1,7 +1,6 @@
-package id.ac.ui.cs.advprog.papikosbe.repository;
+package id.ac.ui.cs.advprog.papikosbe.repository.chat;
 
 import id.ac.ui.cs.advprog.papikosbe.model.chat.RoomChat;
-import id.ac.ui.cs.advprog.papikosbe.repository.chat.RoomChatRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

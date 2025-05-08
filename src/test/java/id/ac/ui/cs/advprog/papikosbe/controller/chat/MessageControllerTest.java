@@ -1,6 +1,5 @@
-package id.ac.ui.cs.advprog.papikosbe.controller;
+package id.ac.ui.cs.advprog.papikosbe.controller.chat;
 
-import id.ac.ui.cs.advprog.papikosbe.controller.chat.MessageController;
 import id.ac.ui.cs.advprog.papikosbe.model.chat.Message;
 import id.ac.ui.cs.advprog.papikosbe.service.chat.MessageService;
 import org.junit.jupiter.api.BeforeEach;

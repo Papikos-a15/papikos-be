@@ -1,6 +1,6 @@
-package id.ac.ui.cs.advprog.papikosbe.repository;
+package id.ac.ui.cs.advprog.papikosbe.repository.transaction;
 
-import id.ac.ui.cs.advprog.papikosbe.model.Payment;
+import id.ac.ui.cs.advprog.papikosbe.model.transaction.Payment;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;

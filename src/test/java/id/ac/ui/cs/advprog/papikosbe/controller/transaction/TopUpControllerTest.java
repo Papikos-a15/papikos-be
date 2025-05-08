@@ -1,7 +1,8 @@
-package id.ac.ui.cs.advprog.papikosbe.controller;
+package id.ac.ui.cs.advprog.papikosbe.controller.transaction;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import id.ac.ui.cs.advprog.papikosbe.model.TopUp;
+import id.ac.ui.cs.advprog.papikosbe.controller.TopUpController;
+import id.ac.ui.cs.advprog.papikosbe.model.transaction.TopUp;
 import id.ac.ui.cs.advprog.papikosbe.service.transaction.TopUpService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

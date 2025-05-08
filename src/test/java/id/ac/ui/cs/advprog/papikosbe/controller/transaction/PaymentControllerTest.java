@@ -1,7 +1,8 @@
-package id.ac.ui.cs.advprog.papikosbe.controller;
+package id.ac.ui.cs.advprog.papikosbe.controller.transaction;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import id.ac.ui.cs.advprog.papikosbe.model.Payment;
+import id.ac.ui.cs.advprog.papikosbe.controller.PaymentController;
+import id.ac.ui.cs.advprog.papikosbe.model.transaction.Payment;
 import id.ac.ui.cs.advprog.papikosbe.service.transaction.PaymentServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -2,8 +2,8 @@ package id.ac.ui.cs.advprog.papikosbe.service.transaction;
 
 import id.ac.ui.cs.advprog.papikosbe.factory.DefaultTransactionFactory;
 import id.ac.ui.cs.advprog.papikosbe.factory.PaymentFactory;
-import id.ac.ui.cs.advprog.papikosbe.model.Payment;
-import id.ac.ui.cs.advprog.papikosbe.model.Transaction;
+import id.ac.ui.cs.advprog.papikosbe.model.transaction.Payment;
+import id.ac.ui.cs.advprog.papikosbe.model.transaction.Transaction;
 import org.springframework.stereotype.Service;
 
 import id.ac.ui.cs.advprog.papikosbe.enums.TransactionType;

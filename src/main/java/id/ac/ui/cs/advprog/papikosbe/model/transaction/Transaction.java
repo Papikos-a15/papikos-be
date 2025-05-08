@@ -1,4 +1,5 @@
-package id.ac.ui.cs.advprog.papikosbe.model;
+package id.ac.ui.cs.advprog.papikosbe.model.transaction;
+import id.ac.ui.cs.advprog.papikosbe.enums.TransactionType;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -9,24 +10,27 @@ import java.util.UUID;
 
 @Getter
 @Setter
-public class Payment {
+public class Transaction {
     private UUID id;
     private UUID userId;
-    private UUID ownerId;
     private BigDecimal amount;
+    private TransactionType type; // "TOP_UP" atau "PAYMENT"
     private LocalDateTime timestamp;
 
-    public Payment(UUID id, UUID userId, UUID ownerId, BigDecimal amount, LocalDateTime timestamp) {
+    public Transaction(UUID id, UUID userId, BigDecimal amount, TransactionType type, LocalDateTime timestamp) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Payment amount must be positive");
+            throw new IllegalArgumentException("Transaction amount must be positive");
+        }
+        if (type == null) {
+            throw new IllegalArgumentException("Transaction type cannot be null or empty");
         }
         if (timestamp == null) {
             throw new IllegalArgumentException("Timestamp cannot be null");
         }
         this.id = id;
         this.userId = userId;
-        this.ownerId = ownerId;
         this.amount = amount;
+        this.type = type;
         this.timestamp = timestamp;
     }
 }

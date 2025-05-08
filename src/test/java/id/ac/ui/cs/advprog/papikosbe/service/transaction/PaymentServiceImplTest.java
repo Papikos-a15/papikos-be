@@ -1,12 +1,10 @@
-package id.ac.ui.cs.advprog.papikosbe.service;
+package id.ac.ui.cs.advprog.papikosbe.service.transaction;
 
 import id.ac.ui.cs.advprog.papikosbe.enums.TransactionType;
 import id.ac.ui.cs.advprog.papikosbe.factory.DefaultPaymentFactory;
 import id.ac.ui.cs.advprog.papikosbe.factory.DefaultTransactionFactory;
-import id.ac.ui.cs.advprog.papikosbe.model.Payment;
-import id.ac.ui.cs.advprog.papikosbe.model.Transaction;
-import id.ac.ui.cs.advprog.papikosbe.service.transaction.PaymentServiceImpl;
-import id.ac.ui.cs.advprog.papikosbe.service.transaction.TransactionService;
+import id.ac.ui.cs.advprog.papikosbe.model.transaction.Payment;
+import id.ac.ui.cs.advprog.papikosbe.model.transaction.Transaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -1,6 +1,6 @@
 package id.ac.ui.cs.advprog.papikosbe.controller;
 
-import id.ac.ui.cs.advprog.papikosbe.model.Wallet;
+import id.ac.ui.cs.advprog.papikosbe.model.transaction.Wallet;
 import id.ac.ui.cs.advprog.papikosbe.service.transaction.WalletService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

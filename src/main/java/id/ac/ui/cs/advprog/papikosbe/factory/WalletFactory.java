@@ -1,6 +1,6 @@
 package id.ac.ui.cs.advprog.papikosbe.factory;
 
-import id.ac.ui.cs.advprog.papikosbe.model.Wallet;
+import id.ac.ui.cs.advprog.papikosbe.model.transaction.Wallet;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;

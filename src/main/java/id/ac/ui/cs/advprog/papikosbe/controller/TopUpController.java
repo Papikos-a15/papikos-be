@@ -1,6 +1,6 @@
 package id.ac.ui.cs.advprog.papikosbe.controller;
 
-import id.ac.ui.cs.advprog.papikosbe.model.TopUp;
+import id.ac.ui.cs.advprog.papikosbe.model.transaction.TopUp;
 import id.ac.ui.cs.advprog.papikosbe.service.transaction.TopUpService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

@@ -1,6 +1,6 @@
-package id.ac.ui.cs.advprog.papikosbe.repository;
+package id.ac.ui.cs.advprog.papikosbe.repository.transaction;
 
-import id.ac.ui.cs.advprog.papikosbe.model.Wallet;
+import id.ac.ui.cs.advprog.papikosbe.model.transaction.Wallet;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
@@ -26,7 +26,6 @@ public class WalletRepository {
         if (walletToEditOpt.isPresent()) {
             Wallet walletToEdit = walletToEditOpt.get();
             walletToEdit.setBalance(newWalletData.getBalance());
-            // Update field lain kalau ada
             return walletToEdit;
         }
         return null;

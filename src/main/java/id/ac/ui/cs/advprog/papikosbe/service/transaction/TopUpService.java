@@ -1,6 +1,6 @@
 package id.ac.ui.cs.advprog.papikosbe.service.transaction;
 
-import id.ac.ui.cs.advprog.papikosbe.model.TopUp;
+import id.ac.ui.cs.advprog.papikosbe.model.transaction.TopUp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

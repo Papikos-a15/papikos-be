@@ -1,6 +1,6 @@
-package id.ac.ui.cs.advprog.papikosbe.repository;
+package id.ac.ui.cs.advprog.papikosbe.repository.transaction;
 
-import id.ac.ui.cs.advprog.papikosbe.model.TopUp;
+import id.ac.ui.cs.advprog.papikosbe.model.transaction.TopUp;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;

@@ -1,11 +1,10 @@
-package id.ac.ui.cs.advprog.papikosbe.repository;
+package id.ac.ui.cs.advprog.papikosbe.repository.transaction;
 
-import id.ac.ui.cs.advprog.papikosbe.model.TopUp;
+import id.ac.ui.cs.advprog.papikosbe.model.transaction.TopUp;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;

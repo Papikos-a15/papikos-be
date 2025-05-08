@@ -1,4 +1,4 @@
-package id.ac.ui.cs.advprog.papikosbe.model;
+package id.ac.ui.cs.advprog.papikosbe.model.transaction;
 
 import lombok.Getter;
 import lombok.Setter;

@@ -1,8 +1,8 @@
 package id.ac.ui.cs.advprog.papikosbe.service.transaction;
 
 import id.ac.ui.cs.advprog.papikosbe.factory.WalletFactory;
-import id.ac.ui.cs.advprog.papikosbe.model.Wallet;
-import id.ac.ui.cs.advprog.papikosbe.repository.WalletRepository;
+import id.ac.ui.cs.advprog.papikosbe.model.transaction.Wallet;
+import id.ac.ui.cs.advprog.papikosbe.repository.transaction.WalletRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -34,6 +34,18 @@ public class WalletServiceImpl implements WalletService {
     @Override
     public Wallet findById(UUID id) {
         return walletRepository.findById(id).orElse(null);
+    }
+
+    @Override
+    public Wallet findByUserId(UUID userId) {
+        Iterator<Wallet> iterator = walletRepository.findAll();
+        while (iterator.hasNext()) {
+            Wallet wallet = iterator.next();
+            if (wallet.getUserId().equals(userId)) {
+                return wallet;
+            }
+        }
+        return null;
     }
 
     @Override

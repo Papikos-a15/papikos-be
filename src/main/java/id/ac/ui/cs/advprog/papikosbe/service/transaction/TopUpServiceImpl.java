@@ -1,8 +1,12 @@
 package id.ac.ui.cs.advprog.papikosbe.service.transaction;
 
-import id.ac.ui.cs.advprog.papikosbe.model.TopUp;
+import id.ac.ui.cs.advprog.papikosbe.factory.TransactionFactory;
+import id.ac.ui.cs.advprog.papikosbe.model.transaction.TopUp;
 import id.ac.ui.cs.advprog.papikosbe.factory.TopUpFactory;
-import id.ac.ui.cs.advprog.papikosbe.repository.TopUpRepository;
+import id.ac.ui.cs.advprog.papikosbe.model.transaction.Transaction;
+import id.ac.ui.cs.advprog.papikosbe.model.transaction.Wallet;
+import id.ac.ui.cs.advprog.papikosbe.repository.transaction.TopUpRepository;
+import id.ac.ui.cs.advprog.papikosbe.enums.TransactionType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,19 +17,33 @@ import java.util.*;
 @Service
 public class TopUpServiceImpl implements TopUpService {
 
-    @Autowired
-    private TopUpRepository topUpRepository;
-
-    @Autowired
+    private final TopUpRepository topUpRepository;
     private final TopUpFactory topUpFactory;
+    private final TransactionFactory transactionFactory;
+    private final TransactionService transactionService;
+    private final WalletService walletService;
 
-    public TopUpServiceImpl(TopUpFactory topUpFactory) {
+    @Autowired
+    public TopUpServiceImpl(TopUpFactory topUpFactory, TopUpRepository topUpRepository,
+                            TransactionFactory transactionFactory, TransactionService transactionService,
+                            WalletService walletService) {
         this.topUpFactory = topUpFactory;
+        this.topUpRepository = topUpRepository;
+        this.transactionFactory = transactionFactory;
+        this.transactionService = transactionService;
+        this.walletService = walletService;
     }
 
     @Override
     public TopUp createTopUp(UUID userId, BigDecimal amount) {
         TopUp topUp = TopUpFactory.createTopUp(userId, amount);
+
+        Transaction transaction = transactionFactory.createTransaction(userId, amount, TransactionType.TOP_UP);
+        transactionService.create(transaction);
+
+        Wallet wallet = walletService.findByUserId(userId);
+        wallet.setBalance(wallet.getBalance().add(amount));
+        walletService.edit(wallet.getId(), wallet);
 
         return create(topUp);
     }

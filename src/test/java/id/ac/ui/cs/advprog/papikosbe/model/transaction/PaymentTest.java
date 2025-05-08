@@ -1,4 +1,4 @@
-package id.ac.ui.cs.advprog.papikosbe.model;
+package id.ac.ui.cs.advprog.papikosbe.model.transaction;
 
 import id.ac.ui.cs.advprog.papikosbe.factory.DefaultPaymentFactory;
 import id.ac.ui.cs.advprog.papikosbe.factory.PaymentFactory;

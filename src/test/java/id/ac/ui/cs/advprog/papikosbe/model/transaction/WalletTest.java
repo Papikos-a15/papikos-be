@@ -1,6 +1,7 @@
-package id.ac.ui.cs.advprog.papikosbe.model;
+package id.ac.ui.cs.advprog.papikosbe.model.transaction;
 
 import static org.junit.jupiter.api.Assertions.*;
+
 import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.util.UUID;

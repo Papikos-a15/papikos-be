@@ -1,7 +1,8 @@
 package id.ac.ui.cs.advprog.papikosbe.service;
 
-import id.ac.ui.cs.advprog.papikosbe.model.Message;
-import id.ac.ui.cs.advprog.papikosbe.repository.MessageRepository;
+import id.ac.ui.cs.advprog.papikosbe.model.chat.Message;
+import id.ac.ui.cs.advprog.papikosbe.repository.chat.MessageRepository;
+import id.ac.ui.cs.advprog.papikosbe.service.chat.MessageServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

@@ -1,6 +1,6 @@
-package id.ac.ui.cs.advprog.papikosbe.service;
+package id.ac.ui.cs.advprog.papikosbe.service.chat;
 
-import id.ac.ui.cs.advprog.papikosbe.model.RoomChat;
+import id.ac.ui.cs.advprog.papikosbe.model.chat.RoomChat;
 
 import java.util.List;
 import java.util.UUID;

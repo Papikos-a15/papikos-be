@@ -1,7 +1,8 @@
 package id.ac.ui.cs.advprog.papikosbe.controller;
 
-import id.ac.ui.cs.advprog.papikosbe.model.RoomChat;
-import id.ac.ui.cs.advprog.papikosbe.service.RoomChatService;
+import id.ac.ui.cs.advprog.papikosbe.controller.chat.RoomChatController;
+import id.ac.ui.cs.advprog.papikosbe.model.chat.RoomChat;
+import id.ac.ui.cs.advprog.papikosbe.service.chat.RoomChatService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

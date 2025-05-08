@@ -1,7 +1,7 @@
-package id.ac.ui.cs.advprog.papikosbe.service;
+package id.ac.ui.cs.advprog.papikosbe.service.chat;
 
-import id.ac.ui.cs.advprog.papikosbe.model.RoomChat;
-import id.ac.ui.cs.advprog.papikosbe.repository.RoomChatRepository;
+import id.ac.ui.cs.advprog.papikosbe.model.chat.RoomChat;
+import id.ac.ui.cs.advprog.papikosbe.repository.chat.RoomChatRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

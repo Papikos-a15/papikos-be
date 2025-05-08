@@ -1,7 +1,7 @@
-package id.ac.ui.cs.advprog.papikosbe.controller;
+package id.ac.ui.cs.advprog.papikosbe.controller.chat;
 
-import id.ac.ui.cs.advprog.papikosbe.model.RoomChat;
-import id.ac.ui.cs.advprog.papikosbe.service.RoomChatService;
+import id.ac.ui.cs.advprog.papikosbe.model.chat.RoomChat;
+import id.ac.ui.cs.advprog.papikosbe.service.chat.RoomChatService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

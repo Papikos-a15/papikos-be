@@ -1,4 +1,3 @@
-// src/test/java/id/ac/ui/cs/advprog/papikosbe/controller/user/OwnerControllerTest.java
 package id.ac.ui.cs.advprog.papikosbe.controller.user;
 
 import id.ac.ui.cs.advprog.papikosbe.model.user.Owner;
@@ -13,42 +12,48 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.UUID;
+
 import static org.mockito.ArgumentMatchers.eq;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(OwnerController.class)
-@AutoConfigureMockMvc(addFilters = false)          // ⬅ nonaktifkan filter Security
+@AutoConfigureMockMvc(addFilters = false)
 class OwnerControllerTest {
 
     @Autowired private MockMvc mvc;
 
-    @MockBean private OwnerService ownerService;   // ⬅ mock interface‑nya
+    @MockBean private OwnerService ownerService;
 
     @Test
     void approveOwnerSuccessReturns200() throws Exception {
+        UUID id = UUID.randomUUID();
+
         Owner o = Owner.builder()
                 .email("o@mail.com")
                 .password("pw")
                 .build();
-        o.setId(42L);
+        o.setId(id);
         o.setApproved(true);
 
-        Mockito.when(ownerService.approve(42L)).thenReturn(o);
+        Mockito.when(ownerService.approve(eq(id))).thenReturn(o);
 
-        mvc.perform(patch("/owners/42/approve")
+        mvc.perform(patch("/owners/" + id + "/approve")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(42))
+                .andExpect(jsonPath("$.id").value(id.toString()))
                 .andExpect(jsonPath("$.approved").value(true));
     }
 
     @Test
     void approveOwnerNotFoundReturns404() throws Exception {
-        Mockito.when(ownerService.approve(eq(99L)))
+        UUID id = UUID.randomUUID();
+
+        Mockito.when(ownerService.approve(eq(id)))
                 .thenThrow(new EntityNotFoundException());
 
-        mvc.perform(patch("/owners/99/approve")
+        mvc.perform(patch("/owners/" + id + "/approve")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
     }

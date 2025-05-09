@@ -89,7 +89,7 @@ public class WishlistController {
                     .collect(Collectors.toList());
 
             if (userWishlists.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+                return new ResponseEntity<>(List.of(), HttpStatus.NO_CONTENT);
             }
 
             return new ResponseEntity<>(userWishlists, HttpStatus.OK);

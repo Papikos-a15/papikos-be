@@ -10,13 +10,9 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -41,15 +37,12 @@ class WishlistControllerTest {
 
     @Test
     void testGetAllWishlists() {
-        // Arrange
         List<Wishlist> wishlists = new ArrayList<>();
         wishlists.add(testWishlist);
         when(wishlistService.getAllWishlists()).thenReturn(wishlists);
 
-        // Act
         ResponseEntity<List<Wishlist>> response = wishlistController.getAllWishlists();
 
-        // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(1, response.getBody().size());
@@ -57,14 +50,21 @@ class WishlistControllerTest {
     }
 
     @Test
+    void testGetAllWishlists_InternalServerError() {
+        when(wishlistService.getAllWishlists()).thenThrow(new RuntimeException("Internal error"));
+
+        ResponseEntity<List<Wishlist>> response = wishlistController.getAllWishlists();
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        verify(wishlistService, times(1)).getAllWishlists();
+    }
+
+    @Test
     void testAddWishlist() {
-        // Arrange
         doNothing().when(wishlistService).addWishlist(any(Wishlist.class));
 
-        // Act
         ResponseEntity<Map<String, String>> response = wishlistController.addWishlist(testWishlist);
 
-        // Assert
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals("Wishlist added successfully", response.getBody().get("message"));
@@ -73,14 +73,11 @@ class WishlistControllerTest {
 
     @Test
     void testAddWishlist_WithIllegalArgumentException() {
-        // Arrange
         doThrow(new IllegalArgumentException("Invalid wishlist fields"))
                 .when(wishlistService).addWishlist(any(Wishlist.class));
 
-        // Act
         ResponseEntity<Map<String, String>> response = wishlistController.addWishlist(testWishlist);
 
-        // Assert
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals("Invalid wishlist fields", response.getBody().get("message"));
@@ -88,14 +85,35 @@ class WishlistControllerTest {
     }
 
     @Test
+    void testAddWishlist_WithNullWishlist() {
+        ResponseEntity<Map<String, String>> response = wishlistController.addWishlist(null);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("Wishlist cannot be null", response.getBody().get("message"));
+        verify(wishlistService, never()).addWishlist(any());
+    }
+
+    @Test
+    void testAddWishlist_WithException() {
+        Map<String, String> response = new HashMap<>();
+        doThrow(new RuntimeException("Unexpected error"))
+                .when(wishlistService).addWishlist(any(Wishlist.class));
+
+        ResponseEntity<Map<String, String>> result = wishlistController.addWishlist(testWishlist);
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, result.getStatusCode());
+        assertNotNull(result.getBody());
+        assertEquals("An error occurred while adding the wishlist", result.getBody().get("message"));
+        verify(wishlistService, times(1)).addWishlist(testWishlist);
+    }
+
+    @Test
     void testRemoveWishlist() {
-        // Arrange
         doNothing().when(wishlistService).removeWishlist(wishlistId);
 
-        // Act
         ResponseEntity<Map<String, String>> response = wishlistController.removeWishlist(wishlistId);
 
-        // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals("Wishlist removed successfully", response.getBody().get("message"));
@@ -104,12 +122,8 @@ class WishlistControllerTest {
 
     @Test
     void testRemoveWishlist_InvalidUUID() {
-        // make sure the test handles the null UUID correctly
-
-        // Act - The controller will handle the null UUID
         ResponseEntity<Map<String, String>> response = wishlistController.removeWishlist(null);
 
-        // Assert
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals("Invalid wishlist ID", response.getBody().get("message"));
@@ -117,28 +131,25 @@ class WishlistControllerTest {
     }
 
     @Test
-    void testAddWishlist_WithNullWishlist() {
-        // Act
-        ResponseEntity<Map<String, String>> response = wishlistController.addWishlist(null);
+    void testRemoveWishlist_InternalServerError() {
+        doThrow(new RuntimeException("Internal error")).when(wishlistService).removeWishlist(wishlistId);
 
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        ResponseEntity<Map<String, String>> response = wishlistController.removeWishlist(wishlistId);
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals("Wishlist cannot be null", response.getBody().get("message"));
-        verify(wishlistService, never()).addWishlist(any());
+        assertEquals("An error occurred while removing the wishlist", response.getBody().get("message"));
+        verify(wishlistService, times(1)).removeWishlist(wishlistId);
     }
 
     @Test
     void testGetWishlistsByUserId() {
-        // Arrange
         List<Wishlist> wishlists = new ArrayList<>();
         wishlists.add(testWishlist);
         when(wishlistService.getAllWishlists()).thenReturn(wishlists);
 
-        // Act
         ResponseEntity<List<Wishlist>> response = wishlistController.getWishlistsByUserId(userId);
 
-        // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(1, response.getBody().size());
@@ -146,18 +157,34 @@ class WishlistControllerTest {
     }
 
     @Test
+    void testGetWishlistsByUserId_IdNull() {
+    ResponseEntity<List<Wishlist>> response = wishlistController.getWishlistsByUserId(null);
+
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());  // Expecting BAD_REQUEST
+    assertNotNull(response.getBody());  // The body should not be null
+    assertEquals(0, response.getBody().size());
+    }
+
+    @Test
     void testGetWishlistsByUserId_NoResults() {
-        // Arrange
         List<Wishlist> wishlists = new ArrayList<>();
         wishlists.add(testWishlist);
         when(wishlistService.getAllWishlists()).thenReturn(wishlists);
 
-        // Act
         ResponseEntity<List<Wishlist>> response = wishlistController.getWishlistsByUserId(UUID.randomUUID());
 
-        // Assert
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
+        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+        assertTrue(response.getBody().isEmpty());
         assertEquals(0, response.getBody().size());
+    }
+
+    @Test
+    void testGetWishlistsByUserId_InternalServerError() {
+        when(wishlistService.getAllWishlists()).thenThrow(new RuntimeException("Internal error"));
+
+        ResponseEntity<List<Wishlist>> response = wishlistController.getWishlistsByUserId(userId);
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        verify(wishlistService, times(1)).getAllWishlists();
     }
 }

@@ -83,7 +83,7 @@ public class KosServiceImplTest {
     @Test
     public void testUpdateKos() {
         Kos kos = kos1;
-        Kos newKos = new Kos`(kos.getId(), "UpdatedKos", "UpdatedAlamatKos", "UpdatedDeskripsiKos",
+        Kos newKos = new Kos(kos.getId(), "UpdatedKos", "UpdatedAlamatKos", "UpdatedDeskripsiKos",
                 75000.0, true);
         doReturn(newKos).when(kosRepository).updateKos(kos.getId(), newKos);
 

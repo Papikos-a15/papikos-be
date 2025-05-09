@@ -1,4 +1,4 @@
-package id.ac.ui.cs.advprog.papikosbe.factory;
+package id.ac.ui.cs.advprog.papikosbe.factory.notification;
 
 import id.ac.ui.cs.advprog.papikosbe.enums.NotificationType;
 

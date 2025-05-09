@@ -1,4 +1,4 @@
-package id.ac.ui.cs.advprog.papikosbe.model;
+package id.ac.ui.cs.advprog.papikosbe.model.wishlist;
 
 import java.util.UUID;
 

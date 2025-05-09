@@ -1,7 +1,6 @@
 package id.ac.ui.cs.advprog.papikosbe.controller.transaction;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import id.ac.ui.cs.advprog.papikosbe.controller.WalletController;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Wallet;
 import id.ac.ui.cs.advprog.papikosbe.service.transaction.WalletService;
 import org.hamcrest.Matchers;

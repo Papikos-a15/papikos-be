@@ -10,6 +10,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -26,11 +27,12 @@ class OwnerServiceTest {
                 .email("o@mail.com")
                 .password("pwd")
                 .build();
-        o.setId(42L);
-        when(ownerRepo.findById(42L)).thenReturn(Optional.of(o));
+        UUID id = UUID.randomUUID();
+        o.setId(id);
+        when(ownerRepo.findById(id)).thenReturn(Optional.of(o));
         when(ownerRepo.save(o)).thenReturn(o);
 
-        Owner approved = ownerService.approve(42L);
+        Owner approved = ownerService.approve(id);
 
         assertThat(approved.isApproved()).isTrue();
         verify(ownerRepo).save(o);
@@ -38,9 +40,10 @@ class OwnerServiceTest {
 
     @Test
     void testApproveOwnerNotFoundThrows() {
-        when(ownerRepo.findById(7L)).thenReturn(Optional.empty());
+        UUID id = UUID.randomUUID();
+        when(ownerRepo.findById(id)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> ownerService.approve(7L))
+        assertThatThrownBy(() -> ownerService.approve(id))
                 .isInstanceOf(EntityNotFoundException.class);
     }
 }

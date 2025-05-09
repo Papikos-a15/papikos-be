@@ -8,6 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.EntityNotFoundException;
 
+import java.util.UUID;
+
 @Service
 public class OwnerServiceImpl implements OwnerService {
 
@@ -23,7 +25,7 @@ public class OwnerServiceImpl implements OwnerService {
      */
     @Override
     @Transactional
-    public Owner approve(Long ownerId) {
+    public Owner approve(UUID ownerId) {
         // 1. Ambil owner, atau lempar exception jika tidak ada
         Owner owner = ownerRepo.findById(ownerId)
                 .orElseThrow(EntityNotFoundException::new);

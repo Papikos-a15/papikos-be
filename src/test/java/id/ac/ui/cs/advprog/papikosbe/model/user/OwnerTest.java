@@ -1,6 +1,9 @@
 package id.ac.ui.cs.advprog.papikosbe.model.user;
 
 import org.junit.jupiter.api.Test;
+
+import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class OwnerTest {
@@ -60,13 +63,14 @@ class OwnerTest {
     @Test
     void testGettersAndSetters() {
         Owner owner = new Owner();
-        owner.setId(99L);
+        UUID id = UUID.randomUUID();
+        owner.setId(id);
         owner.setEmail("set@owner.com");
         owner.setPassword("setowner");
         owner.setApproved(true);
 
         assertAll("owner setters/getters",
-                () -> assertEquals(99L,                owner.getId()),
+                () -> assertEquals(id,                owner.getId()),
                 () -> assertEquals("set@owner.com",   owner.getEmail()),
                 () -> assertEquals("setowner",        owner.getPassword()),
                 () -> assertTrue(owner.isApproved())

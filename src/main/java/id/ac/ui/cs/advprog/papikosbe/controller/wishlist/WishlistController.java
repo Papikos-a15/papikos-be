@@ -24,7 +24,7 @@ public class WishlistController {
         this.wishlistService = wishlistService;
     }
 
-    @RequestMapping(value = "/api/v1/wishlists", method = RequestMethod.GET)
+    @RequestMapping(value = "/api/wishlists", method = RequestMethod.GET)
     public ResponseEntity<List<Wishlist>> getAllWishlists() {
         try {
             List<Wishlist> wishlists = wishlistService.getAllWishlists();
@@ -35,7 +35,7 @@ public class WishlistController {
         }
     }
 
-    @RequestMapping(value = "/api/v1/wishlists", method = RequestMethod.POST)
+    @RequestMapping(value = "/api/wishlists", method = RequestMethod.POST)
     public ResponseEntity<Map<String, String>> addWishlist(@RequestBody Wishlist wishlist) {
         Map<String, String> response = new HashMap<>();
 
@@ -57,7 +57,7 @@ public class WishlistController {
         }
     }
 
-    @RequestMapping(value = "/api/v1/wishlists/{wishlistId}", method = RequestMethod.DELETE)
+    @RequestMapping(value = "/api/wishlists/{wishlistId}", method = RequestMethod.DELETE)
     public ResponseEntity<Map<String, String>> removeWishlist(@PathVariable UUID wishlistId) {
         Map<String, String> response = new HashMap<>();
 
@@ -76,7 +76,7 @@ public class WishlistController {
         }
     }
 
-    @RequestMapping(value = "/api/v1/wishlists/user/{userId}", method = RequestMethod.GET)
+    @RequestMapping(value = "/api/wishlists/user/{userId}", method = RequestMethod.GET)
     public ResponseEntity<List<Wishlist>> getWishlistsByUserId(@PathVariable UUID userId) {
         if (userId == null) {
             return new ResponseEntity<>(List.of(), HttpStatus.BAD_REQUEST);

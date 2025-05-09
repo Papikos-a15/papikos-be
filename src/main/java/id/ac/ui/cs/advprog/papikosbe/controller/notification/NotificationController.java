@@ -19,13 +19,13 @@ public class NotificationController {
     @Autowired
     private NotificationService notificationService;
 
-    @RequestMapping(value = "/api/v1/notifications/user/{userId}", method = RequestMethod.GET)
+    @RequestMapping(value = "/api/notifications/user/{userId}", method = RequestMethod.GET)
     public ResponseEntity<List<Notification>> getNotificationsForUser(@PathVariable UUID userId) {
         List<Notification> notifications = notificationService.getNotificationsForUser(userId);
         return ResponseEntity.ok(notifications);
     }
 
-    @RequestMapping(value = "/api/v1/notifications", method = RequestMethod.POST)
+    @RequestMapping(value = "/api/notifications", method = RequestMethod.POST)
     public ResponseEntity<Notification> createNotification(
             @RequestParam(required = false) UUID userId,
             @RequestParam(required = false) String title,
@@ -45,7 +45,7 @@ public class NotificationController {
         }
     }
 
-    @RequestMapping(value = "/api/v1/notifications/{notificationId}/read", method = RequestMethod.PATCH)
+    @RequestMapping(value = "/api/notifications/{notificationId}/read", method = RequestMethod.PATCH)
     public ResponseEntity<Map<String, String>> markAsRead(@PathVariable UUID notificationId) {
         Map<String, String> response = new HashMap<>();
 
@@ -64,7 +64,7 @@ public class NotificationController {
         }
     }
 
-    @RequestMapping(value = "/api/v1/notifications/{notificationId}", method = RequestMethod.DELETE)
+    @RequestMapping(value = "/api/notifications/{notificationId}", method = RequestMethod.DELETE)
     public ResponseEntity<Map<String, String>> deleteNotification(@PathVariable UUID notificationId) {
         Map<String, String> response = new HashMap<>();
 

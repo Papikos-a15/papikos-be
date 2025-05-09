@@ -137,6 +137,6 @@ public class KosControllerTest {
     void deleteKos_returnsDeleted() throws Exception {
         mockMvc.perform(delete("/api/management/"+dummy.getId().toString())
                         .header("Authorization", "Bearer tok"))
-                .andExpect(status().isNoContent());~
+                .andExpect(status().isNoContent());
     }
 }

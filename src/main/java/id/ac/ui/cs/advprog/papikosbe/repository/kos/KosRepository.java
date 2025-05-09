@@ -35,6 +35,7 @@ public class KosRepository {
             existingKos.setAddress(updatedKos.getAddress());
             existingKos.setDescription(updatedKos.getDescription());
             existingKos.setPrice(updatedKos.getPrice());
+            existingKos.setAvailable(updatedKos.isAvailable());
             // Save the updated Kos.
             store.put(id, existingKos);
             return existingKos;

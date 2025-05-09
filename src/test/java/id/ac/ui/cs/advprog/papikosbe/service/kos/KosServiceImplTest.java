@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -85,7 +84,7 @@ public class KosServiceImplTest {
     public void testUpdateKos() {
         Kos kos = kos1;
         Kos newKos = new Kos(kos.getId(), "UpdatedKos", "UpdatedAlamatKos", "UpdatedDeskripsiKos",
-                75000.0);
+                75000.0, true);
         doReturn(newKos).when(kosRepository).updateKos(kos.getId(), newKos);
 
         Kos result = kosService.updateKos(kos.getId(), newKos);

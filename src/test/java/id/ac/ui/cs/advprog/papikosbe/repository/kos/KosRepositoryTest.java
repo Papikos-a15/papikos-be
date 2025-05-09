@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -57,7 +58,7 @@ public class KosRepositoryTest {
         // Save a Kos entry.
         Kos kos = kosList.get(1);
         Kos savedKos = kosRepository.save(kos);
-        String id = savedKos.getId();
+        UUID id = savedKos.getId();
 
         // Retrieve the Kos by its ID.
         Kos foundKos = kosRepository.getKosById(id);
@@ -84,7 +85,7 @@ public class KosRepositoryTest {
         // Save a Kos entry.
         Kos kos = kosList.getFirst();
         Kos savedKos = kosRepository.save(kos);
-        String id = savedKos.getId();
+        UUID id = savedKos.getId();
 
         // Create an updated object.
         Kos updatedKos = new Kos();
@@ -110,7 +111,7 @@ public class KosRepositoryTest {
         // Save a Kos entry.
         Kos kos = kosList.getFirst();
         Kos savedKos = kosRepository.save(kos);
-        String id = savedKos.getId();
+        UUID id = savedKos.getId();
 
         // Delete the Kos entry.
         boolean deleted = kosRepository.deleteKos(id);

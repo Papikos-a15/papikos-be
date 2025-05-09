@@ -36,7 +36,7 @@ public class KosTest {
     @Test
     public void testParameterizedConstructor() {
         // Create a new instance using the parameterized constructor.
-        Kos kos = new Kos(UUID.randomUUID(), "Kos Param", "Param Address", "Param Description", 90000.0);
+        Kos kos = new Kos(UUID.randomUUID(), "Kos Param", "Param Address", "Param Description", 90000.0, true);
 
         // The fields should be set as provided
         assertNotNull(kos.getId(), "ID should be not null when explicitly set");

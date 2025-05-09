@@ -39,7 +39,7 @@ class OwnerControllerTest {
 
         Mockito.when(ownerService.approve(eq(id))).thenReturn(o);
 
-        mvc.perform(patch("/owners/" + id + "/approve")
+        mvc.perform(patch("/api/owners/" + id + "/approve")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()))
@@ -53,7 +53,7 @@ class OwnerControllerTest {
         Mockito.when(ownerService.approve(eq(id)))
                 .thenThrow(new EntityNotFoundException());
 
-        mvc.perform(patch("/owners/" + id + "/approve")
+        mvc.perform(patch("/api/owners/" + id + "/approve")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
     }

@@ -1,7 +1,7 @@
-package id.ac.ui.cs.advprog.papikosbe.factory;
+package id.ac.ui.cs.advprog.papikosbe.factory.notification;
 
 import id.ac.ui.cs.advprog.papikosbe.enums.NotificationType;
-import id.ac.ui.cs.advprog.papikosbe.model.Notification;
+import id.ac.ui.cs.advprog.papikosbe.model.notification.Notification;
 
 import java.time.LocalDateTime;
 import java.util.UUID;

@@ -1,14 +1,13 @@
-package id.ac.ui.cs.advprog.papikosbe.service;
+package id.ac.ui.cs.advprog.papikosbe.service.notification;
 
 import id.ac.ui.cs.advprog.papikosbe.enums.NotificationType;
-import id.ac.ui.cs.advprog.papikosbe.factory.NotificationFactory;
-import id.ac.ui.cs.advprog.papikosbe.factory.NotificationFactoryProvider;
-import id.ac.ui.cs.advprog.papikosbe.model.Notification;
-import id.ac.ui.cs.advprog.papikosbe.repository.NotificationRepository;
+import id.ac.ui.cs.advprog.papikosbe.factory.notification.NotificationFactory;
+import id.ac.ui.cs.advprog.papikosbe.factory.notification.NotificationFactoryProvider;
+import id.ac.ui.cs.advprog.papikosbe.model.notification.Notification;
+import id.ac.ui.cs.advprog.papikosbe.repository.notification.NotificationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;

@@ -1,4 +1,4 @@
-package id.ac.ui.cs.advprog.papikosbe.model;
+package id.ac.ui.cs.advprog.papikosbe.model.notification;
 
 import java.time.LocalDateTime;
 import java.util.UUID;

@@ -1,11 +1,12 @@
-package id.ac.ui.cs.advprog.papikosbe.service;
+package id.ac.ui.cs.advprog.papikosbe.service.kos;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import id.ac.ui.cs.advprog.papikosbe.model.Kos;
-import id.ac.ui.cs.advprog.papikosbe.repository.KosRepository;
+import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
+import id.ac.ui.cs.advprog.papikosbe.repository.kos.KosRepository;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class KosServiceImpl implements KosService {
@@ -31,17 +32,17 @@ public class KosServiceImpl implements KosService {
     }
 
     @Override
-    public Kos getKosById(String id) {
+    public Kos getKosById(UUID id) {
         return kosRepository.getKosById(id);
     }
 
     @Override
-    public Kos updateKos(String id, Kos updatedKos) {
+    public Kos updateKos(UUID id, Kos updatedKos) {
         return kosRepository.updateKos(id, updatedKos);
     }
 
     @Override
-    public void deleteKos(String id) {
+    public void deleteKos(UUID id) {
         kosRepository.deleteKos(id);
     }
 }

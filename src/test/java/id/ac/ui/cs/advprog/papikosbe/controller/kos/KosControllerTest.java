@@ -74,20 +74,20 @@ public class KosControllerTest {
     void addKos_returnsCreated() throws Exception {
         when(kosService.addKos(any())).thenReturn(dummy);
 
-        mockMvc.perform(post("/api/management")
+        mockMvc.perform(post("/api/management/add")
                         .header("Authorization", "Bearer tok")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dummy)))
                 .andExpect(status().isCreated())
                 .andExpect((jsonPath("$.id").value(dummy.getId().toString())))
-                .andExpect((jsonPath("$.isAvailable").value(dummy.isAvailable())));
+                .andExpect((jsonPath("$.available").value(dummy.isAvailable())));
     }
 
     @Test
-    void getAllKos_returnsList()  throws Exception {
+    void getAllKos_returnsList() throws Exception {
         when(kosService.getAllKos()).thenReturn(List.of(dummy));
 
-        mockMvc.perform(get("/api/management")
+        mockMvc.perform(get("/api/management/list")
                         .header("Authorization", "Bearer tok"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(dummy.getId().toString()));
@@ -116,27 +116,29 @@ public class KosControllerTest {
     @Test
     void updateKos_returnsUpdated() throws Exception {
         Kos newKos = new Kos(
-                dummy.getId(),
-                UUID.randomUUID(),
-                UUID.randomUUID(),
-                "Kos2",
-                "Addr Kos2",
-                "Description Kos2",
-                1200000.0,
-                true
+            dummy.getId(),
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            "Kos2",
+            "Addr Kos2",
+            "Description Kos2",
+            1200000.0,
+            true
         );
         when(kosService.updateKos(any(), any())).thenReturn(dummy);
 
-        mockMvc.perform(patch("/api/management/"+dummy.getId().toString())
-                .header("Authorization", "Bearer tok"))
+        mockMvc.perform(patch("/api/management/update/"+dummy.getId().toString())
+                        .header("Authorization", "Bearer tok")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(newKos)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(newKos.getId().toString()))
-                .andExpect(jsonPath("$.isAvailable").value(dummy.isAvailable()));
+                .andExpect(jsonPath("$.available").value(dummy.isAvailable()));
     }
 
     @Test
     void deleteKos_returnsDeleted() throws Exception {
-        mockMvc.perform(delete("/api/management/"+dummy.getId().toString())
+        mockMvc.perform(delete("/api/management/delete/"+dummy.getId().toString())
                         .header("Authorization", "Bearer tok"))
                 .andExpect(status().isNoContent());
     }

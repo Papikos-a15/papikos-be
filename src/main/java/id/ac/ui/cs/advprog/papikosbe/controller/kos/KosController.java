@@ -43,7 +43,7 @@ public class KosController {
         if (kosUpdated == null) {
             return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.status(201).body(kosUpdated);
+        return ResponseEntity.status(200).body(kosUpdated);
     }
 
     @DeleteMapping("/delete/{id}")

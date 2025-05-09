@@ -1,8 +1,9 @@
 package id.ac.ui.cs.advprog.papikosbe.service;
 
-import id.ac.ui.cs.advprog.papikosbe.model.Wishlist;
-import id.ac.ui.cs.advprog.papikosbe.repository.WishlistRepository;
+import id.ac.ui.cs.advprog.papikosbe.model.wishlist.Wishlist;
+import id.ac.ui.cs.advprog.papikosbe.repository.wishlist.WishlistRepository;
 
+import id.ac.ui.cs.advprog.papikosbe.service.wishlist.WishlistServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

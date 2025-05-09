@@ -1,7 +1,8 @@
 package id.ac.ui.cs.advprog.papikosbe.controller;
 
-import id.ac.ui.cs.advprog.papikosbe.model.Wishlist;
-import id.ac.ui.cs.advprog.papikosbe.service.WishlistService;
+import id.ac.ui.cs.advprog.papikosbe.controller.wishlist.WishlistController;
+import id.ac.ui.cs.advprog.papikosbe.model.wishlist.Wishlist;
+import id.ac.ui.cs.advprog.papikosbe.service.wishlist.WishlistService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;

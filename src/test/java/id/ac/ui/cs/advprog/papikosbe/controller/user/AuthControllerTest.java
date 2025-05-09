@@ -33,7 +33,7 @@ class AuthControllerTest {
         Mockito.when(authService.login("user@mail.com","pw"))
                 .thenReturn("jwt-token");
 
-        mvc.perform(post("/auth/login")
+        mvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(
                                 Map.of("email","user@mail.com","password","pw"))))
@@ -46,7 +46,7 @@ class AuthControllerTest {
         Mockito.when(authService.login(anyString(),anyString()))
                 .thenThrow(new BadCredentialsException());
 
-        mvc.perform(post("/auth/login")
+        mvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(
                                 Map.of("email","x@mail.com","password","wrong"))))
@@ -56,7 +56,7 @@ class AuthControllerTest {
 
     @Test
     void logoutReturns200() throws Exception {
-        mvc.perform(post("/auth/logout")
+        mvc.perform(post("/api/auth/logout")
                         .header("Authorization","Bearer jwt-token"))
                 .andExpect(status().isOk());
 

@@ -43,7 +43,7 @@ class RegisterControllerTest {
         Mockito.when(userService.registerTenant("t@mail.com", "pw"))
                 .thenReturn(t);
 
-        mvc.perform(post("/auth/register/tenant")
+        mvc.perform(post("/api/auth/register/tenant")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(
                                 Map.of("email","t@mail.com","password","pw"))))
@@ -65,7 +65,7 @@ class RegisterControllerTest {
         Mockito.when(userService.registerOwner("o@mail.com", "pw"))
                 .thenReturn(o);
 
-        mvc.perform(post("/auth/register/owner")
+        mvc.perform(post("/api/auth/register/owner")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(
                                 Map.of("email","o@mail.com","password","pw"))))
@@ -80,7 +80,7 @@ class RegisterControllerTest {
         Mockito.when(userService.registerTenant(any(), any()))
                 .thenThrow(new DuplicateEmailException("dup@mail.com"));
 
-        mvc.perform(post("/auth/register/tenant")
+        mvc.perform(post("/api/auth/register/tenant")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(
                                 Map.of("email","dup@mail.com","password","pw"))))

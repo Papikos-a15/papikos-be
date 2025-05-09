@@ -77,7 +77,7 @@ class BookingControllerTest {
         when(bookingService.createBooking(any()))
                 .thenReturn(sample);
 
-        mockMvc.perform(post("/bookings")
+        mockMvc.perform(post("/api/bookings")
                         .header("Authorization", "Bearer tok")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(sample)))
@@ -91,7 +91,7 @@ class BookingControllerTest {
         when(bookingService.findAllBookings())
                 .thenReturn(Arrays.asList(sample));
 
-        mockMvc.perform(get("/bookings")
+        mockMvc.perform(get("/api/bookings")
                         .header("Authorization", "Bearer tok"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].bookingId").value(sample.getBookingId().toString()));
@@ -102,7 +102,7 @@ class BookingControllerTest {
         when(bookingService.findBookingById(sample.getBookingId()))
                 .thenReturn(Optional.of(sample));
 
-        mockMvc.perform(get("/bookings/{id}", sample.getBookingId())
+        mockMvc.perform(get("/api/bookings/{id}", sample.getBookingId())
                         .header("Authorization", "Bearer tok"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.bookingId").value(sample.getBookingId().toString()));
@@ -114,7 +114,7 @@ class BookingControllerTest {
         when(bookingService.findBookingById(randomId))
                 .thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/bookings/{id}", randomId)
+        mockMvc.perform(get("/api/bookings/{id}", randomId)
                         .header("Authorization", "Bearer tok"))
                 .andExpect(status().isNotFound());
     }
@@ -124,7 +124,7 @@ class BookingControllerTest {
         UUID id = sample.getBookingId();
         doNothing().when(bookingService).cancelBooking(id);
 
-        mockMvc.perform(delete("/bookings/{id}", id)
+        mockMvc.perform(delete("/api/bookings/{id}", id)
                         .header("Authorization", "Bearer tok"))
                 .andExpect(status().isNoContent());
     }

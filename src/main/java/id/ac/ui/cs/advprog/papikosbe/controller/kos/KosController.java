@@ -16,20 +16,20 @@ public class KosController {
 
     public KosController(KosService kosService) {this.kosService = kosService;}
 
-    @PostMapping
+    @PostMapping("/add")
     public ResponseEntity<Kos> addKos(@RequestBody Kos kos) {
         Kos addedKos = kosService.addKos(kos);
         return ResponseEntity.status(201).body(addedKos);
     }
 
-    @GetMapping
+    @GetMapping("/list")
     public ResponseEntity<List<Kos>> getAllKos() {
         List<Kos> kosList = kosService.getAllKos();
         return ResponseEntity.status(200).body(kosList);
     }
 
-    @GetMapping
-    public ResponseEntity<Kos> getKosById(@RequestParam("id") UUID id) {
+    @GetMapping("/{id}")
+    public ResponseEntity<Kos> getKosById(@PathVariable UUID id) {
         Kos foundKos = kosService.getKosById(id);
         if (foundKos == null) {
             return ResponseEntity.notFound().build();
@@ -37,8 +37,8 @@ public class KosController {
         return ResponseEntity.status(200).body(foundKos);
     }
 
-    @PatchMapping
-    public ResponseEntity<Kos> updateKos(@RequestParam("id") UUID id, @RequestParam("updatedKos") Kos updatedKos) {
+    @PatchMapping("/update/{id}")
+    public ResponseEntity<Kos> updateKos(@PathVariable UUID id, @RequestBody Kos updatedKos) {
         Kos kosUpdated = kosService.updateKos(id, updatedKos);
         if (kosUpdated == null) {
             return ResponseEntity.notFound().build();
@@ -46,8 +46,8 @@ public class KosController {
         return ResponseEntity.status(201).body(kosUpdated);
     }
 
-    @DeleteMapping
-    public ResponseEntity<Nullable> deleteKos(@RequestParam("id") UUID id) {
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<Nullable> deleteKos(@PathVariable UUID id) {
         kosService.deleteKos(id);
         Kos check = kosService.getKosById(id);
         if (check == null) {

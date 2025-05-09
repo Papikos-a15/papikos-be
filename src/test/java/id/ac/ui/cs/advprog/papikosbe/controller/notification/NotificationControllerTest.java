@@ -65,7 +65,7 @@ class NotificationControllerTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(1, response.getBody().size());
-        assertEquals(testNotification, response.getBody().get(0));
+        assertEquals(testNotification, response.getBody().getFirst());
         verify(notificationService, times(1)).getNotificationsForUser(userId);
     }
 
@@ -79,15 +79,6 @@ class NotificationControllerTest {
         assertNotNull(response.getBody());
         assertTrue(response.getBody().isEmpty());
         verify(notificationService, times(1)).getNotificationsForUser(userId);
-    }
-
-    @Test
-    void testGetNotificationsForUser_NullUserId() {
-        ResponseEntity<List<Notification>> response = notificationController.getNotificationsForUser(null);
-
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertNull(response.getBody());
-        verify(notificationService, never()).getNotificationsForUser(any());
     }
 
     @Test

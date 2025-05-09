@@ -21,13 +21,8 @@ public class NotificationController {
 
     @RequestMapping(value = "/api/v1/notifications/user/{userId}", method = RequestMethod.GET)
     public ResponseEntity<List<Notification>> getNotificationsForUser(@PathVariable UUID userId) {
-        try {
-            List<Notification> notifications = notificationService.getNotificationsForUser(userId);
-            return ResponseEntity.ok(notifications);
-        } catch (Exception e) {
-            System.out.println("Error in getting notifications!");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        List<Notification> notifications = notificationService.getNotificationsForUser(userId);
+        return ResponseEntity.ok(notifications);
     }
 
     @RequestMapping(value = "/api/v1/notifications", method = RequestMethod.POST)

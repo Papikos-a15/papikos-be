@@ -3,11 +3,15 @@ package id.ac.ui.cs.advprog.papikosbe.model.kos;
 import lombok.Setter;
 import lombok.Getter;
 
+import java.util.UUID;
+
 @Setter
 @Getter
 public class Kos {
 
-    private String id;
+    private UUID id;
+    private UUID ownerId;
+    private UUID tenantId;
     private String name;
     private String address;
     private String description;
@@ -17,8 +21,18 @@ public class Kos {
     // Constructors
     public Kos() {}
 
-    public Kos(String id, String name, String address, String description, Double price) {
+    public Kos(UUID id, String name, String address, String description, Double price) {
         this.id = id;
+        this.name = name;
+        this.address = address;
+        this.description = description;
+        this.price = price;
+    }
+
+    public Kos(UUID id, UUID ownerId, UUID tenantId, String name, String address, String description, Double price) {
+        this.id = id;
+        this.ownerId = ownerId;
+        this.tenantId = tenantId;
         this.name = name;
         this.address = address;
         this.description = description;

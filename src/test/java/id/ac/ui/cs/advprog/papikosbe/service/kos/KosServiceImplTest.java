@@ -11,6 +11,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -31,14 +32,14 @@ public class KosServiceImplTest {
     @BeforeEach
     public void setUp() {
         kos1 = new Kos();
-        kos1.setId("1234567890");
+        kos1.setId(UUID.randomUUID());
         kos1.setName("Kos1");
         kos1.setAddress("AlamatKos1");
         kos1.setDescription("DeskripsiKos1");
         kos1.setPrice(50000.0);
 
         kos2 = new Kos();
-        kos2.setId("1234567891");
+        kos2.setId(UUID.randomUUID());
         kos2.setName("Kos2");
         kos2.setAddress("AlamatKos2");
         kos2.setDescription("DeskripsiKos2");
@@ -73,11 +74,11 @@ public class KosServiceImplTest {
         Kos kos = kos1;
         doReturn(kos).when(kosRepository).getKosById(kos1.getId());
 
-        Kos retrievedKos = kosService.getKosById("1234567890");
+        Kos retrievedKos = kosService.getKosById(kos.getId());
 
         assertNotNull(retrievedKos, "Kos should be present for the given ID");
         assertEquals(kos.getName(), retrievedKos.getName());
-        verify(kosRepository, times(1)).getKosById("1234567890");
+        verify(kosRepository, times(1)).getKosById(kos.getId());
     }
 
     @Test
@@ -90,7 +91,7 @@ public class KosServiceImplTest {
         Kos result = kosService.updateKos(kos.getId(), newKos);
 
         assertNotNull(result, "The updated Kos should not be null");
-        assertEquals("1234567890", result.getId());
+        assertEquals(kos.getId(), result.getId());
         assertEquals("UpdatedKos", result.getName());
         assertEquals("UpdatedAlamatKos", result.getAddress());
         assertEquals("UpdatedDeskripsiKos", result.getDescription());
@@ -110,7 +111,7 @@ public class KosServiceImplTest {
         Kos result = kosService.getKosById(kos.getId());
 
         assertNull(result, "The deleted Kos should be null");
-        verify(kosRepository, times(1)).deleteKos("1234567890") ;
+        verify(kosRepository, times(1)).deleteKos(kos.getId()) ;
     }
 }
 

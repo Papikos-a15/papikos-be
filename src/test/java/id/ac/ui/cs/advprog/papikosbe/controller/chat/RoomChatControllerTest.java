@@ -40,7 +40,7 @@ public class RoomChatControllerTest {
         RoomChat roomChat = new RoomChat(UUID.randomUUID(), UUID.randomUUID());
         when(roomChatService.getRoomChatById(roomId)).thenReturn(roomChat);
 
-        mockMvc.perform(get("/api/v1/roomchats/" + roomId))
+        mockMvc.perform(get("/api/roomchats/" + roomId))
                 .andExpect(status().isOk());
     }
 
@@ -49,7 +49,7 @@ public class RoomChatControllerTest {
         UUID userId = UUID.randomUUID();
         when(roomChatService.getRoomChatsByUser(userId)).thenReturn(List.of());
 
-        mockMvc.perform(get("/api/v1/roomchats/user/" + userId))
+        mockMvc.perform(get("/api/roomchats/user/" + userId))
                 .andExpect(status().isOk());
     }
 
@@ -64,7 +64,7 @@ public class RoomChatControllerTest {
 
         when(roomChatService.createRoomChatIfNotExists(any(RoomChat.class))).thenReturn(true);
 
-        mockMvc.perform(post("/api/v1/roomchats")
+        mockMvc.perform(post("/api/roomchats")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isOk());

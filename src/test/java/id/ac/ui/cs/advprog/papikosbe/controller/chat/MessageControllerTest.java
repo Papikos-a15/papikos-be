@@ -44,7 +44,7 @@ public class MessageControllerTest {
                 }
                 """;
 
-        mockMvc.perform(post("/api/v1/messages")
+        mockMvc.perform(post("/api/messages")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isCreated());
@@ -55,7 +55,7 @@ public class MessageControllerTest {
         UUID messageId = UUID.randomUUID();
         when(messageService.deleteMessage(messageId)).thenReturn(true);
 
-        mockMvc.perform(delete("/api/v1/messages/" + messageId))
+        mockMvc.perform(delete("/api/messages/" + messageId))
                 .andExpect(status().isOk());
     }
 
@@ -64,7 +64,7 @@ public class MessageControllerTest {
         UUID roomId = UUID.randomUUID();
         when(messageService.getMessagesByRoomId(roomId)).thenReturn(new ArrayList<>());
 
-        mockMvc.perform(get("/api/v1/messages")
+        mockMvc.perform(get("/api/messages")
                         .param("roomId", roomId.toString()))
                 .andExpect(status().isOk());
     }
@@ -83,7 +83,7 @@ public class MessageControllerTest {
         String newContent = "Pesan baru";
         String requestBody = "\"" + newContent + "\"";
 
-        mockMvc.perform(put("/api/v1/messages/" + messageId)
+        mockMvc.perform(put("/api/messages/" + messageId)
                         .contentType("application/json")
                         .content(requestBody))
                 .andExpect(status().isOk());

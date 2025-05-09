@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/roomchats")
+@RequestMapping("/api/roomchats")
 public class RoomChatController {
 
     private final RoomChatService roomChatService;

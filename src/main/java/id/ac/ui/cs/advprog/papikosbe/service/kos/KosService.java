@@ -1,6 +1,6 @@
-package id.ac.ui.cs.advprog.papikosbe.service;
+package id.ac.ui.cs.advprog.papikosbe.service.kos;
 
-import id.ac.ui.cs.advprog.papikosbe.model.Kos;
+import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
 
 import java.util.List;
 

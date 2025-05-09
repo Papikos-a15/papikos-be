@@ -1,10 +1,9 @@
-package id.ac.ui.cs.advprog.papikosbe.repository;
+package id.ac.ui.cs.advprog.papikosbe.repository.kos;
 
-import id.ac.ui.cs.advprog.papikosbe.model.Kos;
+import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.ArrayList;
 import java.util.List;

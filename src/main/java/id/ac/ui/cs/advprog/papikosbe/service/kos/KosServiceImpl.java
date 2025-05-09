@@ -1,9 +1,9 @@
-package id.ac.ui.cs.advprog.papikosbe.service;
+package id.ac.ui.cs.advprog.papikosbe.service.kos;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import id.ac.ui.cs.advprog.papikosbe.model.Kos;
-import id.ac.ui.cs.advprog.papikosbe.repository.KosRepository;
+import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
+import id.ac.ui.cs.advprog.papikosbe.repository.kos.KosRepository;
 
 import java.util.List;
 

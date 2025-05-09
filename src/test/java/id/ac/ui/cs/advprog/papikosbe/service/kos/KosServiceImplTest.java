@@ -1,7 +1,7 @@
-package id.ac.ui.cs.advprog.papikosbe.service;
+package id.ac.ui.cs.advprog.papikosbe.service.kos;
 
-import id.ac.ui.cs.advprog.papikosbe.model.Kos;
-import id.ac.ui.cs.advprog.papikosbe.repository.KosRepository;
+import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
+import id.ac.ui.cs.advprog.papikosbe.repository.kos.KosRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

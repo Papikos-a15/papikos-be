@@ -1,8 +1,7 @@
-package id.ac.ui.cs.advprog.papikosbe.repository;
+package id.ac.ui.cs.advprog.papikosbe.repository.notification;
 
 import id.ac.ui.cs.advprog.papikosbe.enums.NotificationType;
 import id.ac.ui.cs.advprog.papikosbe.model.notification.Notification;
-import id.ac.ui.cs.advprog.papikosbe.repository.notification.NotificationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

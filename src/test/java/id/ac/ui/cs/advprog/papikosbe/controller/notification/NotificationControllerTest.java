@@ -1,6 +1,5 @@
-package id.ac.ui.cs.advprog.papikosbe.controller;
+package id.ac.ui.cs.advprog.papikosbe.controller.notification;
 
-import id.ac.ui.cs.advprog.papikosbe.controller.notification.NotificationController;
 import id.ac.ui.cs.advprog.papikosbe.enums.NotificationType;
 import id.ac.ui.cs.advprog.papikosbe.model.notification.Notification;
 import id.ac.ui.cs.advprog.papikosbe.service.notification.NotificationService;

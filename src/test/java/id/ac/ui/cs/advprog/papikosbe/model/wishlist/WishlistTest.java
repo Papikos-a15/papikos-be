@@ -1,8 +1,7 @@
-package id.ac.ui.cs.advprog.papikosbe.model;
+package id.ac.ui.cs.advprog.papikosbe.model.wishlist;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import id.ac.ui.cs.advprog.papikosbe.model.wishlist.Wishlist;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

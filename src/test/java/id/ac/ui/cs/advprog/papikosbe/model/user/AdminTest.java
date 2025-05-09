@@ -1,6 +1,9 @@
 package id.ac.ui.cs.advprog.papikosbe.model.user;
 
 import org.junit.jupiter.api.Test;
+
+import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class AdminTest {
@@ -38,13 +41,14 @@ class AdminTest {
 
     @Test
     void testGettersAndSetters() {
+        UUID id = UUID.randomUUID();
         Admin admin = new Admin();
-        admin.setId(42L);
+        admin.setId(id);
         admin.setEmail("setter@admin.com");
         admin.setPassword("setterpass");
 
         assertAll("admin setters/getters",
-                () -> assertEquals(42L, admin.getId()),
+                () -> assertEquals(id, admin.getId()),
                 () -> assertEquals("setter@admin.com", admin.getEmail()),
                 () -> assertEquals("setterpass",       admin.getPassword())
         );

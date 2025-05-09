@@ -1,6 +1,9 @@
 package id.ac.ui.cs.advprog.papikosbe.model.user;
 
 import org.junit.jupiter.api.Test;
+
+import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class TenantTest {
@@ -39,12 +42,13 @@ class TenantTest {
     @Test
     void testGettersAndSetters() {
         Tenant tenant = new Tenant();
-        tenant.setId(7L);
+        UUID id = UUID.randomUUID();
+        tenant.setId(id);
         tenant.setEmail("set@tenant.com");
         tenant.setPassword("setpass");
 
         assertAll("tenant setters/getters",
-                () -> assertEquals(7L,                  tenant.getId()),
+                () -> assertEquals(id,                  tenant.getId()),
                 () -> assertEquals("set@tenant.com",   tenant.getEmail()),
                 () -> assertEquals("setpass",          tenant.getPassword())
         );

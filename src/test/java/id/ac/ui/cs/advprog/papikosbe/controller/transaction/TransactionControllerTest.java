@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -34,13 +33,9 @@ class TransactionControllerTest {
     @Test
     void createTransactionReturns201() throws Exception {
         UUID userId = UUID.randomUUID();
-        Transaction t = Transaction.builder()
-                .id(UUID.randomUUID())
-                .userId(userId)
-                .amount(new BigDecimal("100000"))
-                .type(TransactionType.TOP_UP)
-                .timestamp(LocalDateTime.now())
-                .build();
+        UUID transactionId = UUID.randomUUID();
+        BigDecimal amount = new BigDecimal("100000");
+        Transaction t = new Transaction(transactionId, userId, amount, TransactionType.TOP_UP, LocalDateTime.now());
 
         Mockito.when(transactionService.createTransaction(
                 eq(userId),
@@ -61,15 +56,13 @@ class TransactionControllerTest {
                 .andExpect(jsonPath("$.type").value("TOPUP"));
     }
 
+
     @Test
     void getAllTransactionsReturns200() throws Exception {
-        Transaction t1 = Transaction.builder()
-                .id(UUID.randomUUID())
-                .userId(UUID.randomUUID())
-                .amount(new BigDecimal("50000"))
-                .type(TransactionType.TOP_UP)
-                .timestamp(LocalDateTime.now())
-                .build();
+        UUID userId = UUID.randomUUID();
+        UUID transactionId = UUID.randomUUID();
+        BigDecimal amount = new BigDecimal("100000");
+        Transaction t1 = new Transaction(transactionId, userId, amount, TransactionType.TOP_UP, LocalDateTime.now());
 
         Mockito.when(transactionService.findAll())
                 .thenReturn(List.of(t1));
@@ -82,13 +75,9 @@ class TransactionControllerTest {
     @Test
     void getTransactionsByUserIdReturnsList() throws Exception {
         UUID userId = UUID.randomUUID();
-        Transaction t1 = Transaction.builder()
-                .id(UUID.randomUUID())
-                .userId(userId)
-                .amount(new BigDecimal("50000"))
-                .type(TransactionType.TOP_UP)
-                .timestamp(LocalDateTime.now())
-                .build();
+        UUID transactionId = UUID.randomUUID();
+        BigDecimal amount = new BigDecimal("100000");
+        Transaction t1 = new Transaction(transactionId, userId, amount, TransactionType.TOP_UP, LocalDateTime.now());
 
         Mockito.when(transactionService.findAllByUserId(eq(userId)))
                 .thenReturn(List.of(t1));

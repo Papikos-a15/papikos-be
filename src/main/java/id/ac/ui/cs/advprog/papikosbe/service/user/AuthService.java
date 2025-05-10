@@ -1,6 +1,8 @@
 // src/main/java/id/ac/ui/cs/advprog/papikosbe/service/AuthService.java
 package id.ac.ui.cs.advprog.papikosbe.service.user;
 
+import java.util.UUID;
+
 public interface AuthService {
     /**
      * Verify credentials for the given email/password, then
@@ -18,4 +20,7 @@ public interface AuthService {
      * @param token the JWT to invalidate
      */
     void logout(String token);
+
+    UUID getUserIdByEmail(String email);
+    String getUserRoleByEmail(String email);
 }

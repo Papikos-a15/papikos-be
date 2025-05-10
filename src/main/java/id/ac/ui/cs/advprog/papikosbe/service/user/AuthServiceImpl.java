@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
@@ -37,5 +39,19 @@ public class AuthServiceImpl implements AuthService {
     public void logout(String token) {
         // Strategi sederhana: blacklist token
         jwtProvider.invalidate(token);
+    }
+
+    @Override
+    public UUID getUserIdByEmail(String email) {
+        return userRepo.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"))
+                .getId();
+    }
+
+    @Override
+    public String getUserRoleByEmail(String email) {
+        return userRepo.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"))
+                .getRole().name();
     }
 }

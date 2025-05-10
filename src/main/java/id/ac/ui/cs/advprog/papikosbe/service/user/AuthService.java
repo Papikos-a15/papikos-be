@@ -20,7 +20,4 @@ public interface AuthService {
      * @param token the JWT to invalidate
      */
     void logout(String token);
-
-    UUID getUserIdByEmail(String email);
-    String getUserRoleByEmail(String email);
 }

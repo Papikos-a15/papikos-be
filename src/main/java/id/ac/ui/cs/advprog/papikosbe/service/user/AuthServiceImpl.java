@@ -40,18 +40,4 @@ public class AuthServiceImpl implements AuthService {
         // Strategi sederhana: blacklist token
         jwtProvider.invalidate(token);
     }
-
-    @Override
-    public UUID getUserIdByEmail(String email) {
-        return userRepo.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"))
-                .getId();
-    }
-
-    @Override
-    public String getUserRoleByEmail(String email) {
-        return userRepo.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"))
-                .getRole().name();
-    }
 }

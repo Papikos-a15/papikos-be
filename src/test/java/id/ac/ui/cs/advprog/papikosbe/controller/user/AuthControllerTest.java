@@ -30,25 +30,16 @@ class AuthControllerTest {
     @MockBean AuthService authService;
 
     @Test
-    void loginSuccessReturnsJwtWithUserDetails() throws Exception {
-        String email = "user@mail.com";
-        String password = "pw";
-        String token = "jwt-token";
-        UUID userId = UUID.randomUUID();
-        String role = "TENANT";
-
-        Mockito.when(authService.login(email, password)).thenReturn(token);
-        Mockito.when(authService.getUserIdByEmail(email)).thenReturn(userId);
-        Mockito.when(authService.getUserRoleByEmail(email)).thenReturn(role);
+    void loginSuccessReturnsJwt() throws Exception {
+        Mockito.when(authService.login("user@mail.com","pw"))
+                .thenReturn("jwt-token");
 
         mvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(
-                                Map.of("email", email, "password", password))))
+                                Map.of("email","user@mail.com","password","pw"))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").value(token))
-                .andExpect(jsonPath("$.userId").value(userId.toString()))
-                .andExpect(jsonPath("$.role").value(role));
+                .andExpect(jsonPath("$.token").value("jwt-token"));
     }
 
     @Test

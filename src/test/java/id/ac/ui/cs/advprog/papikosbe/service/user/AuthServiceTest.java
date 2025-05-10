@@ -112,25 +112,4 @@ class AuthServiceTest {
         authService.logout(token);
         verify(jwtProvider).invalidate(token);
     }
-
-    @Test
-    void testGetUserIdByEmail_shouldReturnCorrectId() {
-        tenant.setId(java.util.UUID.randomUUID());
-        when(userRepo.findByEmail("t@mail.com"))
-                .thenReturn(Optional.of(tenant));
-
-        var result = authService.getUserIdByEmail("t@mail.com");
-
-        assertThat(result).isEqualTo(tenant.getId());
-    }
-
-    @Test
-    void testGetUserRoleByEmail_shouldReturnCorrectRole() {
-        when(userRepo.findByEmail("t@mail.com"))
-                .thenReturn(Optional.of(tenant));
-
-        var result = authService.getUserRoleByEmail("t@mail.com");
-
-        assertThat(result).isEqualTo("TENANT");
-    }
 }

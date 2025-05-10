@@ -14,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Map;
+import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -29,16 +30,25 @@ class AuthControllerTest {
     @MockBean AuthService authService;
 
     @Test
-    void loginSuccessReturnsJwt() throws Exception {
-        Mockito.when(authService.login("user@mail.com","pw"))
-                .thenReturn("jwt-token");
+    void loginSuccessReturnsJwtWithUserDetails() throws Exception {
+        String email = "user@mail.com";
+        String password = "pw";
+        String token = "jwt-token";
+        UUID userId = UUID.randomUUID();
+        String role = "TENANT";
+
+        Mockito.when(authService.login(email, password)).thenReturn(token);
+        Mockito.when(authService.getUserIdByEmail(email)).thenReturn(userId);
+        Mockito.when(authService.getUserRoleByEmail(email)).thenReturn(role);
 
         mvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(
-                                Map.of("email","user@mail.com","password","pw"))))
+                                Map.of("email", email, "password", password))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").value("jwt-token"));
+                .andExpect(jsonPath("$.token").value(token))
+                .andExpect(jsonPath("$.userId").value(userId.toString()))
+                .andExpect(jsonPath("$.role").value(role));
     }
 
     @Test

@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -21,8 +23,10 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<TokenResponse> login(@RequestBody LoginRequest body) {
         String token = authService.login(body.email(), body.password());
+        UUID userId = authService.getUserIdByEmail(body.email());
+        String role = authService.getUserRoleByEmail(body.email());
 
-        return ResponseEntity.ok(new TokenResponse(token));
+        return ResponseEntity.ok(new TokenResponse(token, userId, role));
     }
 
     /* ---------- LOGOUT ---------- */

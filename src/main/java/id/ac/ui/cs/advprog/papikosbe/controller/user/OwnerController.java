@@ -30,4 +30,11 @@ public class OwnerController {
     public ResponseEntity<ApiError> handleNotFound() {
         return ResponseEntity.status(404).body(new ApiError("Owner not found"));
     }
+
+    /* ---------- GET UNAPPROVED OWNERS ---------- */
+    @GetMapping("/unapproved")
+    public ResponseEntity<?> getUnapprovedOwners() {
+        var owners = ownerService.findUnapprovedOwners();
+        return ResponseEntity.ok(owners);
+    }
 }

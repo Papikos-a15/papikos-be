@@ -46,4 +46,59 @@ class OwnerServiceTest {
         assertThatThrownBy(() -> ownerService.approve(id))
                 .isInstanceOf(EntityNotFoundException.class);
     }
+
+    @Test
+    void testFindByApprovedFalse() {
+        // Owner yang sudah disetujui
+        Owner approvedOwner = Owner.builder()
+                .email("approved@x.com")
+                .password("p")
+                .build();
+
+        // Owner yang belum disetujui
+        Owner unapprovedOwner1 = Owner.builder()
+                .email("unapproved1@x.com")
+                .password("p")
+                .build();
+
+        Owner unapprovedOwner2 = Owner.builder()
+                .email("unapproved2@x.com")
+                .password("p")
+                .build();
+
+        approvedOwner.setApproved(true);
+
+        // Simulasikan owner disimpan dalam database
+        ownerRepo.saveAndFlush(approvedOwner);
+        ownerRepo.saveAndFlush(unapprovedOwner1);
+        ownerRepo.saveAndFlush(unapprovedOwner2);
+
+        // Ambil semua owner yang belum disetujui
+        var results = ownerService.findByApprovedFalse();
+
+        // Verifikasi bahwa hanya owner yang belum disetujui yang muncul
+        assertThat(results).hasSize(2);
+        assertThat(results).extracting("email")
+                .containsExactlyInAnyOrder("unapproved1@x.com", "unapproved2@x.com");
+    }
+
+    @Test
+    void testFindByApprovedFalseReturnsEmpty() {
+        // Owner yang sudah disetujui
+        Owner approvedOwner = Owner.builder()
+                .email("approved@x.com")
+                .password("p")
+                .build();
+
+        approvedOwner.setApproved(true);
+
+        // Simulasikan owner disimpan dalam database
+        ownerRepo.saveAndFlush(approvedOwner);
+
+        // Ambil semua owner yang belum disetujui
+        var results = ownerService.findByApprovedFalse();
+
+        // Verifikasi bahwa tidak ada owner yang belum disetujui
+        assertThat(results).isEmpty();
+    }
 }

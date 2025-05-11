@@ -9,6 +9,7 @@ import org.mockito.*;
 import jakarta.persistence.EntityNotFoundException;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -48,33 +49,32 @@ class OwnerServiceTest {
     }
 
     @Test
-    void testFindByApprovedFalse() {
-        // Owner yang sudah disetujui
+    void testFindUnapprovedOwners() {
+        // Simulasikan owner yang sudah disetujui
         Owner approvedOwner = Owner.builder()
                 .email("approved@x.com")
                 .password("p")
                 .build();
+        approvedOwner.setApproved(true);  // Set approved ke true
 
-        // Owner yang belum disetujui
+        // Simulasikan owner yang belum disetujui
         Owner unapprovedOwner1 = Owner.builder()
                 .email("unapproved1@x.com")
                 .password("p")
                 .build();
+        unapprovedOwner1.setApproved(false);  // Set approved ke false
 
         Owner unapprovedOwner2 = Owner.builder()
                 .email("unapproved2@x.com")
                 .password("p")
                 .build();
+        unapprovedOwner2.setApproved(false);  // Set approved ke false
 
-        approvedOwner.setApproved(true);
-
-        // Simulasikan owner disimpan dalam database
-        ownerRepo.saveAndFlush(approvedOwner);
-        ownerRepo.saveAndFlush(unapprovedOwner1);
-        ownerRepo.saveAndFlush(unapprovedOwner2);
+        // Simulasi owner yang ada di repository
+        when(ownerRepo.findByApprovedFalse()).thenReturn(List.of(unapprovedOwner1, unapprovedOwner2));
 
         // Ambil semua owner yang belum disetujui
-        var results = ownerService.findByApprovedFalse();
+        var results = ownerService.findUnapprovedOwners();
 
         // Verifikasi bahwa hanya owner yang belum disetujui yang muncul
         assertThat(results).hasSize(2);
@@ -83,20 +83,20 @@ class OwnerServiceTest {
     }
 
     @Test
-    void testFindByApprovedFalseReturnsEmpty() {
+    void testFindUnapprovedOwnersReturnsEmpty() {
         // Owner yang sudah disetujui
         Owner approvedOwner = Owner.builder()
                 .email("approved@x.com")
                 .password("p")
                 .build();
 
-        approvedOwner.setApproved(true);
+        approvedOwner.setApproved(true); // Set approved ke true (owner sudah disetujui)
 
-        // Simulasikan owner disimpan dalam database
-        ownerRepo.saveAndFlush(approvedOwner);
+        // Simulasikan owner yang disimpan dalam repository
+        when(ownerRepo.findByApprovedFalse()).thenReturn(List.of());
 
         // Ambil semua owner yang belum disetujui
-        var results = ownerService.findByApprovedFalse();
+        var results = ownerService.findUnapprovedOwners();
 
         // Verifikasi bahwa tidak ada owner yang belum disetujui
         assertThat(results).isEmpty();

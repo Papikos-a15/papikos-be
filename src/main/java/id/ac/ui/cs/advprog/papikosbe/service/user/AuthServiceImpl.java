@@ -5,7 +5,6 @@ import id.ac.ui.cs.advprog.papikosbe.exception.BadCredentialsException;
 import id.ac.ui.cs.advprog.papikosbe.model.user.User;
 import id.ac.ui.cs.advprog.papikosbe.repository.user.UserRepository;
 import id.ac.ui.cs.advprog.papikosbe.security.JwtTokenProvider;
-import id.ac.ui.cs.advprog.papikosbe.service.user.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

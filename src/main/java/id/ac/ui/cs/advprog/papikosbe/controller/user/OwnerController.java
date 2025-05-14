@@ -9,8 +9,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
-@RequestMapping("/owners")
+@RequestMapping("/api/owners")
 @RequiredArgsConstructor
 public class OwnerController {
 
@@ -18,7 +20,7 @@ public class OwnerController {
 
     /* ---------- APPROVE OWNER ---------- */
     @PatchMapping("/{id}/approve")
-    public ResponseEntity<Owner> approve(@PathVariable Long id) {
+    public ResponseEntity<Owner> approve(@PathVariable UUID id) {
         Owner approved = ownerService.approve(id);
         return ResponseEntity.ok(approved);
     }
@@ -27,5 +29,12 @@ public class OwnerController {
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<ApiError> handleNotFound() {
         return ResponseEntity.status(404).body(new ApiError("Owner not found"));
+    }
+
+    /* ---------- GET UNAPPROVED OWNERS ---------- */
+    @GetMapping("/unapproved")
+    public ResponseEntity<?> getUnapprovedOwners() {
+        var owners = ownerService.findUnapprovedOwners();
+        return ResponseEntity.ok(owners);
     }
 }

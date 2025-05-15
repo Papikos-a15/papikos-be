@@ -1,14 +1,12 @@
 name: Continuous Deployment (CD)
 
 on:
-  workflow_run:
-    workflows: ["Continuous Integration (CI)", "SonarCloud"]
-    types:
-      - completed
+  push:
+    branches:
+      - development
 
 jobs:
   deploy:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:

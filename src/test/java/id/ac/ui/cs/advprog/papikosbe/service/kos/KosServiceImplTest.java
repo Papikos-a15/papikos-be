@@ -72,7 +72,7 @@ public class KosServiceImplTest {
     @Test
     public void testGetKosById() {
         Kos kos = kos1;
-        doReturn(kos).when(kosRepository).findById(kos1.getId());
+        doReturn(Optional.of(kos)).when(kosRepository).findById(kos1.getId());
 
         Optional<Kos> retrievedKos = kosService.getKosById(kos.getId());
 
@@ -85,7 +85,6 @@ public class KosServiceImplTest {
     public void testUpdateKos() {
         Kos kos = kos1;
         Kos updatedKos = kos2;
-        doReturn(kos).when(kosRepository).save(kos);
 
         Optional<Kos> result = kosService.updateKos(kos.getId(), updatedKos);
 

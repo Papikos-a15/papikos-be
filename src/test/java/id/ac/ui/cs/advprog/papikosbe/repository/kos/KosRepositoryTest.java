@@ -28,7 +28,7 @@ public class KosRepositoryTest {
         kosList = new ArrayList<>();
 
         Kos kos1 = new Kos();
-        kos1.setId(UUID.randomUUID());
+        kos1.setOwnerId(UUID.randomUUID());
         kos1.setTenantId(UUID.randomUUID());
         kos1.setName("Kos1");
         kos1.setAddress("AlamatKos1");

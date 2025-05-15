@@ -21,8 +21,8 @@ jobs:
         sudo mv koyeb /usr/local/bin/koyeb
         koyeb version
 
-    - name: Log in to Koyeb
-      run: koyeb auth login --token ${{ secrets.KOYEB_API_TOKEN }}
-
     - name: Deploy to Koyeb
-      run: koyeb service redeploy papikos-be --app papikos-a15
+      env:
+        KOYEB_API_TOKEN: ${{ secrets.KOYEB_API_TOKEN }}
+      run: |
+        koyeb service redeploy papikos-be --app papikos-a15

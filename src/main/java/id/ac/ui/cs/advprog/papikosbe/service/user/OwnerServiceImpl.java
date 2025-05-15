@@ -49,9 +49,10 @@ public class OwnerServiceImpl implements OwnerService {
         return ownerRepo.findByApprovedFalse();
     }
 
+    @Override
     public Owner findOwnerById(UUID ownerId) {
-        return null;
-
+        return ownerRepo.findById(ownerId)
+                .orElseThrow(() -> new EntityNotFoundException("Owner with ID " + ownerId + " not found"));
     }
 
 }

@@ -84,4 +84,29 @@ class OwnerControllerTest {
                 .andExpect(jsonPath("$[0].email").value("unapproved1@mail.com"))
                 .andExpect(jsonPath("$[1].email").value("unapproved2@mail.com"));
     }
+
+    @Test
+    void getOwnerEmailByIdSuccessReturns200() throws Exception {
+        UUID id = UUID.randomUUID();
+        String email = "owner@example.com";
+
+        Mockito.when(ownerService.getEmailById(eq(id))).thenReturn(email);
+
+        mvc.perform(get("/api/owners/" + id + "/email")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().string(email));
+    }
+
+    @Test
+    void getOwnerEmailByIdNotFoundReturns404() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        Mockito.when(ownerService.getEmailById(eq(id)))
+                .thenThrow(new EntityNotFoundException());
+
+        mvc.perform(get("/api/owners/" + id + "/email")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+    }
 }

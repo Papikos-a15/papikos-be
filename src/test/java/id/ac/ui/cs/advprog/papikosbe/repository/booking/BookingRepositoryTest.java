@@ -23,19 +23,29 @@ class BookingRepositoryTest {
     private UUID dummyUserId;
     private UUID dummyKosId;
     private Booking sampleBooking;
+    private double monthlyPrice;
+    private String fullName;
+    private String phoneNumber;
 
     @BeforeEach
     void setUp() {
         repository.deleteAll();    // reset store sebelum tiap test
 
-        dummyUserId    = UUID.randomUUID();
-        dummyKosId     = UUID.randomUUID();
-        sampleBooking  = Booking.builder()
+        dummyUserId = UUID.randomUUID();
+        dummyKosId = UUID.randomUUID();
+        monthlyPrice = 1500000.0;
+        fullName = "John Doe";
+        phoneNumber = "081234567890";
+
+        sampleBooking = Booking.builder()
                 .bookingId(UUID.randomUUID())
                 .userId(dummyUserId)
                 .kosId(dummyKosId)
                 .checkInDate(LocalDate.now().plusDays(1))
                 .duration(3)
+                .monthlyPrice(monthlyPrice)
+                .fullName(fullName)
+                .phoneNumber(phoneNumber)
                 .status(BookingStatus.PENDING_PAYMENT)
                 .build();
     }
@@ -46,6 +56,9 @@ class BookingRepositoryTest {
         Optional<Booking> retrieved = repository.findById(sampleBooking.getBookingId());
         assertTrue(retrieved.isPresent());
         assertEquals(sampleBooking.getBookingId(), retrieved.get().getBookingId());
+        assertEquals(monthlyPrice, retrieved.get().getMonthlyPrice());
+        assertEquals(fullName, retrieved.get().getFullName());
+        assertEquals(phoneNumber, retrieved.get().getPhoneNumber());
     }
 
     @Test
@@ -58,19 +71,39 @@ class BookingRepositoryTest {
     void testFindByUserId() {
         Booking b1 = Booking.builder()
                 .bookingId(UUID.randomUUID())
-                .userId(dummyUserId).kosId(dummyKosId)
+                .userId(dummyUserId)
+                .kosId(dummyKosId)
                 .checkInDate(LocalDate.now().plusDays(1))
-                .duration(3).status(BookingStatus.PENDING_PAYMENT).build();
+                .duration(3)
+                .monthlyPrice(monthlyPrice)
+                .fullName(fullName)
+                .phoneNumber(phoneNumber)
+                .status(BookingStatus.PENDING_PAYMENT)
+                .build();
+
         Booking b2 = Booking.builder()
                 .bookingId(UUID.randomUUID())
-                .userId(dummyUserId).kosId(dummyKosId)
+                .userId(dummyUserId)
+                .kosId(dummyKosId)
                 .checkInDate(LocalDate.now().plusDays(2))
-                .duration(2).status(BookingStatus.PENDING_PAYMENT).build();
+                .duration(2)
+                .monthlyPrice(monthlyPrice)
+                .fullName("Jane Doe")
+                .phoneNumber("089876543210")
+                .status(BookingStatus.PENDING_PAYMENT)
+                .build();
+
         Booking b3 = Booking.builder()
                 .bookingId(UUID.randomUUID())
-                .userId(UUID.randomUUID()).kosId(dummyKosId)
+                .userId(UUID.randomUUID())
+                .kosId(dummyKosId)
                 .checkInDate(LocalDate.now().plusDays(3))
-                .duration(4).status(BookingStatus.PENDING_PAYMENT).build();
+                .duration(4)
+                .monthlyPrice(2000000.0)
+                .fullName("Other User")
+                .phoneNumber("087654321098")
+                .status(BookingStatus.PENDING_PAYMENT)
+                .build();
 
         repository.saveAll(List.of(b1, b2, b3));
 
@@ -91,14 +124,27 @@ class BookingRepositoryTest {
     void testFindAllBookings() {
         Booking b1 = Booking.builder()
                 .bookingId(UUID.randomUUID())
-                .userId(dummyUserId).kosId(dummyKosId)
+                .userId(dummyUserId)
+                .kosId(dummyKosId)
                 .checkInDate(LocalDate.now().plusDays(1))
-                .duration(1).status(BookingStatus.PENDING_PAYMENT).build();
+                .duration(1)
+                .monthlyPrice(1200000.0)
+                .fullName("User One")
+                .phoneNumber("081111111111")
+                .status(BookingStatus.PENDING_PAYMENT)
+                .build();
+
         Booking b2 = Booking.builder()
                 .bookingId(UUID.randomUUID())
-                .userId(dummyUserId).kosId(dummyKosId)
+                .userId(dummyUserId)
+                .kosId(dummyKosId)
                 .checkInDate(LocalDate.now().plusDays(2))
-                .duration(2).status(BookingStatus.PENDING_PAYMENT).build();
+                .duration(2)
+                .monthlyPrice(1300000.0)
+                .fullName("User Two")
+                .phoneNumber("082222222222")
+                .status(BookingStatus.PENDING_PAYMENT)
+                .build();
 
         repository.saveAll(List.of(b1, b2));
 
@@ -106,5 +152,16 @@ class BookingRepositoryTest {
         assertEquals(2, all.size());
         assertTrue(all.contains(b1));
         assertTrue(all.contains(b2));
+    }
+
+    @Test
+    void testTotalPriceCalculation() {
+        // Test the derived total price calculation
+        repository.save(sampleBooking);
+        Optional<Booking> retrieved = repository.findById(sampleBooking.getBookingId());
+        assertTrue(retrieved.isPresent());
+
+        double expectedTotal = monthlyPrice * sampleBooking.getDuration();
+        assertEquals(expectedTotal, retrieved.get().getTotalPrice());
     }
 }

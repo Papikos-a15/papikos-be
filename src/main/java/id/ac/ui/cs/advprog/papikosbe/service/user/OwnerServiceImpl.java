@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.EntityNotFoundException;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -37,5 +38,14 @@ public class OwnerServiceImpl implements OwnerService {
         }
         // 3. Kembalikan owner yang sudah disetujui
         return owner;
+    }
+    /**
+     * Mengambil daftar owner yang belum disetujui (approved = false).
+     * @return daftar owner yang belum disetujui
+     */
+    @Override
+    public List<Owner> findUnapprovedOwners() {
+        // Mengambil daftar owner yang belum disetujui (approved = false)
+        return ownerRepo.findByApprovedFalse();
     }
 }

@@ -94,4 +94,38 @@ class OwnerRepositoryTest {
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
+    @Test
+    @DisplayName("findByApprovedFalse returns only unapproved owners")
+    void testFindByApprovedFalse() {
+        Owner approvedOwner = Owner.builder()
+                .email("approved@x.com")
+                .password("p")
+                .build();
+
+        Owner unapprovedOwner1 = Owner.builder()
+                .email("unapproved1@x.com")
+                .password("p")
+                .build();
+
+        Owner unapprovedOwner2 = Owner.builder()
+                .email("unapproved2@x.com")
+                .password("p")
+                .build();
+
+        approvedOwner = ownerRepo.saveAndFlush(approvedOwner);
+        ownerRepo.saveAndFlush(unapprovedOwner1);
+        ownerRepo.saveAndFlush(unapprovedOwner2);
+
+        // Update approved flag untuk satu user
+        approvedOwner.setApproved(true);
+        ownerRepo.saveAndFlush(approvedOwner);
+
+        var results = ownerRepo.findByApprovedFalse();
+
+        assertThat(results).hasSize(2);
+        assertThat(results).extracting("email")
+                .containsExactlyInAnyOrder("unapproved1@x.com", "unapproved2@x.com");
+    }
+
+
 }

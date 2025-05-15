@@ -1,0 +1,28 @@
+name: Continuous Deployment (CD)
+
+on:
+  push:
+    branches:
+      - development
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Install Koyeb CLI v5.5.0
+      run: |
+        curl -LO https://github.com/koyeb/koyeb-cli/releases/download/v5.5.0/koyeb-cli_5.5.0_linux_amd64.tar.gz
+        tar -xzf koyeb-cli_5.5.0_linux_amd64.tar.gz
+        ls -l  # list files to see extracted binary
+        sudo mv koyeb /usr/local/bin/koyeb
+        koyeb version
+
+    - name: Deploy to Koyeb
+      env:
+        KOYEB_API_TOKEN: ${{ secrets.KOYEB_API_TOKEN }}
+      run: |
+        koyeb service redeploy papikos-be --app papikos-a15 --token $KOYEB_API_TOKEN

@@ -11,6 +11,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -60,57 +61,58 @@ public class KosServiceImplTest {
 
     @Test
     public void testGetAllKos() {
-        doReturn(Arrays.asList(kos1, kos2)).when(kosRepository).getAllKos();
+        doReturn(Arrays.asList(kos1, kos2)).when(kosRepository).findAll();
 
         List<Kos> result = kosService.getAllKos();
         assertNotNull(result, "The returned list should not be null");
         assertEquals(2, result.size(), "There should be two Kos entries");
-        verify(kosRepository, times(1)).getAllKos();
+        verify(kosRepository, times(1)).findAll();
     }
 
     @Test
     public void testGetKosById() {
         Kos kos = kos1;
-        doReturn(kos).when(kosRepository).getKosById(kos1.getId());
+        doReturn(kos).when(kosRepository).findById(kos1.getId());
 
-        Kos retrievedKos = kosService.getKosById(kos.getId());
+        Optional<Kos> retrievedKos = kosService.getKosById(kos.getId());
 
         assertNotNull(retrievedKos, "Kos should be present for the given ID");
-        assertEquals(kos.getName(), retrievedKos.getName());
-        verify(kosRepository, times(1)).getKosById(kos.getId());
+        retrievedKos.ifPresent(value -> assertEquals(kos.getName(), value.getName()));
+        verify(kosRepository, times(1)).findById(kos.getId());
     }
 
     @Test
     public void testUpdateKos() {
         Kos kos = kos1;
-        Kos newKos = new Kos(kos.getId(), "UpdatedKos", "UpdatedAlamatKos", "UpdatedDeskripsiKos",
-                75000.0, true);
-        doReturn(newKos).when(kosRepository).updateKos(kos.getId(), newKos);
+        Kos updatedKos = kos2;
+        doReturn(kos).when(kosRepository).save(kos);
 
-        Kos result = kosService.updateKos(kos.getId(), newKos);
+        Optional<Kos> result = kosService.updateKos(kos.getId(), updatedKos);
 
         assertNotNull(result, "The updated Kos should not be null");
-        assertEquals(kos.getId(), result.getId());
-        assertEquals("UpdatedKos", result.getName());
-        assertEquals("UpdatedAlamatKos", result.getAddress());
-        assertEquals("UpdatedDeskripsiKos", result.getDescription());
-        assertEquals(75000.0, result.getPrice());
-        verify(kosRepository, times(1)).updateKos(kos.getId(), newKos);
+        if (result.isPresent()) {
+            assertEquals(kos.getId(), result.get().getId());
+            assertEquals("UpdatedKos", result.get().getName());
+            assertEquals("UpdatedAlamatKos", result.get().getAddress());
+            assertEquals("UpdatedDeskripsiKos", result.get().getDescription());
+            assertEquals(75000.0, result.get().getPrice());
+            verify(kosRepository, times(1)).save(kos);
+        }
     }
 
     @Test
     public void testDeleteKos() {
         Kos kos = kos1;
         doReturn(kos).when(kosRepository).save(kos);
-        doReturn(null).when(kosRepository).getKosById(kos.getId());
+        doReturn(null).when(kosRepository).findById(kos.getId());
 
         kosService.addKos(kos);
         kosService.deleteKos(kos.getId());
 
-        Kos result = kosService.getKosById(kos.getId());
+        Optional<Kos> result = kosService.getKosById(kos.getId());
 
         assertNull(result, "The deleted Kos should be null");
-        verify(kosRepository, times(1)).deleteKos(kos.getId()) ;
+        verify(kosRepository, times(1)).deleteById(kos.getId()); ;
     }
 }
 

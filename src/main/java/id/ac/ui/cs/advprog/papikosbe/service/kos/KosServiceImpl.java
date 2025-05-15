@@ -35,7 +35,15 @@ public class KosServiceImpl implements KosService {
 
     @Override
     public Optional<Kos> updateKos(UUID id, Kos updatedKos) {
-        return kosRepository.updateKos(id, updatedKos);
+        Optional<Kos> foundKos = kosRepository.findById(id);
+        if (foundKos.isPresent()) {
+            foundKos.get().setName(updatedKos.getName());
+            foundKos.get().setDescription(updatedKos.getDescription());
+            foundKos.get().setAddress(updatedKos.getAddress());
+            foundKos.get().setPrice(updatedKos.getPrice());
+            foundKos.get().setAvailable(updatedKos.isAvailable());
+        }
+        return foundKos;
     }
 
     @Override

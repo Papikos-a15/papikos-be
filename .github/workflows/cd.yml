@@ -13,13 +13,12 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Set up Node.js (needed for koyeb CLI via npm)
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18' # or any LTS version
-
-    - name: Install Koyeb CLI
-      run: npm install -g koyeb
+    - name: Install Koyeb CLI from GitHub Release
+      run: |
+        curl -LO https://github.com/koyeb/koyeb-cli/releases/latest/download/koyeb-linux.tgz
+        tar -xzf koyeb-linux.tgz
+        sudo mv koyeb /usr/local/bin
+        koyeb version
 
     - name: Log in to Koyeb
       run: koyeb auth login --token ${{ secrets.KOYEB_API_TOKEN }}

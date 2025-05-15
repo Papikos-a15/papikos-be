@@ -4,6 +4,7 @@ import java.util.Optional;
 import java.util.UUID;
 import id.ac.ui.cs.advprog.papikosbe.model.booking.Booking;
 import java.util.List;
+import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
 
 public interface BookingService {
     Booking createBooking(Booking booking);
@@ -12,4 +13,5 @@ public interface BookingService {
     void cancelBooking(UUID bookingId);
     public void clearStore();
     void updateBooking(Booking booking);
+    void updateBookingStatus(UUID bookingId, BookingStatus newStatus);
 }

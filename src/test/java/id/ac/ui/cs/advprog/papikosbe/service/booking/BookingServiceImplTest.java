@@ -119,10 +119,10 @@ public class BookingServiceImplTest {
         assertEquals(updatedCheckIn, updatedBooking.get().getCheckInDate(), "Check-in date should be updated");
         assertEquals(updatedDuration, updatedBooking.get().getDuration(), "Duration should be updated");
     }
-    
+
     @Test
     public void testEditBookingAfterApprovalShouldFail() {
-        // Once a booking is approved, tenant should not be able to edit it
+        // Create booking with PENDING_PAYMENT status
         Booking booking = new Booking(
                 UUID.randomUUID(),
                 UUID.randomUUID(),
@@ -134,20 +134,26 @@ public class BookingServiceImplTest {
                 phoneNumber,
                 BookingStatus.PENDING_PAYMENT
         );
-        
+
+        // Save initial booking
         Booking createdBooking = bookingService.createBooking(booking);
-        
-        // Change status to APPROVED
-        createdBooking.setStatus(BookingStatus.PAID);
-        bookingService.updateBooking(createdBooking);
-        
-        // Try to edit booking details
-        createdBooking.setFullName("New Name");
-        createdBooking.setDuration(5);
-        
-        // Should throw IllegalStateException
+
+        // First update: Change status to PAID (this should work)
+        bookingService.updateBookingStatus(createdBooking.getBookingId(), BookingStatus.PAID);
+
+        // Verify status changed
+        Optional<Booking> paidBooking = bookingService.findBookingById(createdBooking.getBookingId());
+        assertTrue(paidBooking.isPresent(), "Booking should exist");
+        assertEquals(BookingStatus.PAID, paidBooking.get().getStatus(), "Status should be PAID");
+
+        // Now try to edit other details (should fail)
+        Booking updatedBooking = paidBooking.get();
+        updatedBooking.setFullName("New Name");
+        updatedBooking.setDuration(5);
+
+        // This should throw IllegalStateException
         assertThrows(IllegalStateException.class, () -> {
-            bookingService.updateBooking(createdBooking);
+            bookingService.updateBooking(updatedBooking);
         }, "Should not be able to edit booking after approval");
     }
     

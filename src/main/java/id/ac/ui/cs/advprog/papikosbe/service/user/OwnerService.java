@@ -18,4 +18,6 @@ public interface OwnerService {
      * @return a list of unapproved owners
      */
     List<Owner> findUnapprovedOwners();
+
+    Owner findOwnerById(UUID ownerId);
 }

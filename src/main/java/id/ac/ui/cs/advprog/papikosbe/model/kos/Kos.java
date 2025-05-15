@@ -13,28 +13,28 @@ public class Kos {
 
     @Id
     @GeneratedValue
-    @Column(name = "kos_id", columnDefinition = "uuid", updatable = false, nullable = false)
+    @Column(columnDefinition = "uuid", updatable = false, nullable = false)
     private UUID id;
 
-    @Column(name = "owner_id", updatable = false, nullable = false)
+    @Column(updatable = false, nullable = false)
     private UUID ownerId;
 
-    @Column(name = "tenant_id", updatable = false)
+    @Column(updatable = false)
     private UUID tenantId;
 
-    @Column(name = "name", nullable = false)
+    @Column(nullable = false)
     private String name;
 
-    @Column(name = "address", nullable = false)
+    @Column(nullable = false)
     private String address;
 
-    @Column(name = "description", nullable = true)
+    @Column()
     private String description;
 
-    @Column(name = "price", nullable = false)
+    @Column(nullable = false)
     private Double price;
 
-    @Column(name = "is_available", nullable = false)
+    @Column(nullable = false)
     private boolean isAvailable;
 
 

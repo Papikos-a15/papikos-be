@@ -14,66 +14,198 @@ import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
 public class BookingServiceImplTest {
 
     private BookingService bookingService;
-
+    private double monthlyPrice;
+    private String fullName;
+    private String phoneNumber;
+    
     @BeforeEach
     public void setUp() {
         // Mengambil instance service dengan pola Singleton
         bookingService = BookingServiceImpl.getInstance();
         bookingService.clearStore();  // ← reset state sebelum tiap test
+        
+        // Initialize test data
+        monthlyPrice = 1200000.0;
+        fullName = "John Doe";
+        phoneNumber = "081234567890";
     }
 
     @Test
-    public void testCreateBooking() {
-        // Membuat booking baru dengan status awal PENDING_PAYMENT
+    public void testCreateBookingWithPersonalDetails() {
+        // Membuat booking baru dengan data diri lengkap
         Booking booking = new Booking(
                 UUID.randomUUID(),
                 UUID.randomUUID(),
                 UUID.randomUUID(),
-                LocalDate.now().plusDays(1),
-                3,
+                LocalDate.now().plusDays(7),  // Check-in date 
+                3,                            // Duration in months
+                monthlyPrice,                 // Monthly price
+                fullName,                     // Full name
+                phoneNumber,                  // Phone number
                 BookingStatus.PENDING_PAYMENT
         );
+        
         Booking createdBooking = bookingService.createBooking(booking);
-        // Diharapkan booking yang dibuat tidak null, memiliki ID, dan status PENDING_PAYMENT
+        
+        // Verifikasi data diri tersimpan dengan benar
         assertNotNull(createdBooking, "Created booking should not be null");
-        assertNotNull(createdBooking.getBookingId(), "Booking id should not be null");
-        assertEquals(BookingStatus.PENDING_PAYMENT, createdBooking.getStatus(), "Initial status should be PENDING_PAYMENT");
+        assertEquals(fullName, createdBooking.getFullName(), "Full name should be stored correctly");
+        assertEquals(phoneNumber, createdBooking.getPhoneNumber(), "Phone number should be stored correctly");
+        assertEquals(monthlyPrice, createdBooking.getMonthlyPrice(), "Monthly price should be stored correctly");
+        assertEquals(LocalDate.now().plusDays(7), createdBooking.getCheckInDate(), "Check-in date should be stored correctly");
+        assertEquals(3, createdBooking.getDuration(), "Duration should be stored correctly");
+    }
+    
+    @Test
+    public void testCalculateTotalPrice() {
+        // Verifikasi perhitungan total harga (harga bulanan × durasi)
+        Booking booking = new Booking(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                LocalDate.now().plusDays(7),
+                3,                     // 3 months
+                monthlyPrice,          // 1,200,000 per month
+                fullName,
+                phoneNumber,
+                BookingStatus.PENDING_PAYMENT
+        );
+        
+        bookingService.createBooking(booking);
+        
+        Optional<Booking> retrievedBooking = bookingService.findBookingById(booking.getBookingId());
+        assertTrue(retrievedBooking.isPresent(), "Booking should be found");
+        
+        double expectedTotal = monthlyPrice * 3; // 3,600,000
+        assertEquals(expectedTotal, retrievedBooking.get().getTotalPrice(), 
+                "Total price should be monthly price × duration");
+    }
+    
+    @Test
+    public void testEditBookingBeforeApproval() {
+        // Tenant should be able to edit booking details before approval
+        Booking booking = new Booking(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                LocalDate.now().plusDays(7),
+                3,
+                monthlyPrice,
+                fullName,
+                phoneNumber,
+                BookingStatus.PENDING_PAYMENT
+        );
+        
+        bookingService.createBooking(booking);
+        
+        // Edit booking details
+        String updatedName = "Jane Doe";
+        String updatedPhone = "089876543210";
+        LocalDate updatedCheckIn = LocalDate.now().plusDays(14);
+        int updatedDuration = 6;
+        
+        booking.setFullName(updatedName);
+        booking.setPhoneNumber(updatedPhone);
+        booking.setCheckInDate(updatedCheckIn);
+        booking.setDuration(updatedDuration);
+        
+        bookingService.updateBooking(booking);
+        
+        // Verify updates
+        Optional<Booking> updatedBooking = bookingService.findBookingById(booking.getBookingId());
+        assertTrue(updatedBooking.isPresent(), "Updated booking should be found");
+        assertEquals(updatedName, updatedBooking.get().getFullName(), "Name should be updated");
+        assertEquals(updatedPhone, updatedBooking.get().getPhoneNumber(), "Phone should be updated");
+        assertEquals(updatedCheckIn, updatedBooking.get().getCheckInDate(), "Check-in date should be updated");
+        assertEquals(updatedDuration, updatedBooking.get().getDuration(), "Duration should be updated");
+    }
+    
+    @Test
+    public void testEditBookingAfterApprovalShouldFail() {
+        // Once a booking is approved, tenant should not be able to edit it
+        Booking booking = new Booking(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                LocalDate.now().plusDays(7),
+                3,
+                monthlyPrice,
+                fullName,
+                phoneNumber,
+                BookingStatus.PENDING_PAYMENT
+        );
+        
+        Booking createdBooking = bookingService.createBooking(booking);
+        
+        // Change status to APPROVED
+        createdBooking.setStatus(BookingStatus.PAID);
+        bookingService.updateBooking(createdBooking);
+        
+        // Try to edit booking details
+        createdBooking.setFullName("New Name");
+        createdBooking.setDuration(5);
+        
+        // Should throw IllegalStateException
+        assertThrows(IllegalStateException.class, () -> {
+            bookingService.updateBooking(createdBooking);
+        }, "Should not be able to edit booking after approval");
+    }
+    
+    @Test
+    public void testCancelBooking() {
+        // Simple cancellation test
+        Booking booking = new Booking(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                LocalDate.now().plusDays(7),
+                3,
+                monthlyPrice,
+                fullName,
+                phoneNumber,
+                BookingStatus.PENDING_PAYMENT
+        );
+        
+        bookingService.createBooking(booking);
+        bookingService.cancelBooking(booking.getBookingId());
+        
+        Optional<Booking> cancelledBooking = bookingService.findBookingById(booking.getBookingId());
+        assertTrue(cancelledBooking.isPresent(), "Booking should be found after cancellation");
+        assertEquals(BookingStatus.CANCELLED, cancelledBooking.get().getStatus(), 
+                "Booking status should be CANCELLED");
     }
 
     @Test
     public void testFindBookingByIdNotFound() {
-        // Mencari booking dengan ID acak, seharusnya Optional.empty()
         Optional<Booking> result = bookingService.findBookingById(UUID.randomUUID());
         assertFalse(result.isPresent(), "Booking should not be found for an unknown id");
     }
-
-    @Test
-    public void testCancelBooking() {
-        // Membuat dan menyimpan booking, lalu batalkan
-        Booking booking = new Booking(
-                UUID.randomUUID(),
-                UUID.randomUUID(),
-                UUID.randomUUID(),
-                LocalDate.now().plusDays(1),
-                3,
-                BookingStatus.PENDING_PAYMENT
-        );
-        bookingService.createBooking(booking);
-        bookingService.cancelBooking(booking.getBookingId());
-        Optional<Booking> cancelledBooking = bookingService.findBookingById(booking.getBookingId());
-        // Setelah cancel, status harus berubah menjadi CANCELLED
-        assertTrue(cancelledBooking.isPresent(), "Booking should be found after cancellation");
-        assertEquals(BookingStatus.CANCELLED, cancelledBooking.get().getStatus(), "Booking status should be CANCELLED after cancellation");
-    }
-
+    
     @Test
     public void testFindAllBookings() {
         Booking b1 = new Booking(
-                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
-                LocalDate.now().plusDays(1), 1, BookingStatus.PENDING_PAYMENT);
+                UUID.randomUUID(), 
+                UUID.randomUUID(), 
+                UUID.randomUUID(),
+                LocalDate.now().plusDays(1), 
+                1, 
+                monthlyPrice,
+                "User One",
+                "081111111111",
+                BookingStatus.PENDING_PAYMENT
+        );
+        
         Booking b2 = new Booking(
-                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
-                LocalDate.now().plusDays(2), 2, BookingStatus.PENDING_PAYMENT);
+                UUID.randomUUID(), 
+                UUID.randomUUID(), 
+                UUID.randomUUID(),
+                LocalDate.now().plusDays(2), 
+                2, 
+                monthlyPrice + 300000,
+                "User Two",
+                "082222222222",
+                BookingStatus.PENDING_PAYMENT
+        );
 
         bookingService.createBooking(b1);
         bookingService.createBooking(b2);

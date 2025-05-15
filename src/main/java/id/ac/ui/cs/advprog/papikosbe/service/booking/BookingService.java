@@ -11,4 +11,5 @@ public interface BookingService {
     List<Booking> findAllBookings();
     void cancelBooking(UUID bookingId);
     public void clearStore();
+    void updateBooking(Booking booking);
 }

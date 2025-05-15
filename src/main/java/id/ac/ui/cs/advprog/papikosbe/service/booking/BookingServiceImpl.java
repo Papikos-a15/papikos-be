@@ -31,6 +31,8 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public Booking createBooking(Booking booking) {
         // Simpan booking ke dalam store
+        booking.setBookingId(UUID.randomUUID());
+        booking.setStatus(BookingStatus.PENDING_PAYMENT);
         bookingStore.put(booking.getBookingId(), booking);
         return booking;
     }

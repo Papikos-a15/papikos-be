@@ -13,11 +13,14 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Log in to Koyeb CLI
+    - name: Install and log in to Koyeb CLI
       run: |
         curl -sL https://deb.koyeb.com/install.sh | bash
+        echo "$HOME/.koyeb/bin" >> $GITHUB_PATH
+        export PATH="$HOME/.koyeb/bin:$PATH"
         koyeb auth login --token ${{ secrets.KOYEB_API_TOKEN }}
 
     - name: Deploy to Koyeb
       run: |
+        export PATH="$HOME/.koyeb/bin:$PATH"
         koyeb service redeploy papikos-be --app papikos-a15

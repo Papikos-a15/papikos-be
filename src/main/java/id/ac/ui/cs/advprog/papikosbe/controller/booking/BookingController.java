@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.papikosbe.controller.booking;
 
+import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
 import id.ac.ui.cs.advprog.papikosbe.model.booking.Booking;
 import id.ac.ui.cs.advprog.papikosbe.service.booking.BookingService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,5 +41,23 @@ public class BookingController {
     public ResponseEntity<Void> cancelBooking(@PathVariable UUID id) {
         bookingService.cancelBooking(id);
         return ResponseEntity.noContent().build();
+    }
+    
+    // Skeleton implementation for the updateBooking method
+    @PutMapping("/{id}")
+    public ResponseEntity<Booking> updateBooking(@PathVariable UUID id, @RequestBody Booking booking) {
+        // Minimal implementation for RED phase
+        bookingService.updateBooking(booking);
+        return ResponseEntity.ok(booking);
+    }
+    
+    // Skeleton implementation for the updateBookingStatus method
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<Booking> updateBookingStatus(
+            @PathVariable UUID id, 
+            @RequestParam BookingStatus status) {
+        // Minimal implementation for RED phase
+        bookingService.updateBookingStatus(id, status);
+        return ResponseEntity.ok().build();
     }
 }

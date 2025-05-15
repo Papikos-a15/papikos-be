@@ -1,9 +1,6 @@
 name: Continuous Deployment (CD)
 
 on:
-  push:
-    branches:
-      - development
   workflow_run:
     workflows: ["Continuous Integration (CI)", "SonarCloud"]
     types:

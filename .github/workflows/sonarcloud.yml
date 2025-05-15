@@ -1,6 +1,5 @@
 name: SonarCloud
-on: 
-  workflow_call:
+on: push
 jobs:
   build:
     name: Build and Analyze

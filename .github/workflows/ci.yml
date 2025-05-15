@@ -2,7 +2,8 @@ name: Continuous Integration (CI)
 
 ## Run CI jobs on all branches by default
 on:
-  workflow_call:
+  push:
+  pull_request:
 
 jobs:
   test:

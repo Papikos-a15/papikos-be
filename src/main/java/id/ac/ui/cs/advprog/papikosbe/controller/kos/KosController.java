@@ -32,13 +32,23 @@ public class KosController {
     @GetMapping("/{id}")
     public ResponseEntity<Kos> getKosById(@PathVariable UUID id) {
         Optional<Kos> foundKos = kosService.getKosById(id);
-        return foundKos.map(kos -> ResponseEntity.status(200).body(kos)).orElseGet(() -> ResponseEntity.notFound().build());
+        if (foundKos.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return foundKos.map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PatchMapping("/update/{id}")
     public ResponseEntity<Kos> updateKos(@PathVariable UUID id, @RequestBody Kos updatedKos) {
         Optional<Kos> kosUpdated = kosService.updateKos(id, updatedKos);
-        return kosUpdated.map(kos -> ResponseEntity.status(200).body(kos)).orElseGet(() -> ResponseEntity.notFound().build());
+        if (kosUpdated.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return kosUpdated.map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/delete/{id}")

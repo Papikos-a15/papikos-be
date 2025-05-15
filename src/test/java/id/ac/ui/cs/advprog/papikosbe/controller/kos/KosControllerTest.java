@@ -107,7 +107,7 @@ public class KosControllerTest {
     @Test
     void getKosById_notFound() throws Exception {
         UUID randomId = UUID.randomUUID();
-        when(kosService.getKosById(randomId)).thenReturn(null);
+        when(kosService.getKosById(randomId)).thenReturn(Optional.empty());
 
         mockMvc.perform(get("/api/management/"+randomId.toString())
                         .header("Authorization", "Bearer tok"))

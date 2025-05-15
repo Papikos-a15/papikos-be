@@ -5,7 +5,7 @@ on:
     branches:
       - development
   workflow_run:
-    workflows: ["Continuous Integration (CI)", "Scorecard supply-chain security", "SonarCloud"]
+    workflows: ["Continuous Integration (CI)", "SonarCloud"]
     types:
       - completed
 

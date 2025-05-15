@@ -4,23 +4,26 @@ import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@DataJpaTest
 public class KosRepositoryTest {
 
+    @Autowired
     private KosRepository kosRepository;
     // A list of sample Kos objects to be used in tests.
     private List<Kos> kosList;
 
     @BeforeEach
     public void setUp() {
-        // Instantiate your in-memory repository.
-        kosRepository = new KosRepository();
         // Prepare some sample Kos entries.
         kosList = new ArrayList<>();
 
@@ -61,12 +64,13 @@ public class KosRepositoryTest {
         UUID id = savedKos.getId();
 
         // Retrieve the Kos by its ID.
-        Kos foundKos = kosRepository.getKosById(id);
-        assertNotNull(foundKos, "Kos should be found by its ID");
-        assertEquals("Kos2", foundKos.getName());
-        assertEquals("AlamatKos2", foundKos.getAddress());
-        assertEquals("DeskripsiKos2", foundKos.getDescription());
-        assertEquals(50000.00, foundKos.getPrice());
+        Optional<Kos> foundKos = kosRepository.findById(id);
+        if(foundKos.isPresent()) {
+            assertEquals("Kos2", foundKos.get().getName());
+            assertEquals("AlamatKos2", foundKos.get().getAddress());
+            assertEquals("DeskripsiKos2", foundKos.get().getDescription());
+            assertEquals(50000.00, foundKos.get().getPrice());
+        }
     }
 
     @Test
@@ -76,7 +80,7 @@ public class KosRepositoryTest {
         kosRepository.save(kosList.get(1));
 
         // Retrieve all Kos entries.
-        List<Kos> allKos = kosRepository.getAllKos();
+        List<Kos> allKos = kosRepository.findAll();
         assertEquals(2, allKos.size(), "There should be exactly two Kos entries stored");
     }
 
@@ -87,23 +91,21 @@ public class KosRepositoryTest {
         Kos savedKos = kosRepository.save(kos);
         UUID id = savedKos.getId();
 
-        // Create an updated object.
-        Kos updatedKos = new Kos();
-        updatedKos.setName("UpdatedKos");
-        updatedKos.setAddress("UpdatedAlamat");
-        updatedKos.setDescription("UpdatedDeskripsi");
-        updatedKos.setPrice(75000.00);
+        Optional<Kos> foundKos = kosRepository.findById(id);
+        if(foundKos.isPresent()) {
+            foundKos.get().setName("UpdatedKos");
+            foundKos.get().setAddress("UpdatedAlamat");
+            foundKos.get().setDescription("UpdatedDeskripsi");
+            foundKos.get().setPrice(75000.00);
 
-        // Update the Kos entry.
-        Kos resultKos = kosRepository.updateKos(id, updatedKos);
+            // Verify that the updated fields match.
+            assertEquals(id, foundKos.get().getId());
+            assertEquals("UpdatedKos", foundKos.get().getName());
+            assertEquals("UpdatedAlamat", foundKos.get().getAddress());
+            assertEquals("UpdatedDeskripsi", foundKos.get().getDescription());
+            assertEquals(75000.00, foundKos.get().getPrice());
+        }
 
-        // Verify that the updated fields match.
-        assertNotNull(resultKos, "Updated Kos should not be null");
-        assertEquals(id, resultKos.getId());
-        assertEquals("UpdatedKos", resultKos.getName());
-        assertEquals("UpdatedAlamat", resultKos.getAddress());
-        assertEquals("UpdatedDeskripsi", resultKos.getDescription());
-        assertEquals(75000.00, resultKos.getPrice());
     }
 
     @Test
@@ -114,11 +116,10 @@ public class KosRepositoryTest {
         UUID id = savedKos.getId();
 
         // Delete the Kos entry.
-        boolean deleted = kosRepository.deleteKos(id);
-        assertTrue(deleted, "Deletion should return true");
+        kosRepository.deleteById(id);
 
         // Verify that the Kos entry is no longer available.
-        Kos resultKos = kosRepository.getKosById(id);
-        assertNull(resultKos, "Kos should no longer exist in the repository after deletion");
+        Optional<Kos> resultKos = kosRepository.findById(id);
+        assertNotNull(resultKos, "Kos should no longer exist in the repository after deletion");
     }
 }

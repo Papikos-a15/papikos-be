@@ -48,4 +48,10 @@ public class OwnerServiceImpl implements OwnerService {
         // Mengambil daftar owner yang belum disetujui (approved = false)
         return ownerRepo.findByApprovedFalse();
     }
+
+    public Owner findOwnerById(UUID ownerId) {
+        return null;
+
+    }
+
 }

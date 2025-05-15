@@ -101,4 +101,42 @@ class OwnerServiceTest {
         // Verifikasi bahwa tidak ada owner yang belum disetujui
         assertThat(results).isEmpty();
     }
+
+    @Test
+    void testFindOwnerByIdSuccess() {
+        // Setup test data
+        UUID id = UUID.randomUUID();
+        Owner expectedOwner = Owner.builder()
+                .email("owner@example.com")
+                .password("password")
+                .build();
+        expectedOwner.setId(id);
+
+        // Configure mock repository to return the test data
+        when(ownerRepo.findById(id)).thenReturn(Optional.of(expectedOwner));
+
+        // Call the service method
+        Owner result = ownerService.findOwnerById(id);
+
+        // Verify the result
+        assertThat(result).isEqualTo(expectedOwner);
+        assertThat(result.getEmail()).isEqualTo("owner@example.com");
+        verify(ownerRepo).findById(id);
+    }
+
+    @Test
+    void testFindOwnerByIdNotFound() {
+        // Setup test data
+        UUID id = UUID.randomUUID();
+
+        // Configure mock repository to return empty
+        when(ownerRepo.findById(id)).thenReturn(Optional.empty());
+
+        // Verify that the service throws EntityNotFoundException
+        assertThatThrownBy(() -> ownerService.findOwnerById(id))
+                .isInstanceOf(EntityNotFoundException.class);
+
+        verify(ownerRepo).findById(id);
+    }
+
 }

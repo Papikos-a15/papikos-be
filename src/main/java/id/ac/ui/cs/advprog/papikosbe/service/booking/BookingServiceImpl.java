@@ -42,9 +42,7 @@ public class BookingServiceImpl implements BookingService {
         }
         
         // Ensure initial status is PENDING_PAYMENT
-        if (booking.getStatus() == null) {
-            booking.setStatus(BookingStatus.PENDING_PAYMENT);
-        }
+        booking.setStatus(BookingStatus.PENDING_PAYMENT);
         
         // Save booking to store
         bookingStore.put(booking.getBookingId(), booking);
@@ -82,7 +80,7 @@ public class BookingServiceImpl implements BookingService {
         // Get existing booking
         Booking existingBooking = bookingStore.get(booking.getBookingId());
         
-        // Check if booking can be edited (only PENDING_PAYMENT status)
+        // Check if booking can be edited (currently only PENDING_PAYMENT)
         if (existingBooking.getStatus() != BookingStatus.PENDING_PAYMENT) {
             throw new IllegalStateException("Cannot edit booking after it has been paid or cancelled");
         }
@@ -94,19 +92,38 @@ public class BookingServiceImpl implements BookingService {
         bookingStore.put(booking.getBookingId(), booking);
     }
 
-    @Override
+    // Keep this method since the tests are still using it
+    // This will be replaced with specific methods later
     public void updateBookingStatus(UUID bookingId, BookingStatus newStatus) {
         Booking booking = bookingStore.get(bookingId);
         if (booking == null) {
             throw new EntityNotFoundException("Booking with ID " + bookingId + " not found");
         }
         
-        // Validate status transition
-        validateStatusTransition(booking.getStatus(), newStatus);
-        
-        // Update the status
         booking.setStatus(newStatus);
         bookingStore.put(bookingId, booking);
+    }
+
+    // Minimal skeleton implementation for payBooking - will fail tests
+    @Override
+    public void payBooking(UUID bookingId) {
+        // Minimal implementation that will cause tests to fail
+        // No status checking or transition logic yet
+        Booking booking = bookingStore.get(bookingId);
+        if (booking == null) {
+            throw new EntityNotFoundException("Booking not found");
+        }
+    }
+    
+    // Minimal skeleton implementation for approveBooking - will fail tests
+    @Override
+    public void approveBooking(UUID bookingId) {
+        // Minimal implementation that will cause tests to fail
+        // No status checking or transition logic yet
+        Booking booking = bookingStore.get(bookingId);
+        if (booking == null) {
+            throw new EntityNotFoundException("Booking not found");
+        }
     }
     
     // Helper method to validate booking data
@@ -130,18 +147,6 @@ public class BookingServiceImpl implements BookingService {
         if (booking.getPhoneNumber() == null || booking.getPhoneNumber().trim().isEmpty()) {
             throw new IllegalArgumentException("Phone number cannot be empty");
         }
-    }
-    
-    // Helper method to validate status transitions
-    private void validateStatusTransition(BookingStatus currentStatus, BookingStatus newStatus) {
-        // Add validation rules for status transitions if needed
-        // For example: Can't transition from CANCELLED to any other status
-        if (currentStatus == BookingStatus.CANCELLED && newStatus != BookingStatus.CANCELLED) {
-            throw new IllegalStateException("Cannot change status of a cancelled booking");
-        }
-        
-        // Other status transition rules could be added here
-        // For example: Can only go to ACTIVE after PAID
     }
 
     // Utility for tests

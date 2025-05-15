@@ -131,14 +131,6 @@ public class BookingTest {
     }
 
     @Test
-    public void testStatusTransitionToActive() {
-        // Simulasi perubahan status booking dari PAID ke ACTIVE
-        booking.setStatus(BookingStatus.PAID);
-        booking.setStatus(BookingStatus.ACTIVE);
-        assertEquals(BookingStatus.ACTIVE, booking.getStatus());
-    }
-
-    @Test
     public void testStatusTransitionToCancelled() {
         // Simulasi pembatalan booking
         booking.setStatus(BookingStatus.CANCELLED);

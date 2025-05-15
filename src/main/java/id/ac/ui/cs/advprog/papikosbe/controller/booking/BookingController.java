@@ -57,21 +57,21 @@ public class BookingController {
         }
     }
 
-    @PatchMapping("/{id}/status")
-    public ResponseEntity<Booking> updateBookingStatus(
-            @PathVariable UUID id,
-            @RequestParam BookingStatus status) {
-        try {
-            bookingService.updateBookingStatus(id, status);
-            return bookingService.findBookingById(id)
-                    .map(ResponseEntity::ok)
-                    .orElse(ResponseEntity.notFound().build());
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(403).build(); // Forbidden status transition
-        }
-    }
+//    @PatchMapping("/{id}/status")
+//    public ResponseEntity<Booking> updateBookingStatus(
+//            @PathVariable UUID id,
+//            @RequestParam BookingStatus status) {
+//        try {
+//            bookingService.updateBookingStatus(id, status);
+//            return bookingService.findBookingById(id)
+//                    .map(ResponseEntity::ok)
+//                    .orElse(ResponseEntity.notFound().build());
+//        } catch (EntityNotFoundException e) {
+//            return ResponseEntity.notFound().build();
+//        } catch (IllegalStateException e) {
+//            return ResponseEntity.status(403).build(); // Forbidden status transition
+//        }
+//    }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancelBooking(@PathVariable UUID id) {

@@ -21,6 +21,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -95,7 +96,7 @@ public class KosControllerTest {
 
     @Test
     void getKosById_found() throws Exception {
-        when(kosService.getKosById(any())).thenReturn(dummy);
+        when(kosService.getKosById(any())).thenReturn(Optional.ofNullable(dummy));
 
         mockMvc.perform(get("/api/management/"+dummy.getId().toString())
                         .header("Authorization", "Bearer tok"))
@@ -106,7 +107,7 @@ public class KosControllerTest {
     @Test
     void getKosById_notFound() throws Exception {
         UUID randomId = UUID.randomUUID();
-        when(kosService.getKosById(randomId)).thenReturn(null);
+        when(kosService.getKosById(randomId)).thenReturn(Optional.empty());
 
         mockMvc.perform(get("/api/management/"+randomId.toString())
                         .header("Authorization", "Bearer tok"))
@@ -125,7 +126,7 @@ public class KosControllerTest {
             1200000.0,
             true
         );
-        when(kosService.updateKos(any(), any())).thenReturn(dummy);
+        when(kosService.updateKos(any(), any())).thenReturn(Optional.ofNullable(dummy));
 
         mockMvc.perform(patch("/api/management/update/"+dummy.getId().toString())
                         .header("Authorization", "Bearer tok")

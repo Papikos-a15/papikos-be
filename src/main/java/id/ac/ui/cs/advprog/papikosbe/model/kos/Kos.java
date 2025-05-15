@@ -1,21 +1,40 @@
 package id.ac.ui.cs.advprog.papikosbe.model.kos;
 
-import lombok.Setter;
-import lombok.Getter;
+import lombok.*;
+import jakarta.persistence.*;
 
 import java.util.UUID;
 
-@Setter
-@Getter
+@Entity
+@Table(name = "kos")
+@Builder
+@Setter @Getter
 public class Kos {
 
+    @Id
+    @GeneratedValue
+    @Column(columnDefinition = "uuid", updatable = false, nullable = false)
     private UUID id;
+
+    @Column(updatable = false, nullable = false)
     private UUID ownerId;
+
+    @Column(updatable = false)
     private UUID tenantId;
+
+    @Column(nullable = false)
     private String name;
+
+    @Column(nullable = false)
     private String address;
+
+    @Column()
     private String description;
+
+    @Column(nullable = false)
     private Double price;
+
+    @Column(nullable = false)
     private boolean isAvailable;
 
 

@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/management")
@@ -30,27 +31,31 @@ public class KosController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Kos> getKosById(@PathVariable UUID id) {
-        Kos foundKos = kosService.getKosById(id);
-        if (foundKos == null) {
+        Optional<Kos> foundKos = kosService.getKosById(id);
+        if (foundKos.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.status(200).body(foundKos);
+
+        return foundKos.map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PatchMapping("/update/{id}")
     public ResponseEntity<Kos> updateKos(@PathVariable UUID id, @RequestBody Kos updatedKos) {
-        Kos kosUpdated = kosService.updateKos(id, updatedKos);
-        if (kosUpdated == null) {
+        Optional<Kos> kosUpdated = kosService.updateKos(id, updatedKos);
+        if (kosUpdated.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.status(200).body(kosUpdated);
+
+        return kosUpdated.map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<Nullable> deleteKos(@PathVariable UUID id) {
         kosService.deleteKos(id);
-        Kos check = kosService.getKosById(id);
-        if (check == null) {
+        Optional<Kos> check = kosService.getKosById(id);
+        if (check.isEmpty()) {
             return ResponseEntity.status(204).build();
         }
         return ResponseEntity.notFound().build();

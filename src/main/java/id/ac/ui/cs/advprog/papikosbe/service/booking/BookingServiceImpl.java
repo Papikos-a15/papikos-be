@@ -35,15 +35,15 @@ public class BookingServiceImpl implements BookingService {
     public Booking createBooking(Booking booking) {
         // Full validation of all booking fields
         validateBookingData(booking);
-        
+
         // Set booking ID if not provided
         if (booking.getBookingId() == null) {
             booking.setBookingId(UUID.randomUUID());
         }
-        
+
         // Ensure initial status is PENDING_PAYMENT
         booking.setStatus(BookingStatus.PENDING_PAYMENT);
-        
+
         // Save booking to store
         bookingStore.put(booking.getBookingId(), booking);
         return booking;
@@ -65,7 +65,7 @@ public class BookingServiceImpl implements BookingService {
         if (booking == null) {
             throw new EntityNotFoundException("Booking with ID " + bookingId + " not found");
         }
-        
+
         booking.setStatus(BookingStatus.CANCELLED);
         bookingStore.put(bookingId, booking);
     }
@@ -76,74 +76,77 @@ public class BookingServiceImpl implements BookingService {
         if (!bookingStore.containsKey(booking.getBookingId())) {
             throw new EntityNotFoundException("Booking with ID " + booking.getBookingId() + " not found");
         }
-        
+
         // Get existing booking
         Booking existingBooking = bookingStore.get(booking.getBookingId());
-        
-        // Check if booking can be edited (currently only PENDING_PAYMENT)
-        if (existingBooking.getStatus() != BookingStatus.PENDING_PAYMENT) {
-            throw new IllegalStateException("Cannot edit booking after it has been paid or cancelled");
+
+        // Check if booking can be edited (PENDING_PAYMENT or PAID status)
+        if (existingBooking.getStatus() != BookingStatus.PENDING_PAYMENT &&
+                existingBooking.getStatus() != BookingStatus.PAID) {
+            throw new IllegalStateException("Cannot edit booking after it has been approved or cancelled");
         }
-        
+
+        // Preserve the current status to prevent status changes via general update
+        BookingStatus currentStatus = existingBooking.getStatus();
+
         // Validate all updated data
         validateBookingData(booking);
-        
+
+        // Ensure status isn't changed through this method
+        booking.setStatus(currentStatus);
+
         // Update the booking
         bookingStore.put(booking.getBookingId(), booking);
     }
 
-    // Keep this method since the tests are still using it
-    // This will be replaced with specific methods later
-    public void updateBookingStatus(UUID bookingId, BookingStatus newStatus) {
+    @Override
+    public void payBooking(UUID bookingId) {
         Booking booking = bookingStore.get(bookingId);
         if (booking == null) {
             throw new EntityNotFoundException("Booking with ID " + bookingId + " not found");
         }
-        
-        booking.setStatus(newStatus);
+
+        if (booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
+            throw new IllegalStateException("Only bookings in PENDING_PAYMENT status can be paid");
+        }
+
+        booking.setStatus(BookingStatus.PAID);
         bookingStore.put(bookingId, booking);
     }
 
-    // Minimal skeleton implementation for payBooking - will fail tests
-    @Override
-    public void payBooking(UUID bookingId) {
-        // Minimal implementation that will cause tests to fail
-        // No status checking or transition logic yet
-        Booking booking = bookingStore.get(bookingId);
-        if (booking == null) {
-            throw new EntityNotFoundException("Booking not found");
-        }
-    }
-    
-    // Minimal skeleton implementation for approveBooking - will fail tests
     @Override
     public void approveBooking(UUID bookingId) {
-        // Minimal implementation that will cause tests to fail
-        // No status checking or transition logic yet
         Booking booking = bookingStore.get(bookingId);
         if (booking == null) {
-            throw new EntityNotFoundException("Booking not found");
+            throw new EntityNotFoundException("Booking with ID " + bookingId + " not found");
         }
+
+        if (booking.getStatus() != BookingStatus.PAID) {
+            throw new IllegalStateException("Only PAID bookings can be approved");
+        }
+
+        booking.setStatus(BookingStatus.APPROVED);
+        bookingStore.put(bookingId, booking);
     }
-    
+
     // Helper method to validate booking data
     private void validateBookingData(Booking booking) {
         if (booking.getDuration() < 1) {
             throw new IllegalArgumentException("Duration must be at least 1 month");
         }
-        
+
         if (booking.getCheckInDate() == null || booking.getCheckInDate().isBefore(LocalDate.now())) {
             throw new IllegalArgumentException("Check-in date cannot be in the past");
         }
-        
+
         if (booking.getMonthlyPrice() <= 0) {
             throw new IllegalArgumentException("Monthly price must be greater than 0");
         }
-        
+
         if (booking.getFullName() == null || booking.getFullName().trim().isEmpty()) {
             throw new IllegalArgumentException("Full name cannot be empty");
         }
-        
+
         if (booking.getPhoneNumber() == null || booking.getPhoneNumber().trim().isEmpty()) {
             throw new IllegalArgumentException("Phone number cannot be empty");
         }

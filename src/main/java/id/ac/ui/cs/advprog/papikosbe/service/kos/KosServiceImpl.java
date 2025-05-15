@@ -6,6 +6,7 @@ import id.ac.ui.cs.advprog.papikosbe.repository.kos.KosRepository;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -24,21 +25,21 @@ public class KosServiceImpl implements KosService {
 
     @Override
     public List<Kos> getAllKos() {
-        return kosRepository.getAllKos();
+        return kosRepository.findAll();
     }
 
     @Override
-    public Kos getKosById(UUID id) {
-        return kosRepository.getKosById(id);
+    public Optional<Kos> getKosById(UUID id) {
+        return kosRepository.findById(id);
     }
 
     @Override
-    public Kos updateKos(UUID id, Kos updatedKos) {
+    public Optional<Kos> updateKos(UUID id, Kos updatedKos) {
         return kosRepository.updateKos(id, updatedKos);
     }
 
     @Override
     public void deleteKos(UUID id) {
-        kosRepository.deleteKos(id);
+        kosRepository.deleteById(id);
     }
 }

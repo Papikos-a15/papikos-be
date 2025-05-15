@@ -56,23 +56,21 @@ public class BookingController {
             return ResponseEntity.notFound().build();
         }
     }
+    // Skeleton implementation for pay endpoint - will fail tests
+    @PostMapping("/{id}/pay")
+    public ResponseEntity<Booking> payBooking(@PathVariable UUID id) {
+        // Minimal implementation to make compilation succeed but fail tests
+        // No proper implementation yet
+        return ResponseEntity.ok().build();
+    }
 
-//    @PatchMapping("/{id}/status")
-//    public ResponseEntity<Booking> updateBookingStatus(
-//            @PathVariable UUID id,
-//            @RequestParam BookingStatus status) {
-//        try {
-//            bookingService.updateBookingStatus(id, status);
-//            return bookingService.findBookingById(id)
-//                    .map(ResponseEntity::ok)
-//                    .orElse(ResponseEntity.notFound().build());
-//        } catch (EntityNotFoundException e) {
-//            return ResponseEntity.notFound().build();
-//        } catch (IllegalStateException e) {
-//            return ResponseEntity.status(403).build(); // Forbidden status transition
-//        }
-//    }
-
+    // Skeleton implementation for approve endpoint - will fail tests
+    @PostMapping("/{id}/approve")
+    public ResponseEntity<Booking> approveBooking(@PathVariable UUID id) {
+        // Minimal implementation to make compilation succeed but fail tests
+        // No proper implementation yet
+        return ResponseEntity.ok().build();
+    }
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancelBooking(@PathVariable UUID id) {
         bookingService.cancelBooking(id);

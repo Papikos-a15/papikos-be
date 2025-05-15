@@ -28,6 +28,8 @@ public class KosRepositoryTest {
         kosList = new ArrayList<>();
 
         Kos kos1 = new Kos();
+        kos1.setId(UUID.randomUUID());
+        kos1.setTenantId(UUID.randomUUID());
         kos1.setName("Kos1");
         kos1.setAddress("AlamatKos1");
         kos1.setDescription("DeskripsiKos1");
@@ -35,6 +37,8 @@ public class KosRepositoryTest {
         kosList.add(kos1);
 
         Kos kos2 = new Kos();
+        kos2.setOwnerId(UUID.randomUUID());
+        kos2.setTenantId(UUID.randomUUID());
         kos2.setName("Kos2");
         kos2.setAddress("AlamatKos2");
         kos2.setDescription("DeskripsiKos2");

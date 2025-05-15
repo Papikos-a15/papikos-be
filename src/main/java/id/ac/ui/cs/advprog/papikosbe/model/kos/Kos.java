@@ -19,7 +19,7 @@ public class Kos {
     @Column(name = "owner_id", updatable = false, nullable = false)
     private UUID ownerId;
 
-    @Column(name = "tenant_id", updatable = false, nullable = false)
+    @Column(name = "tenant_id", updatable = false)
     private UUID tenantId;
 
     @Column(name = "name", nullable = false)

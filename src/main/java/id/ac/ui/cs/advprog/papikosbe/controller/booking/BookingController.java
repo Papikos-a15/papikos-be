@@ -56,24 +56,57 @@ public class BookingController {
             return ResponseEntity.notFound().build();
         }
     }
-    // Skeleton implementation for pay endpoint - will fail tests
+
     @PostMapping("/{id}/pay")
     public ResponseEntity<Booking> payBooking(@PathVariable UUID id) {
-        // Minimal implementation to make compilation succeed but fail tests
-        // No proper implementation yet
-        return ResponseEntity.ok().build();
+        try {
+            // Call service to pay the booking
+            bookingService.payBooking(id);
+
+            // Fetch the updated booking to return in response
+            return bookingService.findBookingById(id)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (EntityNotFoundException e) {
+            // Booking not found
+            return ResponseEntity.notFound().build();
+        } catch (IllegalStateException e) {
+            // Invalid status transition (e.g., trying to pay an already paid booking)
+            return ResponseEntity.status(403).build(); // Forbidden
+        }
     }
 
-    // Skeleton implementation for approve endpoint - will fail tests
     @PostMapping("/{id}/approve")
     public ResponseEntity<Booking> approveBooking(@PathVariable UUID id) {
-        // Minimal implementation to make compilation succeed but fail tests
-        // No proper implementation yet
-        return ResponseEntity.ok().build();
+        try {
+            // Call service to approve the booking
+            bookingService.approveBooking(id);
+
+            // Fetch the updated booking to return in response
+            return bookingService.findBookingById(id)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (EntityNotFoundException e) {
+            // Booking not found
+            return ResponseEntity.notFound().build();
+        } catch (IllegalStateException e) {
+            // Invalid status transition (e.g., trying to approve unpaid booking)
+            return ResponseEntity.status(403).build(); // Forbidden
+        }
     }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancelBooking(@PathVariable UUID id) {
-        bookingService.cancelBooking(id);
-        return ResponseEntity.noContent().build();
+        try {
+            // Call service to cancel the booking
+            bookingService.cancelBooking(id);
+            return ResponseEntity.noContent().build();
+        } catch (EntityNotFoundException e) {
+            // Booking not found
+            return ResponseEntity.notFound().build();
+        } catch (IllegalStateException e) {
+            // If cancellation is restricted under certain conditions
+            return ResponseEntity.status(403).build(); // Forbidden
+        }
     }
 }

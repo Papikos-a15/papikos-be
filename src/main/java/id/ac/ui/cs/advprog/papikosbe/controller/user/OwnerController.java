@@ -37,9 +37,14 @@ public class OwnerController {
         var owners = ownerService.findUnapprovedOwners();
         return ResponseEntity.ok(owners);
     }
+
     @GetMapping("/{id}/email")
     public ResponseEntity<String> getOwnerEmailById(@PathVariable UUID id) {
-        // Will be implemented in the next commit
-        return null;
+        try {
+            Owner owner = ownerService.findOwnerById(id);
+            return ResponseEntity.ok(owner.getEmail());
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 }

@@ -90,7 +90,13 @@ class OwnerControllerTest {
         UUID id = UUID.randomUUID();
         String email = "owner@example.com";
 
-        Mockito.when(ownerService.getEmailById(eq(id))).thenReturn(email);
+        Owner owner = Owner.builder()
+                .email(email)
+                .password("password")
+                .build();
+        owner.setId(id);
+
+        Mockito.when(ownerService.findOwnerById(eq(id))).thenReturn(owner);
 
         mvc.perform(get("/api/owners/" + id + "/email")
                         .contentType(MediaType.APPLICATION_JSON))
@@ -102,7 +108,7 @@ class OwnerControllerTest {
     void getOwnerEmailByIdNotFoundReturns404() throws Exception {
         UUID id = UUID.randomUUID();
 
-        Mockito.when(ownerService.getEmailById(eq(id)))
+        Mockito.when(ownerService.findOwnerById(eq(id)))
                 .thenThrow(new EntityNotFoundException());
 
         mvc.perform(get("/api/owners/" + id + "/email")

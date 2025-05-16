@@ -81,3 +81,11 @@ Hasilnya, Papikos mendapatkan peta risiko yang jelas, menunjang arsitektur lebih
 
 ### Code Diagram
 ![alt text](<img/Booking Code Diagram fixed.png>)
+
+## Payment (Nayla)
+### Component Diagram
+
+![Transaction Component Diagram](img/Adpro-module9-Nayla.drawio.png)
+
+### Code Diagram
+![Transaction Code Diagram](<img/Transaction-Code-Diagram.png>)

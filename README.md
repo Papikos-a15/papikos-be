@@ -44,7 +44,7 @@ Ini threats utama yang diidentifikasi di setiap kontainer Papikos:
 
 ---
 ### Risk Consensus
-![alt text](img/Adpro-module9-Risk Consensus.drawio.png)
+![alt text](img/Adpro-module9-Risk%20Consensus.drawio.png)
 
 1. **Penempatan Sticky Notes**  
    Setiap threat diberi nilai risiko individu oleh lima peserta, lalu ditempel di diagram kontainer.
@@ -80,7 +80,7 @@ Hasilnya, Papikos mendapatkan peta risiko yang jelas, menunjang arsitektur lebih
 ![alt text](img/Adpro-module9-Vincent.drawio.png)
 
 ### Code Diagram
-![alt text](img/Booking Code Diagram fixed.png)
+![alt text](img/Booking%20Code%20Diagram%20fixed.png)
 
 ## Payment (Nayla)
 ### Component Diagram
@@ -95,4 +95,11 @@ Hasilnya, Papikos mendapatkan peta risiko yang jelas, menunjang arsitektur lebih
 ![Chat Component Diagram](img/Adpro-module9-chat.drawio.png)
 
 ### Code Diagram
-![Chat Code Diagram](img/chat diagram.png)
+![Chat Code Diagram](img/chat%20diagram.png)
+
+## Chat (Alex)
+### Component Diagram
+![Kos Component Diagram](img/Alex.png)
+
+### Code Diagram
+![Kos Code Diagram](img/Alexander.png)

@@ -74,3 +74,10 @@ Risk Storming diterapkan untuk secara sistematis mengidentifikasi dan mempriorit
 Hasilnya, Papikos mendapatkan peta risiko yang jelas, menunjang arsitektur lebih tahan gangguan dan lebih aman sebelum memasuki produksi.
 
 
+## Booking (Vincent)
+### Component Diagram
+
+![alt text](img/Adpro-module9-Vincent.drawio.png)
+
+### Code Diagram
+![alt text](<img/Booking Code Diagram fixed.png>)

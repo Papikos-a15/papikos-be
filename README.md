@@ -19,3 +19,7 @@ AdvProg 2024-2025 - A15 - PapiKos
 
 ### Deployment Diagram
 ![alt text](img/Adpro-module9-Deployment%20Diagram.drawio.png)
+
+## Future Architecture
+
+![alt text](img/future_architecture.png)

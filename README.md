@@ -6,7 +6,7 @@ AdvProg 2024-2025 - A15 - PapiKos
 2. Pengelolaan Kos : Alex
 3. Payment : Nayla
 4. Chat  : akhdan
-5. Wishlist dan Notifikasi : Abbygail
+5. Wishlist dan Notifikasi : Abygail
 
 ## Module 9 (Software Architecture)
 
@@ -103,3 +103,13 @@ Hasilnya, Papikos mendapatkan peta risiko yang jelas, menunjang arsitektur lebih
 
 ### Code Diagram
 ![Kos Code Diagram](img/Alex(2).png)
+
+## Wishlist and Notification (Abygail)
+### Component Diagram
+![alt text](img/Adpro-module9-Abygail.drawio.png)
+
+### Code Diagram
+Notification:
+![alt text](img/NotificationCodeDiagram.png)
+Wishlist:
+![alt text](img/WishlistCodeDiagram.png)

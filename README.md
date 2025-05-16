@@ -26,7 +26,7 @@ AdvProg 2024-2025 - A15 - PapiKos
 
 ## Risk Storming
 ### Risk Analysis
-![alt text](<img/Adpro-module9-Risk Storming.drawio.png>)
+![alt text](img/Adpro-module9-Risk Storming.drawio.png)
 
 Ini threats utama yang diidentifikasi di setiap kontainer Papikos:
 
@@ -44,7 +44,7 @@ Ini threats utama yang diidentifikasi di setiap kontainer Papikos:
 
 ---
 ### Risk Consensus
-![alt text](<img/Adpro-module9-Risk Consensus.drawio.png>)
+![alt text](img/Adpro-module9-Risk Consensus.drawio.png)
 
 1. **Penempatan Sticky Notes**  
    Setiap threat diberi nilai risiko individu oleh lima peserta, lalu ditempel di diagram kontainer.
@@ -80,7 +80,7 @@ Hasilnya, Papikos mendapatkan peta risiko yang jelas, menunjang arsitektur lebih
 ![alt text](img/Adpro-module9-Vincent.drawio.png)
 
 ### Code Diagram
-![alt text](<img/Booking Code Diagram fixed.png>)
+![alt text](img/Booking Code Diagram fixed.png)
 
 ## Payment (Nayla)
 ### Component Diagram
@@ -88,4 +88,11 @@ Hasilnya, Papikos mendapatkan peta risiko yang jelas, menunjang arsitektur lebih
 ![Transaction Component Diagram](img/Adpro-module9-Nayla.drawio.png)
 
 ### Code Diagram
-![Transaction Code Diagram](<img/Transaction-Code-Diagram.png>)
+![Transaction Code Diagram](img/Transaction-Code-Diagram.png)
+
+## Chat (Akhdan)
+### Component Diagram
+![Chat Component Diagram](img/Adpro-module9-chat.drawio.png)
+
+### Code Diagram
+![Chat Code Diagram](img/chat diagram.png)

@@ -99,7 +99,7 @@ Hasilnya, Papikos mendapatkan peta risiko yang jelas, menunjang arsitektur lebih
 
 ## Chat (Alex)
 ### Component Diagram
-![Kos Component Diagram](img/Alex.png)
+![Kos Component Diagram](img/Alex(1).png)
 
 ### Code Diagram
-![Kos Code Diagram](img/Alexander.png)
+![Kos Code Diagram](img/Alex(2).png)

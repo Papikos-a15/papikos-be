@@ -24,7 +24,5 @@ jobs:
     - name: Deploy to Koyeb
       env:
         KOYEB_API_TOKEN: ${{ secrets.KOYEB_API_TOKEN }}
-        SPRING_DATASOURCE_USERNAME: ${{ secrets.DB_USERNAME }}
-        SPRING_DATASOURCE_PASSWORD: ${{ secrets.DB_PASSWORD }}
       run: |
         koyeb service redeploy papikos-be --app papikos-a15 --token $KOYEB_API_TOKEN

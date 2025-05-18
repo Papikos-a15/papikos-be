@@ -2,6 +2,8 @@ package id.ac.ui.cs.advprog.papikosbe.controller.transaction;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Wallet;
+import id.ac.ui.cs.advprog.papikosbe.model.user.Tenant;
+import id.ac.ui.cs.advprog.papikosbe.model.user.User;
 import id.ac.ui.cs.advprog.papikosbe.service.transaction.WalletService;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,7 +41,14 @@ class WalletControllerTest {
     @Test
     void testCreateWallet() throws Exception {
         UUID userId = UUID.randomUUID();
-        Wallet wallet = new Wallet(UUID.randomUUID(), userId, BigDecimal.ZERO);
+
+        User dummyUser = Tenant.builder()
+                .email("dummy@example.com")
+                .password("securepassword")
+                .build();
+
+        Wallet wallet = new Wallet(dummyUser, BigDecimal.ZERO);
+        wallet.setId(UUID.randomUUID());
 
         when(walletService.create(userId)).thenReturn(wallet);
 
@@ -47,14 +56,19 @@ class WalletControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"userId\": \"" + userId.toString() + "\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userId").value(userId.toString()));
+                .andExpect(jsonPath("$.user.id").doesNotExist());
     }
-
 
     @Test
     void testFindAllWallets() throws Exception {
-        Wallet wallet1 = new Wallet(UUID.randomUUID(), UUID.randomUUID(), new BigDecimal("100.00"));
-        Wallet wallet2 = new Wallet(UUID.randomUUID(), UUID.randomUUID(), new BigDecimal("200.00"));
+        User user1 = Tenant.builder().email("nae@gmail.com").password("123").build();
+        User user2 = Tenant.builder().email("farah@gmail.com").password("456").build();
+
+        Wallet wallet1 = new Wallet(user1, new BigDecimal("100.00"));
+        wallet1.setId(UUID.randomUUID());
+
+        Wallet wallet2 = new Wallet(user2, new BigDecimal("200.00"));
+        wallet2.setId(UUID.randomUUID());
 
         when(walletService.findAll()).thenReturn(List.of(wallet1, wallet2));
 
@@ -65,29 +79,49 @@ class WalletControllerTest {
 
     @Test
     void testFindWalletById() throws Exception {
-        UUID walletId = UUID.randomUUID();
-        Wallet wallet = new Wallet(walletId, UUID.randomUUID(), new BigDecimal("150.00"));
+        User user1 = Tenant.builder().email("nae@gmail.com").password("123").build();
 
-        when(walletService.findById(walletId)).thenReturn(wallet);
+        Wallet wallet = new Wallet(user1, new BigDecimal("100.00"));
+        wallet.setId(UUID.randomUUID());
 
-        mockMvc.perform(get("/api/wallets/" + walletId))
+        when(walletService.findById(wallet.getId())).thenReturn(wallet);
+
+        mockMvc.perform(get("/api/wallets/" + wallet.getId()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(walletId.toString()));
+                .andExpect(jsonPath("$.id").value(wallet.getId().toString()));
     }
 
     @Test
     void testEditWallet() throws Exception {
         UUID walletId = UUID.randomUUID();
-        Wallet updatedWallet = new Wallet(walletId, UUID.randomUUID(), new BigDecimal("300.00"));
+        UUID userId = UUID.randomUUID();
+
+        String jsonContent = String.format("""
+        {
+            "id": "%s",
+            "user": {
+                "id": "%s"
+            },
+            "balance": 300.00
+        }
+        """, walletId, userId);
+
+        User dummyUser = new Tenant();
+        dummyUser.setId(userId);
+
+        Wallet updatedWallet = new Wallet(dummyUser, new BigDecimal("300.00"));
+        updatedWallet.setId(walletId);
 
         when(walletService.edit(eq(walletId), any(Wallet.class))).thenReturn(updatedWallet);
 
         mockMvc.perform(put("/api/wallets/" + walletId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updatedWallet)))
+                        .content(jsonContent))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.balance", Matchers.is(300.0)));
     }
+
+
 
     @Test
     void testDeleteWallet() throws Exception {

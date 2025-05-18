@@ -2,6 +2,8 @@ package id.ac.ui.cs.advprog.papikosbe.service.transaction;
 
 import id.ac.ui.cs.advprog.papikosbe.factory.WalletFactory;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Wallet;
+import id.ac.ui.cs.advprog.papikosbe.model.user.Tenant;
+import id.ac.ui.cs.advprog.papikosbe.model.user.User;
 import id.ac.ui.cs.advprog.papikosbe.repository.transaction.WalletRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,10 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -33,29 +32,35 @@ class WalletServiceImplTest {
     WalletFactory walletFactory;
 
     Wallet wallet;
-    UUID userId;
+    User user;
 
     @BeforeEach
     void setUp() {
-        userId = UUID.randomUUID();
-        wallet = new Wallet(UUID.randomUUID(), userId, BigDecimal.ZERO); // manual, bukan dari factory
+        UUID walletId = UUID.randomUUID();
+
+        user = Tenant.builder()
+                .email("nae@example.com")
+                .password("securepass123")
+                .build();
+
+        wallet = new Wallet(user, new BigDecimal("100.00"));
+        wallet.setId(walletId);
     }
 
     @Test
     void testCreateWallet() {
-        when(walletFactory.createWallet(userId)).thenReturn(wallet);
-        when(walletRepository.create(any(Wallet.class))).thenReturn(wallet);
+        when(walletFactory.createWallet(user)).thenReturn(wallet);
+        when(walletRepository.save(any(Wallet.class))).thenReturn(wallet);
 
-        Wallet createdWallet = walletService.create(userId);
+        Wallet createdWallet = walletService.create(user.getId());
 
         assertNotNull(createdWallet);
-        assertEquals(userId, createdWallet.getUserId());
+        assertEquals(user, createdWallet.getUser());
     }
 
     @Test
     void testFindAllWallets() {
-        Iterator<Wallet> walletIterator = Collections.singletonList(wallet).iterator();
-        when(walletRepository.findAll()).thenReturn(walletIterator);
+        when(walletRepository.findAll()).thenReturn(List.of(wallet));
 
         var wallets = walletService.findAll();
 
@@ -78,7 +83,8 @@ class WalletServiceImplTest {
     void testEditWallet() {
         when(walletRepository.findById(wallet.getId())).thenReturn(Optional.of(wallet));
 
-        Wallet updatedWallet = new Wallet(wallet.getId(), userId, new BigDecimal("500.00"));
+        Wallet updatedWallet = new Wallet(user, new BigDecimal("500.00"));
+        updatedWallet.setId(wallet.getId());
 
         Wallet editedWallet = walletService.edit(wallet.getId(), updatedWallet);
 
@@ -89,10 +95,10 @@ class WalletServiceImplTest {
     @Test
     void testDeleteWallet() {
         UUID walletId = wallet.getId();
-        doNothing().when(walletRepository).delete(walletId);
+        doNothing().when(walletRepository).delete(wallet);
 
         walletService.delete(walletId);
 
-        verify(walletRepository, times(1)).delete(walletId);
+        verify(walletRepository, times(1)).delete(wallet);
     }
 }

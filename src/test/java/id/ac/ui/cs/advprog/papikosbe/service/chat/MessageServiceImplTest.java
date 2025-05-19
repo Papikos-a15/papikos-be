@@ -112,4 +112,29 @@ public class MessageServiceImplTest {
 
         assertThrows(NoSuchElementException.class, () -> messageService.getMessageById(id));
     }
+
+    @Test
+    void testSaveMessage_shouldThrowIfSendTypeUnsupported() {
+        Message message = new Message();
+        message.setSendType(SendType.valueOf("TO_ONE"));
+
+        MessageServiceImpl messageService = new MessageServiceImpl(
+                messageRepository, roomChatRepository, List.of()
+        );
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            messageService.saveMessage(message);
+        });
+    }
+
+    @Test
+    void testGetMessagesByRoomId_shouldThrowIfRoomNotFound() {
+        UUID roomId = UUID.randomUUID();
+
+        when(roomChatRepository.findById(roomId)).thenReturn(Optional.empty());
+
+        assertThrows(NoSuchElementException.class, () -> {
+            messageService.getMessagesByRoomId(roomId);
+        });
+    }
 }

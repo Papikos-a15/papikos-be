@@ -1,10 +1,13 @@
 package id.ac.ui.cs.advprog.papikosbe.controller.chat;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import id.ac.ui.cs.advprog.papikosbe.controller.chat.dto.SendMessageRequest;
 import id.ac.ui.cs.advprog.papikosbe.enums.SendType;
 import id.ac.ui.cs.advprog.papikosbe.model.chat.Message;
 import id.ac.ui.cs.advprog.papikosbe.model.chat.RoomChat;
 import id.ac.ui.cs.advprog.papikosbe.repository.chat.RoomChatRepository;
 import id.ac.ui.cs.advprog.papikosbe.service.chat.MessageService;
+import id.ac.ui.cs.advprog.papikosbe.service.user.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,6 +18,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 import static org.mockito.Mockito.*;
@@ -31,6 +35,9 @@ public class MessageControllerTest {
 
     @Mock
     private RoomChatRepository roomChatRepository;
+
+    @Mock
+    private UserService userService;
 
     @InjectMocks
     private MessageController messageController;
@@ -110,5 +117,34 @@ public class MessageControllerTest {
         mockMvc.perform(get("/api/messages")
                         .param("roomId", roomId.toString()))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void testGetMessagesByRoom() throws Exception {
+        UUID roomId = UUID.randomUUID();
+        UUID senderId = UUID.randomUUID();
+        UUID messageId = UUID.randomUUID();
+
+        RoomChat roomChat = new RoomChat();
+        roomChat.setId(roomId);
+
+        Message message = new Message();
+        message.setId(messageId);
+        message.setRoomChat(roomChat);
+        message.setSenderId(senderId);
+        message.setContent("Halo!");
+        message.setEdited(false);
+        message.setSendType(SendType.TO_ONE);
+        message.setTimestamp(LocalDateTime.now());
+
+        when(messageService.getMessagesByRoomId(roomId)).thenReturn(List.of(message));
+        when(userService.getEmailById(senderId)).thenReturn("sender@email.com");
+
+        mockMvc.perform(get("/api/messages")
+                        .param("roomId", roomId.toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(messageId.toString()))
+                .andExpect(jsonPath("$[0].senderId").value(senderId.toString()))
+                .andExpect(jsonPath("$[0].senderEmail").value("sender@email.com"));
     }
 }

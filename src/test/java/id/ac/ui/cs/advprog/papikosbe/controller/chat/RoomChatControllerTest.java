@@ -2,6 +2,7 @@ package id.ac.ui.cs.advprog.papikosbe.controller.chat;
 
 import id.ac.ui.cs.advprog.papikosbe.model.chat.RoomChat;
 import id.ac.ui.cs.advprog.papikosbe.service.chat.RoomChatService;
+import id.ac.ui.cs.advprog.papikosbe.service.user.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,6 +13,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 import static org.mockito.Mockito.*;
@@ -25,6 +27,9 @@ public class RoomChatControllerTest {
 
     @Mock
     private RoomChatService roomChatService;
+
+    @Mock
+    private UserService userService;
 
     @InjectMocks
     private RoomChatController roomChatController;
@@ -87,4 +92,57 @@ public class RoomChatControllerTest {
                         .content(requestBody))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    void testGetRoomChatsByUser() throws Exception {
+        UUID userId = UUID.randomUUID();
+        RoomChat roomChat = new RoomChat();
+        roomChat.setPenyewaId(userId);
+        roomChat.setPemilikKosId(UUID.randomUUID());
+        roomChat.setCreatedAt(LocalDateTime.now());
+        roomChat.setId(UUID.randomUUID());
+
+        // Mock repository dan service
+        when(roomChatService.getRoomChatsByUser(userId)).thenReturn(List.of(roomChat));
+        when(userService.getEmailById(any(UUID.class))).thenReturn("email@test.com");
+
+        mockMvc.perform(get("/api/roomchats/user/" + userId))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testGetRoomChatsByUser_whenUserIsPenyewa() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID pemilikId = UUID.randomUUID();
+
+        RoomChat roomChat = new RoomChat();
+        roomChat.setId(UUID.randomUUID());
+        roomChat.setPenyewaId(userId); // sama dengan userId
+        roomChat.setPemilikKosId(pemilikId);
+        roomChat.setCreatedAt(LocalDateTime.now());
+
+        when(roomChatService.getRoomChatsByUser(userId)).thenReturn(List.of(roomChat));
+        when(userService.getEmailById(pemilikId)).thenReturn("pemilik@email.com");
+
+        mockMvc.perform(get("/api/roomchats/user/" + userId))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testGetRoomChatsByUser_whenUserIsPemilik() throws Exception {
+        UUID penyewaId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID(); // ini sebagai pemilik
+        RoomChat roomChat = new RoomChat();
+        roomChat.setId(UUID.randomUUID());
+        roomChat.setPenyewaId(penyewaId); // beda dengan userId
+        roomChat.setPemilikKosId(userId);
+        roomChat.setCreatedAt(LocalDateTime.now());
+
+        when(roomChatService.getRoomChatsByUser(userId)).thenReturn(List.of(roomChat));
+        when(userService.getEmailById(penyewaId)).thenReturn("penyewa@email.com");
+
+        mockMvc.perform(get("/api/roomchats/user/" + userId))
+                .andExpect(status().isOk());
+    }
+
 }

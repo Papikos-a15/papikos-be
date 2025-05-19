@@ -25,15 +25,14 @@ public class NotificationTest {
         dummyMessage = "Ada kamar kosong di kos yang kamu favoritkan!";
         createdAt = LocalDateTime.now();
 
-        notification = new Notification(
-                UUID.randomUUID(),
-                dummyUserId,
-                dummyTitle,
-                dummyMessage,
-                createdAt,
-                NotificationType.SYSTEM,
-                false
-        );
+        // Using the Builder pattern to create the Notification
+        notification = new Notification.Builder(UUID.randomUUID(), dummyUserId)
+                .setTitle(dummyTitle)
+                .setMessage(dummyMessage)
+                .setCreatedAt(createdAt)
+                .setType(NotificationType.SYSTEM)
+                .setIsRead(false)
+                .build();
     }
 
     @Test

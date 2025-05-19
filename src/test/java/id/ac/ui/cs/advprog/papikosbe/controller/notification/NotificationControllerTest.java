@@ -42,15 +42,14 @@ class NotificationControllerTest {
         userId = UUID.randomUUID();
         notificationId = UUID.randomUUID();
 
-        testNotification = new Notification(
-                notificationId,
-                userId,
-                "Test Notification",
-                "This is a test notification message",
-                LocalDateTime.now(),
-                NotificationType.SYSTEM,
-                false
-        );
+        // Create the test Notification using the Builder
+        testNotification = new Notification.Builder(notificationId, userId)
+                .setTitle("Test Notification")
+                .setMessage("This is a test notification message")
+                .setCreatedAt(LocalDateTime.now())
+                .setType(NotificationType.SYSTEM)
+                .setIsRead(false)
+                .build();
 
         testNotifications = new ArrayList<>();
         testNotifications.add(testNotification);
@@ -65,7 +64,7 @@ class NotificationControllerTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(1, response.getBody().size());
-        assertEquals(testNotification, response.getBody().getFirst());
+        assertEquals(testNotification, response.getBody().get(0)); // Changed to index 0 as it is a List
         verify(notificationService, times(1)).getNotificationsForUser(userId);
     }
 
@@ -87,6 +86,7 @@ class NotificationControllerTest {
         String message = "This is a new notification";
         NotificationType type = NotificationType.SYSTEM;
 
+        // Simulating the service returning the created notification
         when(notificationService.createNotification(eq(userId), eq(title), eq(message), eq(type)))
                 .thenReturn(testNotification);
 

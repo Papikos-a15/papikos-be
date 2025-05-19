@@ -18,16 +18,14 @@ public class NotificationRepositoryTest {
 
     @BeforeEach
     public void setUp() {
-        repository = new NotificationRepository();
-        sampleNotif = new Notification(
-                UUID.randomUUID(),
-                UUID.randomUUID(),
-                "Welcome",
-                "Thanks for joining!",
-                LocalDateTime.now(),
-                NotificationType.OTHER,
-                false
-        );
+        repository = new NotificationRepository(); // Assuming this is a mock or simple in-memory repo
+        sampleNotif = new Notification.Builder(UUID.randomUUID(), UUID.randomUUID())
+                .setTitle("Welcome")
+                .setMessage("Thanks for joining!")
+                .setCreatedAt(LocalDateTime.now())
+                .setType(NotificationType.OTHER)
+                .setIsRead(false)
+                .build();
     }
 
     @Test

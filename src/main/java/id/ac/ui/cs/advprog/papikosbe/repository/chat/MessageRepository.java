@@ -1,36 +1,14 @@
 package id.ac.ui.cs.advprog.papikosbe.repository.chat;
 
 import id.ac.ui.cs.advprog.papikosbe.model.chat.Message;
+import id.ac.ui.cs.advprog.papikosbe.model.chat.RoomChat;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.List;
+import java.util.UUID;
 
 @Repository
-public class MessageRepository {
-
-    private final Map<UUID, Message> messageStore = new HashMap<>();
-
-    public void createMessage(Message message) {
-        messageStore.put(message.getId(), message);
-    }
-
-    public Message getMessageById(UUID id) {
-        return messageStore.get(id);
-    }
-
-    public void editMessage(Message updatedMessage) {
-        messageStore.put(updatedMessage.getId(), updatedMessage);
-    }
-
-    public boolean deleteMessage(UUID id) {
-        return messageStore.remove(id) != null;
-    }
-
-    public List<Message> getMessagesByRoomId(UUID roomId) {
-        return messageStore.values().stream()
-                .filter(message -> message.getRoomChatId().equals(roomId))
-                .sorted(Comparator.comparing(Message::getTimestamp))
-                .collect(Collectors.toList());
-    }
+public interface MessageRepository extends JpaRepository<Message, UUID> {
+    List<Message> findByRoomChatOrderByTimestampAsc(RoomChat roomChat);
 }

@@ -1,74 +1,88 @@
 package id.ac.ui.cs.advprog.papikosbe.repository.chat;
 
+import id.ac.ui.cs.advprog.papikosbe.enums.SendType;
 import id.ac.ui.cs.advprog.papikosbe.model.chat.Message;
+import id.ac.ui.cs.advprog.papikosbe.model.chat.RoomChat;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@DataJpaTest
 public class MessageRepositoryTest {
 
+    @Autowired
     private MessageRepository messageRepository;
-    private UUID roomId;
+
+    @Autowired
+    private RoomChatRepository roomChatRepository;
+
+    private RoomChat room;
     private UUID senderId;
 
     @BeforeEach
     void setUp() {
-        messageRepository = new MessageRepository();
-        roomId = UUID.randomUUID();
         senderId = UUID.randomUUID();
+        room = new RoomChat(UUID.randomUUID(), UUID.randomUUID());
+        roomChatRepository.save(room);
     }
 
     @Test
-    void testCreateAndGetMessageById() {
-        Message message = new Message(roomId, senderId, "Hello World!");
-        messageRepository.createMessage(message);
+    void testCreateAndFindById() {
+        Message message = new Message(room, senderId, "Hello!", SendType.TO_ONE);
+        messageRepository.save(message);
 
-        Message found = messageRepository.getMessageById(message.getId());
+        Optional<Message> found = messageRepository.findById(message.getId());
 
-        assertNotNull(found);
-        assertEquals("Hello World!", found.getContent());
+        assertTrue(found.isPresent());
+        assertEquals("Hello!", found.get().getContent());
+        assertEquals(room.getId(), found.get().getRoomChat().getId());
+        assertEquals(SendType.TO_ONE, found.get().getSendType());
     }
 
     @Test
-    void testEditMessage() {
-        Message message = new Message(roomId, senderId, "Old Message");
-        messageRepository.createMessage(message);
+    void testUpdateMessage() {
+        Message message = new Message(room, senderId, "Original Message", SendType.TO_ONE);
+        messageRepository.save(message);
 
-        message.setContent("New Message");
-        messageRepository.editMessage(message);
+        message.setContent("Updated Message");
+        message.setEdited(true);
+        messageRepository.save(message);
 
-        Message updated = messageRepository.getMessageById(message.getId());
-        assertEquals("New Message", updated.getContent());
+        Message updated = messageRepository.findById(message.getId()).orElseThrow();
+        assertEquals("Updated Message", updated.getContent());
+        assertTrue(updated.isEdited());
     }
 
     @Test
     void testDeleteMessage() {
-        Message message = new Message(roomId, senderId, "To be deleted");
-        messageRepository.createMessage(message);
+        Message message = new Message(room, senderId, "To be deleted", SendType.TO_ONE);
+        messageRepository.save(message);
 
-        boolean deleted = messageRepository.deleteMessage(message.getId());
+        UUID messageId = message.getId();
+        messageRepository.deleteById(messageId);
 
-        assertTrue(deleted);
-        assertNull(messageRepository.getMessageById(message.getId()));
+        assertFalse(messageRepository.findById(messageId).isPresent());
     }
 
     @Test
-    void testGetMessagesByRoomIdSortedByTimestamp() throws InterruptedException {
-        Message message1 = new Message(roomId, senderId, "First");
-        Thread.sleep(10); // biar beda timestamp
-        Message message2 = new Message(roomId, senderId, "Second");
+    void testFindByRoomChatOrderByTimestampAsc() throws InterruptedException {
+        Message message1 = new Message(room, senderId, "First", SendType.TO_ONE);
+        Thread.sleep(10);
+        Message message2 = new Message(room, senderId, "Second", SendType.TO_ONE);
 
-        messageRepository.createMessage(message1);
-        messageRepository.createMessage(message2);
+        messageRepository.saveAll(List.of(message1, message2));
 
-        List<Message> messages = messageRepository.getMessagesByRoomId(roomId);
+        List<Message> result = messageRepository.findByRoomChatOrderByTimestampAsc(room);
 
-        assertEquals(2, messages.size());
-        assertEquals("First", messages.get(0).getContent());
-        assertEquals("Second", messages.get(1).getContent());
+        assertEquals(2, result.size());
+        assertEquals("First", result.get(0).getContent());
+        assertEquals("Second", result.get(1).getContent());
     }
 }

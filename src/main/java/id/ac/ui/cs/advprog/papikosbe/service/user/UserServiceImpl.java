@@ -11,6 +11,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
@@ -53,6 +55,13 @@ public class UserServiceImpl implements UserService {
                 .build();           // approved = false by default
 
         return ownerRepo.save(owner);
+    }
+
+    @Override
+    public String getEmailById(UUID id) {
+        return userRepo.findById(id)
+                .map(user -> user.getEmail())
+                .orElse("tidak diketahui");
     }
 
     /* ---------- util ---------- */

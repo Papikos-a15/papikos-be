@@ -1,12 +1,15 @@
 package id.ac.ui.cs.advprog.papikosbe.service.chat;
 
+import id.ac.ui.cs.advprog.papikosbe.enums.SendType;
 import id.ac.ui.cs.advprog.papikosbe.model.chat.Message;
+import id.ac.ui.cs.advprog.papikosbe.model.chat.RoomChat;
 import id.ac.ui.cs.advprog.papikosbe.repository.chat.MessageRepository;
+import id.ac.ui.cs.advprog.papikosbe.repository.chat.RoomChatRepository;
+import id.ac.ui.cs.advprog.papikosbe.strategy.chat.SendStrategy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -14,68 +17,99 @@ import static org.mockito.Mockito.*;
 public class MessageServiceImplTest {
 
     private MessageRepository messageRepository;
-    private MessageServiceImpl messageService;
+    private RoomChatRepository roomChatRepository;
+    private SendStrategy sendToOneStrategy;
+    private MessageService messageService;
+
+    private RoomChat room;
+    private UUID senderId;
 
     @BeforeEach
     void setUp() {
         messageRepository = mock(MessageRepository.class);
-        messageService = new MessageServiceImpl(messageRepository);
+        roomChatRepository = mock(RoomChatRepository.class);
+        sendToOneStrategy = mock(SendStrategy.class);
+
+        List<SendStrategy> strategies = List.of(sendToOneStrategy);
+        when(sendToOneStrategy.getType()).thenReturn(SendType.TO_ONE);
+
+        messageService = new MessageServiceImpl(messageRepository, roomChatRepository, strategies);
+
+        senderId = UUID.randomUUID();
+        room = new RoomChat(UUID.randomUUID(), UUID.randomUUID());
     }
 
     @Test
-    void testSaveMessageShouldCallRepository() {
-        Message message = new Message(UUID.randomUUID(), UUID.randomUUID(), "Hello");
-        doNothing().when(messageRepository).createMessage(message);
-
+    void testSaveMessage_ShouldUseStrategySend() {
+        Message message = new Message(room, senderId, "Halo!", SendType.TO_ONE);
         messageService.saveMessage(message);
 
-        verify(messageRepository, times(1)).createMessage(message);
+        verify(sendToOneStrategy, times(1)).send(message);
     }
 
     @Test
-    void testEditMessageShouldCallRepository() {
-        Message message = new Message(UUID.randomUUID(), UUID.randomUUID(), "Edited");
-        doNothing().when(messageRepository).editMessage(message);
-
+    void testEditMessage_ShouldSetEditedAndSave() {
+        Message message = new Message(room, senderId, "Old", SendType.TO_ONE);
         messageService.editMessage(message);
 
-        verify(messageRepository, times(1)).editMessage(message);
+        assertTrue(message.isEdited());
+        verify(messageRepository, times(1)).save(message);
     }
 
     @Test
-    void testDeleteMessageShouldReturnTrueIfDeleted() {
+    void testDeleteMessage_ShouldDeleteWhenExists() {
         UUID messageId = UUID.randomUUID();
-        when(messageRepository.deleteMessage(messageId)).thenReturn(true);
+        when(messageRepository.existsById(messageId)).thenReturn(true);
 
         boolean result = messageService.deleteMessage(messageId);
 
         assertTrue(result);
-        verify(messageRepository, times(1)).deleteMessage(messageId);
+        verify(messageRepository).deleteById(messageId);
     }
 
     @Test
-    void testGetMessagesByRoomIdShouldReturnMessages() {
-        UUID roomId = UUID.randomUUID();
-        List<Message> messages = List.of(new Message(UUID.randomUUID(), roomId, "Hey"));
+    void testDeleteMessage_ShouldReturnFalseIfNotExists() {
+        UUID messageId = UUID.randomUUID();
+        when(messageRepository.existsById(messageId)).thenReturn(false);
 
-        when(messageRepository.getMessagesByRoomId(roomId)).thenReturn(messages);
+        boolean result = messageService.deleteMessage(messageId);
+
+        assertFalse(result);
+        verify(messageRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void testGetMessagesByRoomId_ShouldReturnSortedMessages() {
+        UUID roomId = UUID.randomUUID();
+        when(roomChatRepository.findById(roomId)).thenReturn(Optional.of(room));
+        when(messageRepository.findByRoomChatOrderByTimestampAsc(room))
+                .thenReturn(List.of(
+                        new Message(room, senderId, "First", SendType.TO_ONE),
+                        new Message(room, senderId, "Second", SendType.TO_ONE)
+                ));
 
         List<Message> result = messageService.getMessagesByRoomId(roomId);
 
-        assertEquals(messages, result);
-        verify(messageRepository, times(1)).getMessagesByRoomId(roomId);
+        assertEquals(2, result.size());
+        assertEquals("First", result.get(0).getContent());
     }
 
     @Test
-    void testGetMessageByIdShouldReturnMessage() {
-        UUID messageId = UUID.randomUUID();
-        Message expectedMessage = new Message(UUID.randomUUID(), UUID.randomUUID(), "Isi Pesan");
+    void testGetMessageById_ShouldReturnMessage() {
+        UUID id = UUID.randomUUID();
+        Message mock = new Message(room, senderId, "Hello", SendType.TO_ONE);
 
-        when(messageRepository.getMessageById(messageId)).thenReturn(expectedMessage);
+        when(messageRepository.findById(id)).thenReturn(Optional.of(mock));
 
-        Message result = messageService.getMessageById(messageId);
+        Message result = messageService.getMessageById(id);
+        assertEquals("Hello", result.getContent());
+    }
 
-        assertEquals(expectedMessage, result);
-        verify(messageRepository, times(1)).getMessageById(messageId);
+    @Test
+    void testGetMessageById_NotFound_ShouldThrow() {
+        UUID id = UUID.randomUUID();
+        when(messageRepository.findById(id)).thenReturn(Optional.empty());
+
+        assertThrows(NoSuchElementException.class, () -> messageService.getMessageById(id));
     }
 }

@@ -2,8 +2,11 @@ package id.ac.ui.cs.advprog.papikosbe.service.booking;
 
 import id.ac.ui.cs.advprog.papikosbe.model.booking.Booking;
 import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
+import id.ac.ui.cs.advprog.papikosbe.service.kos.KosService;
+import id.ac.ui.cs.advprog.papikosbe.service.transaction.PaymentService;
 import jakarta.persistence.EntityNotFoundException;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
@@ -11,17 +14,31 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
 
 @Service
 public class BookingServiceImpl implements BookingService {
 
     private static BookingServiceImpl instance;
     private Map<UUID, Booking> bookingStore;
-
+    private final KosService kosService;
+    private final PaymentService paymentService;
     // Private constructor dengan inisialisasi bookingStore
+    @Autowired
+    public BookingServiceImpl(KosService kosService,PaymentService paymentService) {
+        this.bookingStore = new ConcurrentHashMap<>();
+        this.kosService = kosService;
+        this.paymentService = paymentService;
+        instance = this;
+    }
+
     private BookingServiceImpl() {
-        bookingStore = new ConcurrentHashMap<>();
+        this.bookingStore = new ConcurrentHashMap<>();
+        this.kosService = null; // Tests don't need KosService
+        this.paymentService = null;
     }
 
     public static synchronized BookingServiceImpl getInstance() {
@@ -34,16 +51,21 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public Booking createBooking(Booking booking) {
         // Full validation of all booking fields
-        validateBookingData(booking);
+
 
         // Set booking ID if not provided
         if (booking.getBookingId() == null) {
             booking.setBookingId(UUID.randomUUID());
         }
 
+        if (kosService != null) {
+            Kos kos = kosService.getKosById(booking.getKosId())
+                    .orElseThrow(() -> new EntityNotFoundException("Kos with ID " + booking.getKosId() + " not found"));
+            booking.setMonthlyPrice(kos.getPrice());
+        }
         // Ensure initial status is PENDING_PAYMENT
         booking.setStatus(BookingStatus.PENDING_PAYMENT);
-
+        validateBookingData(booking);
         // Save booking to store
         bookingStore.put(booking.getBookingId(), booking);
         return booking;
@@ -108,6 +130,19 @@ public class BookingServiceImpl implements BookingService {
 
         if (booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
             throw new IllegalStateException("Only bookings in PENDING_PAYMENT status can be paid");
+        }
+
+        // Get kos to find the owner
+        if (kosService != null) {
+            Kos kos = kosService.getKosById(booking.getKosId())
+                    .orElseThrow(() -> new EntityNotFoundException("Kos with ID " + booking.getKosId() + " not found"));
+
+            // Create payment from tenant to owner if payment service is available
+            if (paymentService != null) {
+                // Calculate total price
+                BigDecimal amount = BigDecimal.valueOf(booking.getTotalPrice());
+                paymentService.createPayment(booking.getUserId(), kos.getOwnerId(), amount);
+            }
         }
 
         booking.setStatus(BookingStatus.PAID);

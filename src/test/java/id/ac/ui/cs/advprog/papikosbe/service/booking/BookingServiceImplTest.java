@@ -1,93 +1,108 @@
 package id.ac.ui.cs.advprog.papikosbe.service.booking;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
+import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
+import id.ac.ui.cs.advprog.papikosbe.service.kos.KosService;
+import id.ac.ui.cs.advprog.papikosbe.service.transaction.PaymentService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.List;
+import java.math.BigDecimal;
 import id.ac.ui.cs.advprog.papikosbe.model.booking.Booking;
 import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
 
+@ExtendWith(MockitoExtension.class)
 public class BookingServiceImplTest {
+
+    @Mock
+    private KosService kosService;
+
+    @Mock
+    private PaymentService paymentService;
 
     private BookingService bookingService;
     private double monthlyPrice;
     private String fullName;
     private String phoneNumber;
-
+    private UUID ownerId;
+    private UUID kosId;
+    private Kos testKos;
+    private UUID userId;
     @BeforeEach
     public void setUp() {
-        // Mengambil instance service dengan pola Singleton
-        bookingService = BookingServiceImpl.getInstance();
-        bookingService.clearStore();  // ← reset state sebelum tiap test
+        // Create a real BookingServiceImpl with mocked dependencies
+        BookingServiceImpl realService = new BookingServiceImpl(kosService, paymentService);
+
+        // Set up the static instance reference to our test instance
+        bookingService = realService;
+        ((BookingServiceImpl)bookingService).clearStore();
 
         // Initialize test data
         monthlyPrice = 1200000.0;
         fullName = "John Doe";
         phoneNumber = "081234567890";
+
+        // Create a test Kos object with known owner
+        ownerId = UUID.randomUUID();
+        kosId = UUID.randomUUID();
+        userId = UUID.randomUUID();
+
+        testKos = new Kos();
+        testKos.setId(kosId);
+        testKos.setOwnerId(ownerId);
+        testKos.setName("Test Kos");
+        testKos.setPrice(monthlyPrice);
+        testKos.setAddress("Test Address");
+        testKos.setAvailable(true);
+
+        // Fix unnecessary stubbing error with lenient()
+        lenient().when(kosService.getKosById(kosId)).thenReturn(Optional.of(testKos));
     }
 
     @Test
     public void testCreateBookingWithPersonalDetails() {
-        // Membuat booking baru dengan data diri lengkap
+        // Create booking with test kos
         Booking booking = new Booking(
                 UUID.randomUUID(),
-                UUID.randomUUID(),
-                UUID.randomUUID(),
-                LocalDate.now().plusDays(7),  // Check-in date 
-                3,                            // Duration in months
-                monthlyPrice,                 // Monthly price
-                fullName,                     // Full name
-                phoneNumber,                  // Phone number
-                BookingStatus.PENDING_PAYMENT
-        );
-
-        Booking createdBooking = bookingService.createBooking(booking);
-
-        // Verifikasi data diri tersimpan dengan benar
-        assertNotNull(createdBooking, "Created booking should not be null");
-        assertEquals(fullName, createdBooking.getFullName(), "Full name should be stored correctly");
-        assertEquals(phoneNumber, createdBooking.getPhoneNumber(), "Phone number should be stored correctly");
-        assertEquals(monthlyPrice, createdBooking.getMonthlyPrice(), "Monthly price should be stored correctly");
-        assertEquals(LocalDate.now().plusDays(7), createdBooking.getCheckInDate(), "Check-in date should be stored correctly");
-        assertEquals(3, createdBooking.getDuration(), "Duration should be stored correctly");
-    }
-
-    @Test
-    public void testCalculateTotalPrice() {
-        // Verifikasi perhitungan total harga (harga bulanan × durasi)
-        Booking booking = new Booking(
-                UUID.randomUUID(),
-                UUID.randomUUID(),
-                UUID.randomUUID(),
+                userId,
+                kosId,
                 LocalDate.now().plusDays(7),
-                3,                     // 3 months
-                monthlyPrice,          // 1,200,000 per month
+                3,
+                monthlyPrice,
                 fullName,
                 phoneNumber,
                 BookingStatus.PENDING_PAYMENT
         );
 
-        bookingService.createBooking(booking);
+        Booking createdBooking = bookingService.createBooking(booking);
 
-        Optional<Booking> retrievedBooking = bookingService.findBookingById(booking.getBookingId());
-        assertTrue(retrievedBooking.isPresent(), "Booking should be found");
+        // Verify kos service was called
+        verify(kosService).getKosById(kosId);
 
-        double expectedTotal = monthlyPrice * 3; // 3,600,000
-        assertEquals(expectedTotal, retrievedBooking.get().getTotalPrice(),
-                "Total price should be monthly price × duration");
+        // Verify booking details
+        assertNotNull(createdBooking);
+        assertEquals(fullName, createdBooking.getFullName());
+        assertEquals(phoneNumber, createdBooking.getPhoneNumber());
+        assertEquals(monthlyPrice, createdBooking.getMonthlyPrice());
+        assertEquals(LocalDate.now().plusDays(7), createdBooking.getCheckInDate());
+        assertEquals(3, createdBooking.getDuration());
     }
 
     @Test
-    public void testEditBookingBeforeApproval() {
-        // Tenant should be able to edit booking details before approval
+    public void testCalculateTotalPrice() {
         Booking booking = new Booking(
                 UUID.randomUUID(),
-                UUID.randomUUID(),
-                UUID.randomUUID(),
+                userId,
+                kosId,
                 LocalDate.now().plusDays(7),
                 3,
                 monthlyPrice,
@@ -97,6 +112,32 @@ public class BookingServiceImplTest {
         );
 
         bookingService.createBooking(booking);
+
+        verify(kosService).getKosById(kosId);
+
+        Optional<Booking> retrievedBooking = bookingService.findBookingById(booking.getBookingId());
+        assertTrue(retrievedBooking.isPresent());
+
+        double expectedTotal = monthlyPrice * 3;
+        assertEquals(expectedTotal, retrievedBooking.get().getTotalPrice());
+    }
+
+    @Test
+    public void testEditBookingBeforeApproval() {
+        Booking booking = new Booking(
+                UUID.randomUUID(),
+                userId,
+                kosId,
+                LocalDate.now().plusDays(7),
+                3,
+                monthlyPrice,
+                fullName,
+                phoneNumber,
+                BookingStatus.PENDING_PAYMENT
+        );
+
+        bookingService.createBooking(booking);
+        verify(kosService).getKosById(kosId);
 
         // Edit booking details
         String updatedName = "Jane Doe";
@@ -111,22 +152,20 @@ public class BookingServiceImplTest {
 
         bookingService.updateBooking(booking);
 
-        // Verify updates
         Optional<Booking> updatedBooking = bookingService.findBookingById(booking.getBookingId());
-        assertTrue(updatedBooking.isPresent(), "Updated booking should be found");
-        assertEquals(updatedName, updatedBooking.get().getFullName(), "Name should be updated");
-        assertEquals(updatedPhone, updatedBooking.get().getPhoneNumber(), "Phone should be updated");
-        assertEquals(updatedCheckIn, updatedBooking.get().getCheckInDate(), "Check-in date should be updated");
-        assertEquals(updatedDuration, updatedBooking.get().getDuration(), "Duration should be updated");
+        assertTrue(updatedBooking.isPresent());
+        assertEquals(updatedName, updatedBooking.get().getFullName());
+        assertEquals(updatedPhone, updatedBooking.get().getPhoneNumber());
+        assertEquals(updatedCheckIn, updatedBooking.get().getCheckInDate());
+        assertEquals(updatedDuration, updatedBooking.get().getDuration());
     }
 
     @Test
     public void testEditBookingAfterPaymentBeforeApproval() {
-        // Create booking with PENDING_PAYMENT status
         Booking booking = new Booking(
                 UUID.randomUUID(),
-                UUID.randomUUID(),
-                UUID.randomUUID(),
+                userId,
+                kosId,
                 LocalDate.now().plusDays(7),
                 3,
                 monthlyPrice,
@@ -135,28 +174,28 @@ public class BookingServiceImplTest {
                 BookingStatus.PENDING_PAYMENT
         );
 
-        // Save initial booking
         Booking createdBooking = bookingService.createBooking(booking);
+        verify(kosService).getKosById(kosId);
 
-        // Move to PAID status using the specific method
+        // Instead of doNothing(), use when().thenReturn() for non-void method
+        // Assuming createPayment returns something, let's return null for simplicity
+        when(paymentService.createPayment(any(), any(), any())).thenReturn(null);
+
         bookingService.payBooking(createdBooking.getBookingId());
+        verify(kosService, times(2)).getKosById(kosId);
+        verify(paymentService).createPayment(eq(userId), eq(ownerId), any(BigDecimal.class));
 
-        // Verify status changed
         Optional<Booking> paidBooking = bookingService.findBookingById(createdBooking.getBookingId());
-        assertTrue(paidBooking.isPresent(), "Booking should exist");
-        assertEquals(BookingStatus.PAID, paidBooking.get().getStatus(), "Status should be PAID");
+        assertTrue(paidBooking.isPresent());
+        assertEquals(BookingStatus.PAID, paidBooking.get().getStatus());
 
-        // Now try to edit other details (should work because editing is allowed in PAID status)
+        // Edit after payment
         Booking updatedBooking = paidBooking.get();
         updatedBooking.setFullName("New Name After Payment");
         updatedBooking.setDuration(5);
 
-        // This should NOT throw an exception
-        assertDoesNotThrow(() -> {
-            bookingService.updateBooking(updatedBooking);
-        }, "Should be able to edit booking after payment but before approval");
+        assertDoesNotThrow(() -> bookingService.updateBooking(updatedBooking));
 
-        // Verify the edits were saved
         Optional<Booking> finalBooking = bookingService.findBookingById(createdBooking.getBookingId());
         assertTrue(finalBooking.isPresent());
         assertEquals("New Name After Payment", finalBooking.get().getFullName());
@@ -165,11 +204,10 @@ public class BookingServiceImplTest {
 
     @Test
     public void testEditBookingAfterApprovalShouldFail() {
-        // Create booking, pay for it, and approve it
         Booking booking = new Booking(
                 UUID.randomUUID(),
-                UUID.randomUUID(),
-                UUID.randomUUID(),
+                userId,
+                kosId,
                 LocalDate.now().plusDays(7),
                 3,
                 monthlyPrice,
@@ -178,38 +216,34 @@ public class BookingServiceImplTest {
                 BookingStatus.PENDING_PAYMENT
         );
 
-        // Save initial booking
         Booking createdBooking = bookingService.createBooking(booking);
+        verify(kosService).getKosById(kosId);
 
-        // Pay for the booking using the specific method
+        // Fix the doNothing() call
+        when(paymentService.createPayment(any(), any(), any())).thenReturn(null);
+
         bookingService.payBooking(createdBooking.getBookingId());
+        verify(paymentService).createPayment(eq(userId), eq(ownerId), any(BigDecimal.class));
 
-        // Approve the booking using the specific method
         bookingService.approveBooking(createdBooking.getBookingId());
 
-        // Verify status changed to APPROVED
         Optional<Booking> approvedBooking = bookingService.findBookingById(createdBooking.getBookingId());
-        assertTrue(approvedBooking.isPresent(), "Booking should exist");
-        assertEquals(BookingStatus.APPROVED, approvedBooking.get().getStatus(), "Status should be APPROVED");
+        assertTrue(approvedBooking.isPresent());
+        assertEquals(BookingStatus.APPROVED, approvedBooking.get().getStatus());
 
-        // Now try to edit other details (should fail)
         Booking updatedBooking = approvedBooking.get();
         updatedBooking.setFullName("New Name");
         updatedBooking.setDuration(5);
 
-        // This should throw IllegalStateException
-        assertThrows(IllegalStateException.class, () -> {
-            bookingService.updateBooking(updatedBooking);
-        }, "Should not be able to edit booking after approval");
+        assertThrows(IllegalStateException.class, () -> bookingService.updateBooking(updatedBooking));
     }
 
     @Test
     public void testPayBookingFailsIfAlreadyPaid() {
-        // Create and pay for a booking
         Booking booking = new Booking(
                 UUID.randomUUID(),
-                UUID.randomUUID(),
-                UUID.randomUUID(),
+                userId,
+                kosId,
                 LocalDate.now().plusDays(7),
                 3,
                 monthlyPrice,
@@ -219,21 +253,21 @@ public class BookingServiceImplTest {
         );
 
         Booking createdBooking = bookingService.createBooking(booking);
-        bookingService.payBooking(createdBooking.getBookingId());
+        // Fix the doNothing() call
+        when(paymentService.createPayment(any(), any(), any())).thenReturn(null);
 
-        // Try to pay again (should fail)
-        assertThrows(IllegalStateException.class, () -> {
-            bookingService.payBooking(createdBooking.getBookingId());
-        }, "Should not be able to pay for an already paid booking");
+        bookingService.payBooking(createdBooking.getBookingId());
+        verify(paymentService).createPayment(eq(userId), eq(ownerId), any(BigDecimal.class));
+
+        assertThrows(IllegalStateException.class, () -> bookingService.payBooking(createdBooking.getBookingId()));
     }
 
     @Test
     public void testApproveBookingFailsIfNotPaid() {
-        // Create booking but don't pay
         Booking booking = new Booking(
                 UUID.randomUUID(),
-                UUID.randomUUID(),
-                UUID.randomUUID(),
+                userId,
+                kosId,
                 LocalDate.now().plusDays(7),
                 3,
                 monthlyPrice,
@@ -243,20 +277,17 @@ public class BookingServiceImplTest {
         );
 
         Booking createdBooking = bookingService.createBooking(booking);
+        verify(kosService).getKosById(kosId);
 
-        // Try to approve without payment (should fail)
-        assertThrows(IllegalStateException.class, () -> {
-            bookingService.approveBooking(createdBooking.getBookingId());
-        }, "Should not be able to approve an unpaid booking");
+        assertThrows(IllegalStateException.class, () -> bookingService.approveBooking(createdBooking.getBookingId()));
     }
 
     @Test
     public void testCancelBooking() {
-        // Simple cancellation test
         Booking booking = new Booking(
                 UUID.randomUUID(),
-                UUID.randomUUID(),
-                UUID.randomUUID(),
+                userId,
+                kosId,
                 LocalDate.now().plusDays(7),
                 3,
                 monthlyPrice,
@@ -266,12 +297,13 @@ public class BookingServiceImplTest {
         );
 
         bookingService.createBooking(booking);
+        verify(kosService).getKosById(kosId);
+
         bookingService.cancelBooking(booking.getBookingId());
 
         Optional<Booking> cancelledBooking = bookingService.findBookingById(booking.getBookingId());
-        assertTrue(cancelledBooking.isPresent(), "Booking should be found after cancellation");
-        assertEquals(BookingStatus.CANCELLED, cancelledBooking.get().getStatus(),
-                "Booking status should be CANCELLED");
+        assertTrue(cancelledBooking.isPresent());
+        assertEquals(BookingStatus.CANCELLED, cancelledBooking.get().getStatus());
     }
 
     @Test
@@ -284,8 +316,8 @@ public class BookingServiceImplTest {
     public void testFindAllBookings() {
         Booking b1 = new Booking(
                 UUID.randomUUID(),
-                UUID.randomUUID(),
-                UUID.randomUUID(),
+                userId,
+                kosId,
                 LocalDate.now().plusDays(1),
                 1,
                 monthlyPrice,
@@ -296,8 +328,8 @@ public class BookingServiceImplTest {
 
         Booking b2 = new Booking(
                 UUID.randomUUID(),
-                UUID.randomUUID(),
-                UUID.randomUUID(),
+                userId,
+                kosId,
                 LocalDate.now().plusDays(2),
                 2,
                 monthlyPrice + 300000,
@@ -308,10 +340,12 @@ public class BookingServiceImplTest {
 
         bookingService.createBooking(b1);
         bookingService.createBooking(b2);
+        verify(kosService, times(2)).getKosById(kosId);
 
         List<Booking> all = bookingService.findAllBookings();
-        assertEquals(2, all.size(), "Seharusnya ada 2 booking total");
-        assertTrue(all.contains(b1), "Harus mengandung booking pertama");
-        assertTrue(all.contains(b2), "Harus mengandung booking kedua");
+        assertEquals(2, all.size());
+        assertTrue(all.contains(b1));
+        assertTrue(all.contains(b2));
     }
+
 }

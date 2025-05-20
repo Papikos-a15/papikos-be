@@ -1,83 +1,67 @@
 package id.ac.ui.cs.advprog.papikosbe.model.notification;
 
+import jakarta.persistence.*;
+import lombok.*;
+import id.ac.ui.cs.advprog.papikosbe.enums.NotificationType;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import id.ac.ui.cs.advprog.papikosbe.enums.NotificationType;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.NoArgsConstructor;
-
+@Entity
+@Table(name = "notifications")
 @Getter
 @Setter
 @NoArgsConstructor
+@Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Notification {
 
+    @Id
+    @Column(name = "notification_id", nullable = false, updatable = false)
+    @EqualsAndHashCode.Include
     private UUID id;
+
+    @Column(name = "user_id", nullable = false, updatable = false)
     private UUID userId;
+
+    @Column(name = "title", nullable = false)
     private String title;
+
+    @Column(name = "message", nullable = false)
     private String message;
+
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type", nullable = false)
     private NotificationType type;
+
+    @Column(name = "is_read", nullable = false)
     private boolean isRead;
 
-    private Notification(Builder builder) {
-        this.id = builder.id;
-        this.userId = builder.userId;
-        this.title = builder.title;
-        this.message = builder.message;
-        this.createdAt = builder.createdAt != null ? builder.createdAt : LocalDateTime.now();
-        this.type = builder.type;
-        this.isRead = builder.isRead;
+    /**
+     * @deprecated Use the new constructor with full details instead.
+     * This constructor is kept for backward compatibility and will be removed in future updates.
+     */
+    @Deprecated
+    public Notification(UUID id, UUID userId, String title, String message, LocalDateTime createdAt, NotificationType type, boolean isRead) {
+        this.id = id;
+        this.userId = userId;
+        this.title = title;
+        this.message = message;
+        this.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
+        this.type = type;
+        this.isRead = isRead;
     }
 
-    public static class Builder {
-        private UUID id;
-        private UUID userId;
-        private String title;
-        private String message;
-        private LocalDateTime createdAt;
-        private NotificationType type;
-        private boolean isRead;
-
-        public Builder(UUID id, UUID userId) {
-            this.id = id;
-            this.userId = userId;
+    @PrePersist @PreUpdate
+    private void validate() {
+        if (title == null || title.trim().isEmpty()) {
+            throw new IllegalArgumentException("Title cannot be null or empty");
         }
-
-        public Builder setTitle(String title) {
-            if (title == null || title.trim().isEmpty()) {
-                throw new IllegalArgumentException("Title cannot be null or empty");
-            }
-            this.title = title;
-            return this;
-        }
-
-        public Builder setMessage(String message) {
-            if (message == null || message.trim().isEmpty()) {
-                throw new IllegalArgumentException("Message cannot be null or empty");
-            }
-            this.message = message;
-            return this;
-        }
-
-        public Builder setCreatedAt(LocalDateTime createdAt) {
-            this.createdAt = createdAt;
-            return this;
-        }
-
-        public Builder setType(NotificationType type) {
-            this.type = type;
-            return this;
-        }
-
-        public Builder setIsRead(boolean isRead) {
-            this.isRead = isRead;
-            return this;
-        }
-
-        public Notification build() {
-            return new Notification(this);
+        if (message == null || message.trim().isEmpty()) {
+            throw new IllegalArgumentException("Message cannot be null or empty");
         }
     }
 }

@@ -56,26 +56,30 @@ class NotificationServiceImplTest {
         UUID userId = UUID.randomUUID();
         UUID otherUserId = UUID.randomUUID();
 
-        Notification userNotif = new Notification.Builder(UUID.randomUUID(), userId)
-                .setTitle("Title 1")
-                .setMessage("Message 1")
-                .setType(NotificationType.SYSTEM)
-                .setIsRead(false)
+        Notification userNotif = Notification.builder()
+                .id(UUID.randomUUID())
+                .userId(userId)
+                .title("Title 1")
+                .message("Message 1")
+                .type(NotificationType.SYSTEM)
+                .isRead(false)
                 .build();
 
-        Notification otherNotif = new Notification.Builder(UUID.randomUUID(), otherUserId)
-                .setTitle("Title 2")
-                .setMessage("Message 2")
-                .setType(NotificationType.BOOKING)
-                .setIsRead(false)
+        Notification otherNotif = Notification.builder()
+                .id(UUID.randomUUID())
+                .userId(otherUserId)
+                .title("Title 2")
+                .message("Message 2")
+                .type(NotificationType.BOOKING)
+                .isRead(false)
                 .build();
 
-        when(notificationRepository.findAll()).thenReturn(List.of(userNotif, otherNotif));
+        when(notificationRepository.findByUserId(userId)).thenReturn(List.of(userNotif));
 
         List<Notification> result = notificationService.getNotificationsForUser(userId);
 
         assertEquals(1, result.size());
-        assertEquals(userId, result.get(0).getUserId());
+        assertEquals(userId, result.getFirst().getUserId());
     }
 
     @Test
@@ -83,18 +87,22 @@ class NotificationServiceImplTest {
         UUID notifId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
 
-        Notification notif = new Notification.Builder(notifId, userId)
-                .setTitle("Unread")
-                .setMessage("Message")
-                .setType(NotificationType.PAYMENT)
-                .setIsRead(false)
+        Notification notif = Notification.builder()
+                .id(notifId)
+                .userId(userId)
+                .title("Unread")
+                .message("Message")
+                .type(NotificationType.PAYMENT)
+                .isRead(false)
                 .build();
 
-        when(notificationRepository.findById(notifId)).thenReturn(notif);
+
+        when(notificationRepository.findById(notifId)).thenReturn(Optional.ofNullable(notif));
         when(notificationRepository.save(any(Notification.class))).thenAnswer(i -> i.getArgument(0));
 
         notificationService.markAsRead(notifId);
 
+        assert notif != null;
         assertTrue(notif.isRead());
         verify(notificationRepository).save(notif);
     }
@@ -103,7 +111,7 @@ class NotificationServiceImplTest {
     void testMarkAsRead_NotificationDoesNotExist() {
         UUID notifId = UUID.randomUUID();
 
-        when(notificationRepository.findById(notifId)).thenReturn(null);
+        when(notificationRepository.findById(notifId)).thenReturn(Optional.empty());
 
         notificationService.markAsRead(notifId);
 

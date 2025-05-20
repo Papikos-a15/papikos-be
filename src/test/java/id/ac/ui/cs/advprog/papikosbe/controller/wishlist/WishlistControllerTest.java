@@ -32,7 +32,7 @@ class WishlistControllerTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        testWishlist = new Wishlist(wishlistId, userId, kosId);
+        testWishlist = new Wishlist(userId, kosId);
     }
 
     @Test

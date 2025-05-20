@@ -43,12 +43,14 @@ class NotificationControllerTest {
         notificationId = UUID.randomUUID();
 
         // Create the test Notification using the Builder
-        testNotification = new Notification.Builder(notificationId, userId)
-                .setTitle("Test Notification")
-                .setMessage("This is a test notification message")
-                .setCreatedAt(LocalDateTime.now())
-                .setType(NotificationType.SYSTEM)
-                .setIsRead(false)
+        testNotification = Notification.builder()
+                .id(notificationId)
+                .userId((userId))
+                .title("Test Notification")
+                .message("This is a test notification message")
+                .createdAt(LocalDateTime.now())
+                .type(NotificationType.SYSTEM)
+                .isRead(false)
                 .build();
 
         testNotifications = new ArrayList<>();

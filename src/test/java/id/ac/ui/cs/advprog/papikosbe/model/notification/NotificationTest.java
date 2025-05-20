@@ -26,12 +26,14 @@ public class NotificationTest {
         createdAt = LocalDateTime.now();
 
         // Using the Builder pattern to create the Notification
-        notification = new Notification.Builder(UUID.randomUUID(), dummyUserId)
-                .setTitle(dummyTitle)
-                .setMessage(dummyMessage)
-                .setCreatedAt(createdAt)
-                .setType(NotificationType.SYSTEM)
-                .setIsRead(false)
+        notification = Notification.builder()
+                .id(UUID.randomUUID())
+                .userId(dummyUserId)
+                .title(dummyTitle)
+                .message(dummyMessage)
+                .createdAt(createdAt)
+                .type(NotificationType.SYSTEM)
+                .isRead(false)
                 .build();
     }
 

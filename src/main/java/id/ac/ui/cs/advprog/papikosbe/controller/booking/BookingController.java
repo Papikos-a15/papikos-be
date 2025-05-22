@@ -61,8 +61,9 @@ public class BookingController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Booking>> getAllBookings() {
-        List<Booking> bookings = bookingService.findAllBookings();
+    public ResponseEntity<List<Booking>> getAllBookings(Authentication authentication) {
+        UUID userId = authUtils.getUserIdFromAuth(authentication);
+        List<Booking> bookings = bookingService.findBookingsByUserId(userId);
         return ResponseEntity.ok(bookings);
     }
 

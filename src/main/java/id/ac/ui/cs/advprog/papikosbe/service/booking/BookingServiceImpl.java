@@ -154,6 +154,11 @@ public class BookingServiceImpl implements BookingService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public List<Booking> findBookingsByUserId(UUID userId) {
+        return null;
+    }
+
 
     @Override
     public void clearStore() {

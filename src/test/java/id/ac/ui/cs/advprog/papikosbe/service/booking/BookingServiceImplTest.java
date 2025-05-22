@@ -558,4 +558,45 @@ public class BookingServiceImplTest {
         verify(bookingRepository).deleteAll();
     }
 
+    @Test
+    public void testFindBookingsByUserId() {
+        // Create bookings for our test user
+        Booking userBooking1 = new Booking(
+                UUID.randomUUID(),
+                userId,
+                kosId,
+                LocalDate.now().plusDays(1),
+                2,
+                monthlyPrice,
+                fullName,
+                phoneNumber,
+                BookingStatus.PENDING_PAYMENT
+        );
+
+        // Create booking for different user
+        UUID otherUserId = UUID.randomUUID();
+        Booking otherUserBooking = new Booking(
+                UUID.randomUUID(),
+                otherUserId,
+                kosId,
+                LocalDate.now().plusDays(1),
+                2,
+                monthlyPrice,
+                "Other User",
+                phoneNumber,
+                BookingStatus.PENDING_PAYMENT
+        );
+
+        List<Booking> allBookings = List.of(userBooking1, otherUserBooking);
+        when(bookingRepository.findAll()).thenReturn(allBookings);
+
+        // Call method
+        List<Booking> userBookings = bookingService.findBookingsByUserId(userId);
+
+        // Verify
+        assertEquals(1, userBookings.size());
+        assertTrue(userBookings.contains(userBooking1));
+        assertFalse(userBookings.contains(otherUserBooking));
+    }
+
 }

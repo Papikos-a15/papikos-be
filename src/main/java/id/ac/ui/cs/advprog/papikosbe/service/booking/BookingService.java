@@ -17,7 +17,7 @@ public interface BookingService {
     void cancelBooking(UUID bookingId);
     // Add method to find bookings by owner ID
     List<Booking> findBookingsByOwnerId(UUID ownerId);
-
+    List<Booking> findBookingsByUserId(UUID userId);
     // For tests
     void clearStore();
 }

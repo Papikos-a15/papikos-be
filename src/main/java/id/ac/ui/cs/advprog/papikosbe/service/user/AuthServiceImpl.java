@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
@@ -36,5 +38,11 @@ public class AuthServiceImpl implements AuthService {
     public void logout(String token) {
         // Strategi sederhana: blacklist token
         jwtProvider.invalidate(token);
+    }
+
+    @Override
+    public UUID getUserIdByEmail(String email){
+        User user = userRepo.findByEmail(email).get();
+        return user.getId();
     }
 }

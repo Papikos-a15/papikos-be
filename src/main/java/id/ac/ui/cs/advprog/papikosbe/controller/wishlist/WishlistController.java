@@ -7,95 +7,89 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import java.util.*;
 
 @RestController
+@RequestMapping("/api/wishlists")
 public class WishlistController {
 
-    @Autowired
-    private WishlistService wishlistService;
+    private final WishlistService wishlistService;
 
     @Autowired
     public WishlistController(WishlistService wishlistService) {
         this.wishlistService = wishlistService;
     }
 
-    @RequestMapping(value = "/api/wishlists", method = RequestMethod.GET)
+    @GetMapping
     public ResponseEntity<List<Wishlist>> getAllWishlists() {
         try {
             List<Wishlist> wishlists = wishlistService.getAllWishlists();
-            return new ResponseEntity<>(wishlists, HttpStatus.OK);
+            return ResponseEntity.ok(wishlists);
         } catch (Exception e) {
-            System.out.println("Error in getting all wishlists!");
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    @RequestMapping(value = "/api/wishlists", method = RequestMethod.POST)
-    public ResponseEntity<Map<String, String>> addWishlist(@RequestBody Wishlist wishlist) {
+    @PostMapping
+    public ResponseEntity<Map<String, String>> addWishlist(@RequestBody(required = false) Wishlist wishlist) {
         Map<String, String> response = new HashMap<>();
 
         if (wishlist == null) {
             response.put("message", "Wishlist cannot be null");
-            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+            return ResponseEntity.badRequest().body(response);
         }
 
         try {
             wishlistService.addWishlist(wishlist);
             response.put("message", "Wishlist added successfully");
-            return new ResponseEntity<>(response, HttpStatus.CREATED);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IllegalArgumentException e) {
             response.put("message", e.getMessage());
-            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+            return ResponseEntity.badRequest().body(response);
         } catch (Exception e) {
             response.put("message", "An error occurred while adding the wishlist");
-            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 
-    @RequestMapping(value = "/api/wishlists/{wishlistId}", method = RequestMethod.DELETE)
+    @DeleteMapping("/{wishlistId}")
     public ResponseEntity<Map<String, String>> removeWishlist(@PathVariable UUID wishlistId) {
         Map<String, String> response = new HashMap<>();
 
         if (wishlistId == null) {
             response.put("message", "Invalid wishlist ID");
-            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+            return ResponseEntity.badRequest().body(response);
         }
 
         try {
             wishlistService.removeWishlist(wishlistId);
             response.put("message", "Wishlist removed successfully");
-            return new ResponseEntity<>(response, HttpStatus.OK);
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             response.put("message", "An error occurred while removing the wishlist");
-            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 
-    @RequestMapping(value = "/api/wishlists/user/{userId}", method = RequestMethod.GET)
+    @GetMapping("/user/{userId}")
     public ResponseEntity<List<Wishlist>> getWishlistsByUserId(@PathVariable UUID userId) {
         if (userId == null) {
-            return new ResponseEntity<>(List.of(), HttpStatus.BAD_REQUEST);
+            return ResponseEntity.badRequest().body(List.of());
         }
 
         try {
             List<Wishlist> allWishlists = wishlistService.getAllWishlists();
             List<Wishlist> userWishlists = allWishlists.stream()
-                    .filter(wishlist -> wishlist.getUserId().equals(userId))
-                    .collect(Collectors.toList());
+                    .filter(wishlist -> userId.equals(wishlist.getUserId()))
+                    .toList();
 
             if (userWishlists.isEmpty()) {
                 return new ResponseEntity<>(List.of(), HttpStatus.NO_CONTENT);
             }
 
-            return new ResponseEntity<>(userWishlists, HttpStatus.OK);
+            return ResponseEntity.ok(userWishlists);
         } catch (Exception e) {
-            System.out.println("Error in getting wishlists by user ID!");
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }

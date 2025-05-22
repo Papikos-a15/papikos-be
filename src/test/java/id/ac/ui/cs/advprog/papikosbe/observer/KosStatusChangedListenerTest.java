@@ -21,7 +21,6 @@ import java.util.UUID;
 
 import static org.mockito.Mockito.*;
 
-@SpringBootTest
 class KosStatusChangedListenerTest {
 
     @Mock

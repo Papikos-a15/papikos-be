@@ -121,8 +121,6 @@ class WalletControllerTest {
                 .andExpect(jsonPath("$.balance", Matchers.is(300.0)));
     }
 
-
-
     @Test
     void testDeleteWallet() throws Exception {
         UUID walletId = UUID.randomUUID();

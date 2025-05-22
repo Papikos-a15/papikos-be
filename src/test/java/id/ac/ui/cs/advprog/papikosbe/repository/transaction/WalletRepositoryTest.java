@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.papikosbe.repository.transaction;
 
+import id.ac.ui.cs.advprog.papikosbe.enums.WalletStatus;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Wallet;
 import id.ac.ui.cs.advprog.papikosbe.model.user.Tenant;
 import id.ac.ui.cs.advprog.papikosbe.model.user.User;
@@ -38,6 +39,7 @@ class WalletRepositoryTest {
         user = UserRepository.save(user);
 
         wallet = new Wallet(user, new BigDecimal("100.00"));
+        wallet.setStatus(WalletStatus.ACTIVE);
         wallet = walletRepository.save(wallet);
     }
 

@@ -42,8 +42,12 @@ public class WalletServiceImpl implements WalletService {
     }
 
     @Override
-    public Wallet findByUserId(UUID userId) {
-        return walletRepository.findByUserId(userId).orElse(null);
+    public Wallet getOrCreateWallet(User user) {
+        Wallet wallet = walletRepository.findByUserId(user.getId()).orElse(null);
+        if (wallet == null) {
+            wallet = create(user.getId());
+        }
+        return wallet;
     }
 
     @Override

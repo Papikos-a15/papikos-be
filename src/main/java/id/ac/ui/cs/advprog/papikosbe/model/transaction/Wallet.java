@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.papikosbe.model.transaction;
 
+import id.ac.ui.cs.advprog.papikosbe.enums.WalletStatus;
 import id.ac.ui.cs.advprog.papikosbe.model.user.User;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -35,4 +36,7 @@ public class Wallet {
         this.user = user;
         this.balance = balance;
     }
+
+    @Column(nullable = false)
+    private WalletStatus status;
 }

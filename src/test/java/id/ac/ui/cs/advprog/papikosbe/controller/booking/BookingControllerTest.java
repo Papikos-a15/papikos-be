@@ -26,6 +26,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.hamcrest.Matchers.hasSize;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
@@ -136,14 +137,48 @@ class BookingControllerTest {
     }
 
     @Test
-    void getAllBookings_returnsList() throws Exception {
-        when(bookingService.findAllBookings())
-                .thenReturn(Arrays.asList(sample));
+    void getAllBookings_returnsUserBookingsOnly() throws Exception {
+        // Create booking for current user
+        Booking userBooking = new Booking(
+                UUID.randomUUID(),
+                userId,
+                kosId,
+                LocalDate.now().plusDays(1),
+                2,
+                monthlyPrice,
+                fullName,
+                phoneNumber,
+                BookingStatus.PENDING_PAYMENT
+        );
+
+        // Create booking for different user (shouldn't be returned)
+        UUID otherUserId = UUID.randomUUID();
+        Booking otherUserBooking = new Booking(
+                UUID.randomUUID(),
+                otherUserId,
+                kosId,
+                LocalDate.now().plusDays(1),
+                2,
+                monthlyPrice,
+                "Other User",
+                phoneNumber,
+                BookingStatus.PENDING_PAYMENT
+        );
+
+        // Mock authentication to return the user ID
+        when(authUtils.getUserIdFromAuth(any())).thenReturn(userId);
+
+        // Mock service to return only user's bookings
+        when(bookingService.findBookingsByUserId(userId))
+                .thenReturn(List.of(userBooking));
 
         mockMvc.perform(get("/api/bookings")
                         .header("Authorization", "Bearer tok"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].bookingId").value(sample.getBookingId().toString()));
+                .andExpect(jsonPath("$[0].bookingId").value(userBooking.getBookingId().toString()))
+                .andExpect(jsonPath("$[0].userId").value(userId.toString()))
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$", hasSize(1)));
     }
 
     @Test

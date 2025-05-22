@@ -61,60 +61,49 @@ class WishlistControllerTest {
 
     @Test
     void testAddWishlist() {
-
-        ResponseEntity<Map<String, String>> response = wishlistController.addWishlist(userId, kosId);
+        ResponseEntity<Map<String, String>> response = wishlistController.addWishlist(testWishlist);
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals("Wishlist added successfully", response.getBody().get("message"));
-        verify(wishlistService, times(1)).addWishlist(userId, kosId);
+        verify(wishlistService, times(1)).addWishlist(testWishlist);
     }
 
     @Test
     void testAddWishlist_WithIllegalArgumentException() {
         doThrow(new IllegalArgumentException("Invalid wishlist fields"))
-                .when(wishlistService).addWishlist(eq(userId), eq(kosId));
+                .when(wishlistService).addWishlist(any(Wishlist.class));
 
-        ResponseEntity<Map<String, String>> response = wishlistController.addWishlist(userId, kosId);
+        ResponseEntity<Map<String, String>> response = wishlistController.addWishlist(testWishlist);
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals("Invalid wishlist fields", response.getBody().get("message"));
-        verify(wishlistService, times(1)).addWishlist(userId, kosId);
+        verify(wishlistService, times(1)).addWishlist(testWishlist);
     }
 
     @Test
-    void testAddWishlist_WithNullUserId() {
-        ResponseEntity<Map<String, String>> response = wishlistController.addWishlist(null, kosId);
+    void testAddWishlist_WithNullWishlist() {
+        ResponseEntity<Map<String, String>> response = wishlistController.addWishlist(null);
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals("Wishlist cannot be null", response.getBody().get("message"));
-        verify(wishlistService, never()).addWishlist(any(), any());
-    }
-
-    @Test
-    void testAddWishlist_WithNullKosId() {
-        ResponseEntity<Map<String, String>> response = wishlistController.addWishlist(kosId,null);
-
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals("Wishlist cannot be null", response.getBody().get("message"));
-        verify(wishlistService, never()).addWishlist(any(), any());
+        verify(wishlistService, never()).addWishlist(any());
     }
 
     @Test
     void testAddWishlist_WithException() {
         Map<String, String> response = new HashMap<>();
         doThrow(new RuntimeException("Unexpected error"))
-                .when(wishlistService).addWishlist(eq(userId), eq(kosId));
+                .when(wishlistService).addWishlist(any(Wishlist.class));
 
-        ResponseEntity<Map<String, String>> result = wishlistController.addWishlist(userId, kosId);
+        ResponseEntity<Map<String, String>> result = wishlistController.addWishlist(testWishlist);
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, result.getStatusCode());
         assertNotNull(result.getBody());
         assertEquals("An error occurred while adding the wishlist", result.getBody().get("message"));
-        verify(wishlistService, times(1)).addWishlist(userId, kosId);
+        verify(wishlistService, times(1)).addWishlist(testWishlist);
     }
 
     @Test
@@ -167,11 +156,11 @@ class WishlistControllerTest {
 
     @Test
     void testGetWishlistsByUserId_IdNull() {
-    ResponseEntity<List<Wishlist>> response = wishlistController.getWishlistsByUserId(null);
+        ResponseEntity<List<Wishlist>> response = wishlistController.getWishlistsByUserId(null);
 
-    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());  // Expecting BAD_REQUEST
-    assertNotNull(response.getBody());  // The body should not be null
-    assertEquals(0, response.getBody().size());
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());  // Expecting BAD_REQUEST
+        assertNotNull(response.getBody());  // The body should not be null
+        assertEquals(0, response.getBody().size());
     }
 
     @Test

@@ -29,7 +29,8 @@ public class WishlistServiceImplTest {
         UUID userId = UUID.randomUUID();
         UUID kosId = UUID.randomUUID();
 
-        Wishlist wishlist = wishlistServiceImpl.addWishlist(userId, kosId);
+        Wishlist wishlist = new Wishlist(userId, kosId);
+        wishlistServiceImpl.addWishlist(wishlist);
 
         verify(wishlistRepository, times(1)).save(wishlist);
     }

@@ -10,7 +10,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.lang.reflect.Method;
-import java.util.Set;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -36,6 +36,7 @@ class JwtTokenProviderTest {
                 .email("tenant@example.com")
                 .password("pwd")
                 .build();
+        user.setId(UUID.randomUUID());
 
         String token = jwtProvider.createToken(user);
 
@@ -48,6 +49,8 @@ class JwtTokenProviderTest {
     void testCreateTokenDifferentForDifferentUsers() {
         Admin a1 = Admin.builder().email("a1@example.com").password("pw").build();
         Admin a2 = Admin.builder().email("a2@example.com").password("pw").build();
+        a1.setId(UUID.randomUUID());
+        a2.setId(UUID.randomUUID());
 
         String t1 = jwtProvider.createToken(a1);
         String t2 = jwtProvider.createToken(a2);
@@ -65,6 +68,8 @@ class JwtTokenProviderTest {
     @Test
     void testValidateValidAndInvalidTokens() {
         Tenant t = Tenant.builder().email("t@mail.com").password("pw").build();
+        t.setId(UUID.randomUUID());
+
         String token = jwtProvider.createToken(t);
         assertTrue(jwtProvider.validate(token), "new token should be valid");
 
@@ -74,6 +79,8 @@ class JwtTokenProviderTest {
     @Test
     void testInvalidateRemovesValidity() {
         Tenant t = Tenant.builder().email("x@mail.com").password("pw").build();
+        t.setId(UUID.randomUUID());
+
         String token = jwtProvider.createToken(t);
         assertTrue(jwtProvider.validate(token));
 
@@ -101,6 +108,8 @@ class JwtTokenProviderTest {
                 .email("tenant@x.com")
                 .password("pw")
                 .build();
+        t.setId(UUID.randomUUID());
+
         String token = jwtProvider.createToken(t);
         assertTrue(jwtProvider.validate(token));
 
@@ -116,6 +125,8 @@ class JwtTokenProviderTest {
                 .email("owner@x.com")
                 .password("pw")
                 .build();  // approved defaults to false
+        o.setId(UUID.randomUUID());
+
         String token = jwtProvider.createToken(o);
         assertTrue(jwtProvider.validate(token));
 

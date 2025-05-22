@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/owners")
+@RequestMapping("/api/owners")
 @RequiredArgsConstructor
 public class OwnerController {
 
@@ -29,5 +29,22 @@ public class OwnerController {
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<ApiError> handleNotFound() {
         return ResponseEntity.status(404).body(new ApiError("Owner not found"));
+    }
+
+    /* ---------- GET UNAPPROVED OWNERS ---------- */
+    @GetMapping("/unapproved")
+    public ResponseEntity<?> getUnapprovedOwners() {
+        var owners = ownerService.findUnapprovedOwners();
+        return ResponseEntity.ok(owners);
+    }
+
+    @GetMapping("/{id}/email")
+    public ResponseEntity<String> getOwnerEmailById(@PathVariable UUID id) {
+        try {
+            Owner owner = ownerService.findOwnerById(id);
+            return ResponseEntity.ok(owner.getEmail());
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 }

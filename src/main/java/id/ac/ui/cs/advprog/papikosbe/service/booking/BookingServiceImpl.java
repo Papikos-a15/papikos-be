@@ -6,46 +6,60 @@ import id.ac.ui.cs.advprog.papikosbe.repository.booking.BookingRepository;
 import id.ac.ui.cs.advprog.papikosbe.service.kos.KosService;
 import id.ac.ui.cs.advprog.papikosbe.service.transaction.PaymentService;
 import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
+import id.ac.ui.cs.advprog.papikosbe.validator.booking.BookingValidator;
+import id.ac.ui.cs.advprog.papikosbe.validator.booking.BookingAccessValidator;
 import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.List;
-import org.springframework.stereotype.Service;
+import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class BookingServiceImpl implements BookingService {
 
     private final BookingRepository bookingRepository;
     private final KosService kosService;
     private final PaymentService paymentService;
+    private final BookingValidator stateValidator;
+
+    @Autowired
+    public BookingServiceImpl(BookingRepository bookingRepository,
+                              KosService kosService,
+                              PaymentService paymentService,
+                              BookingValidator stateValidator,
+                              BookingAccessValidator bookingAccessValidator) {
+        this.bookingRepository = bookingRepository;
+        this.kosService = kosService;
+        this.paymentService = paymentService;
+        this.stateValidator = stateValidator;}
 
     @Override
     public Booking createBooking(Booking booking) {
+        // Validate booking data
+        stateValidator.validateBasicFields(booking);
+
         // Set booking ID if not provided
         if (booking.getBookingId() == null) {
             booking.setBookingId(UUID.randomUUID());
         }
 
         Kos kos = kosService.getKosById(booking.getKosId())
-                .orElseThrow(() -> new EntityNotFoundException("Kos with ID " + booking.getKosId() + " not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Kos not found"));
         booking.setMonthlyPrice(kos.getPrice());
 
         // Ensure initial status is PENDING_PAYMENT
         booking.setStatus(BookingStatus.PENDING_PAYMENT);
-        validateBookingData(booking);
 
-        // Save booking to repository
         return bookingRepository.save(booking);
     }
 
     @Override
-    public Optional<Booking> findBookingById(UUID bookingId) {
-        return bookingRepository.findById(bookingId);
+    public Optional<Booking> findBookingById(UUID id) {
+        return bookingRepository.findById(id);
     }
 
     @Override
@@ -55,22 +69,17 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public void updateBooking(Booking booking) {
+        // Validate booking data
+        stateValidator.validateBasicFields(booking);
+
         Booking existingBooking = bookingRepository.findById(booking.getBookingId())
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 
-        // Check if booking can be edited (PENDING_PAYMENT or PAID status)
-        if (existingBooking.getStatus() != BookingStatus.PENDING_PAYMENT &&
-                existingBooking.getStatus() != BookingStatus.PAID) {
-            throw new IllegalStateException("Cannot edit booking after it has been approved or cancelled");
-        }
+        // Validate state transition
+        stateValidator.validateForUpdate(existingBooking);
 
-        // Preserve the current status to prevent status changes via general update
+        // Preserve the current status
         BookingStatus currentStatus = existingBooking.getStatus();
-
-        // Validate all updated data
-        validateBookingData(booking);
-
-        // Ensure status isn't changed through this method
         booking.setStatus(currentStatus);
 
         // Update the booking
@@ -78,106 +87,74 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public void payBooking(UUID bookingId, UUID requesterId) {
+    public void payBooking(UUID bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 
-        if (booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
-            throw new IllegalStateException("Only bookings in PENDING_PAYMENT status can be paid");
-        }
+        // Validate state transition
+        stateValidator.validateForPayment(booking);
 
-        // Verify requester is the tenant who made the booking
-        if (!booking.getUserId().equals(requesterId)) {
-            throw new IllegalStateException("Only the tenant who made the booking can pay for it");
-        }
-
-        // Get kos to find the owner
+        // Get kos to get owner ID
         Kos kos = kosService.getKosById(booking.getKosId())
                 .orElseThrow(() -> new EntityNotFoundException("Kos not found"));
 
-        // Create payment from tenant to owner
-        BigDecimal amount = BigDecimal.valueOf(booking.getTotalPrice());
-        paymentService.createPayment(booking.getUserId(), kos.getOwnerId(), amount);
+        // Create payment
+        paymentService.createPayment(
+                booking.getUserId(),
+                kos.getOwnerId(),
+                BigDecimal.valueOf(booking.getTotalPrice())
+        );
 
+        // Update booking status to PAID
         booking.setStatus(BookingStatus.PAID);
         bookingRepository.save(booking);
     }
 
     @Override
-    public void approveBooking(UUID bookingId, UUID requesterId) {
+    public void approveBooking(UUID bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 
-        // Verify booking is in PAID status
-        if (booking.getStatus() != BookingStatus.PAID) {
-            throw new IllegalStateException("Only PAID bookings can be approved");
-        }
+        // Validate state transition
+        stateValidator.validateForApproval(booking);
 
-        // Get the kos to verify ownership
-        Kos kos = kosService.getKosById(booking.getKosId())
-                .orElseThrow(() -> new EntityNotFoundException("Kos not found"));
-
-        // Verify requester is the owner of the kos
-        if (!kos.getOwnerId().equals(requesterId)) {
-            throw new IllegalStateException("Only the kos owner can approve this booking");
-        }
-
+        // Update booking status to APPROVED
         booking.setStatus(BookingStatus.APPROVED);
         bookingRepository.save(booking);
     }
-
-    @Override
-    public List<Booking> findBookingsByOwnerId(UUID ownerId) {
-        // Get all kos owned by this owner
-        List<Kos> ownerKosList = kosService.getAllKos().stream()
-                .filter(kos -> kos.getOwnerId().equals(ownerId))
-                .toList();
-
-        // Get all kos IDs owned by this owner
-        List<UUID> ownerKosIds = ownerKosList.stream()
-                .map(Kos::getId)
-                .toList();
-
-        // Filter all bookings to only include those for the owner's kos
-        return bookingRepository.findAll().stream()
-                .filter(booking -> ownerKosIds.contains(booking.getKosId()))
-                .toList();
-    }
-
 
     @Override
     public void cancelBooking(UUID bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 
+        // Validate state transition
+        stateValidator.validateForCancellation(booking);
+
+        // Update booking status to CANCELLED
         booking.setStatus(BookingStatus.CANCELLED);
         bookingRepository.save(booking);
     }
 
-    // Helper method to validate booking data
-    private void validateBookingData(Booking booking) {
-        if (booking.getDuration() < 1) {
-            throw new IllegalArgumentException("Duration must be at least 1 month");
-        }
+    @Override
+    public List<Booking> findBookingsByOwnerId(UUID ownerId) {
+        // Get all kos owned by this owner
+        List<Kos> ownerKos = kosService.getAllKos().stream()
+                .filter(kos -> kos.getOwnerId().equals(ownerId))
+                .collect(Collectors.toList());
 
-        if (booking.getCheckInDate() == null || booking.getCheckInDate().isBefore(LocalDate.now())) {
-            throw new IllegalArgumentException("Check-in date cannot be in the past");
-        }
+        // Extract kos IDs
+        List<UUID> ownerKosIds = ownerKos.stream()
+                .map(Kos::getId)
+                .collect(Collectors.toList());
 
-        if (booking.getMonthlyPrice() <= 0) {
-            throw new IllegalArgumentException("Monthly price must be greater than 0");
-        }
-
-        if (booking.getFullName() == null || booking.getFullName().trim().isEmpty()) {
-            throw new IllegalArgumentException("Full name cannot be empty");
-        }
-
-        if (booking.getPhoneNumber() == null || booking.getPhoneNumber().trim().isEmpty()) {
-            throw new IllegalArgumentException("Phone number cannot be empty");
-        }
+        // Find all bookings for these kos
+        return bookingRepository.findAll().stream()
+                .filter(booking -> ownerKosIds.contains(booking.getKosId()))
+                .collect(Collectors.toList());
     }
 
-    // Utility for tests
+
     @Override
     public void clearStore() {
         bookingRepository.deleteAll();

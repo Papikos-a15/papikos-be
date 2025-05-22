@@ -99,16 +99,12 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public void approveBooking(UUID bookingId) {
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
+    public void approveBooking(UUID bookingId, UUID requesterId) {
+    }
 
-        if (booking.getStatus() != BookingStatus.PAID) {
-            throw new IllegalStateException("Only PAID bookings can be approved");
-        }
-
-        booking.setStatus(BookingStatus.APPROVED);
-        bookingRepository.save(booking);
+    @Override
+    public List<Booking> findBookingsByOwnerId(UUID ownerId) {
+    return null;
     }
 
     @Override

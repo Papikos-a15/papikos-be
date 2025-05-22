@@ -35,6 +35,7 @@ public class Wallet {
         }
         this.user = user;
         this.balance = balance;
+        this.status = WalletStatus.ACTIVE;
     }
 
     @Column(nullable = false)

@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
@@ -41,6 +42,9 @@ class TransactionServiceImplTest {
 
     @Mock
     private WalletRepository walletRepository;
+
+    @Mock
+    private WalletService walletService;
 
     @Mock
     private TransactionFactory transactionFactory;
@@ -70,20 +74,27 @@ class TransactionServiceImplTest {
         ownerWallet.setStatus(WalletStatus.ACTIVE);
         ownerWallet.setBalance(new BigDecimal("50000"));
 
-        Payment payment = new Payment();
+        Payment payment = Mockito.spy(new Payment());
         payment.setUser(tenant);
         payment.setOwner(owner);
         payment.setAmount(amount);
 
+        // SETUP MOCKS
         when(userRepository.findById(tenantId)).thenReturn(Optional.of(tenant));
         when(userRepository.findById(ownerId)).thenReturn(Optional.of(owner));
         when(walletRepository.findByUserId(tenantId)).thenReturn(Optional.of(tenantWallet));
         when(walletRepository.findByUserId(ownerId)).thenReturn(Optional.of(ownerWallet));
+        when(walletService.getOrCreateWallet(tenant)).thenReturn(tenantWallet);
+        when(walletService.getOrCreateWallet(owner)).thenReturn(ownerWallet);
         when(transactionFactory.createTransaction(TransactionType.PAYMENT, tenantId, amount, ownerId))
                 .thenReturn(payment);
+        when(payment.process(tenantWallet, ownerWallet)).thenReturn(TransactionStatus.COMPLETED);
+        when(transactionRepository.save(payment)).thenReturn(payment);
 
+        // ACTION
         Payment result = transactionService.createPayment(tenantId, ownerId, amount);
 
+        // ASSERTION
         assertNotNull(result);
         assertEquals(TransactionStatus.COMPLETED, result.getStatus());
         verify(walletRepository).save(tenantWallet);
@@ -120,8 +131,6 @@ class TransactionServiceImplTest {
 
         when(userRepository.findById(tenantId)).thenReturn(Optional.of(tenant));
         when(userRepository.findById(ownerId)).thenReturn(Optional.of(owner));
-        when(walletRepository.findByUserId(tenantId)).thenReturn(Optional.of(tenantWallet));
-        when(walletRepository.findByUserId(ownerId)).thenReturn(Optional.of(ownerWallet));
 
         assertThrows(Exception.class, () -> transactionService.createPayment(tenantId, ownerId, amount));
     }
@@ -139,7 +148,7 @@ class TransactionServiceImplTest {
         tenantWallet.setStatus(WalletStatus.ACTIVE);
         tenantWallet.setBalance(new BigDecimal("50000"));
 
-        TopUp topUp = new TopUp();
+        TopUp topUp = Mockito.spy(new TopUp());
         topUp.setUser(tenant);
         topUp.setAmount(amount);
         topUp.setStatus(TransactionStatus.COMPLETED);
@@ -147,6 +156,8 @@ class TransactionServiceImplTest {
         when(userRepository.findById(tenantId)).thenReturn(Optional.of(tenant));
         when(walletRepository.findByUserId(tenantId)).thenReturn(Optional.of(tenantWallet));
         when(transactionFactory.createTransaction(TransactionType.TOP_UP, tenantId, amount, null)).thenReturn(topUp);
+        when(topUp.process(tenantWallet, null)).thenReturn(TransactionStatus.COMPLETED); // tambahkan ini jika perlu
+        when(transactionRepository.save(topUp)).thenReturn(topUp);
 
         TopUp result = transactionService.createTopUp(tenantId, amount);
 
@@ -155,6 +166,7 @@ class TransactionServiceImplTest {
         verify(walletRepository).save(tenantWallet);
         verify(transactionRepository).save(topUp);
     }
+
 
     @Test
     void testCreateTopUp_Failure_InvalidAmount() throws Exception {

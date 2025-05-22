@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@DiscriminatorValue("TOPUP")
+@DiscriminatorValue("TOP_UP")
 @Getter
 @Setter
 public class TopUp extends Transaction {

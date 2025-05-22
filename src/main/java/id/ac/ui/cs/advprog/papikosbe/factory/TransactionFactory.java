@@ -39,7 +39,6 @@ public class TransactionFactory {
 
     private TopUp createTopUp(UUID userId, BigDecimal amount) throws Exception {
         TopUp topUp = new TopUp();
-        topUp.setId(UUID.randomUUID());
         topUp.setAmount(amount);
         User user = userRepository.findById(userId).orElseThrow(() -> new Exception("User not found"));
         topUp.setUser(user);
@@ -48,7 +47,6 @@ public class TransactionFactory {
 
     private Payment createPayment(UUID tenantId, UUID ownerId, BigDecimal amount) throws Exception {
         Payment payment = new Payment();
-        payment.setId(UUID.randomUUID());
         payment.setAmount(amount);
         User tenant = userRepository.findById(tenantId).orElseThrow(() -> new Exception("Tenant not found"));
         User owner = userRepository.findById(ownerId).orElseThrow(() -> new Exception("Owner not found"));

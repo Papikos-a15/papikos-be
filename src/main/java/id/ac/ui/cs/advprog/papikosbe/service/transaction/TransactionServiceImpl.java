@@ -37,6 +37,9 @@ public class TransactionServiceImpl implements TransactionService {
     @Autowired
     private TransactionFactory transactionFactory;
 
+    @Autowired
+    private WalletService walletService;
+
     @Override
     public Transaction getTransactionById(UUID id) throws Exception {
         return transactionRepository.findById(id)
@@ -74,15 +77,18 @@ public class TransactionServiceImpl implements TransactionService {
 
         TransactionStatus status = payment.process(tenantWallet, ownerWallet);
 
+
+
         if (status == TransactionStatus.COMPLETED) {
             walletRepository.save(tenantWallet);
             walletRepository.save(ownerWallet);
-            transactionRepository.save(payment);
+            Payment savedPayment = transactionRepository.save(payment);
+            System.out.println("Process status: " + status);
+            System.out.println("Saved payment: " + savedPayment);
+            return savedPayment;
         } else {
             throw new Exception("Pembayaran gagal: " + status);
         }
-
-        return payment;
     }
 
     /*** TopUp Methods ***/
@@ -101,19 +107,15 @@ public class TransactionServiceImpl implements TransactionService {
 
         if (status == TransactionStatus.COMPLETED) {
             walletRepository.save(userWallet);
-            transactionRepository.save(topUp);
+            TopUp savedTopUp = transactionRepository.save(topUp);
+            return savedTopUp;
         } else {
             throw new Exception("Top up gagal: " + status);
         }
-
-        return topUp;
     }
 
     /*** Validation Methods ***/
     public void validatePayment(UUID tenantId, UUID ownerId, BigDecimal amount) throws Exception {
-        System.out.println("Cari Tenant ID: " + tenantId);
-        System.out.println("Jumlah user dalam repo: " + userRepository.findAll().size());
-
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new Exception("Jumlah pembayaran harus lebih dari 0");
         }
@@ -128,11 +130,9 @@ public class TransactionServiceImpl implements TransactionService {
         User owner = userRepository.findById(ownerId)
                 .orElseThrow(() -> new Exception("Owner tidak ditemukan"));
 
-        Wallet tenantWallet = walletRepository.findByUserId(tenantId)
-                .orElseThrow(() -> new Exception("Wallet tenant tidak ditemukan"));
+        Wallet tenantWallet = walletService.getOrCreateWallet(tenant);
 
-        Wallet ownerWallet = walletRepository.findByUserId(ownerId)
-                .orElseThrow(() -> new Exception("Wallet owner tidak ditemukan"));
+        Wallet ownerWallet = walletService.getOrCreateWallet(owner);
 
         if (tenantWallet.getStatus() != WalletStatus.ACTIVE) {
             throw new Exception("Wallet tenant tidak aktif");

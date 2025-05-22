@@ -7,7 +7,8 @@ import static org.mockito.Mockito.*;
 import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
 import id.ac.ui.cs.advprog.papikosbe.repository.booking.BookingRepository;
 import id.ac.ui.cs.advprog.papikosbe.service.kos.KosService;
-import id.ac.ui.cs.advprog.papikosbe.service.transaction.PaymentService;
+import id.ac.ui.cs.advprog.papikosbe.service.transaction.TransactionService;
+import id.ac.ui.cs.advprog.papikosbe.service.transaction.TransactionService;
 import id.ac.ui.cs.advprog.papikosbe.validator.booking.BookingValidator;
 import id.ac.ui.cs.advprog.papikosbe.validator.booking.BookingAccessValidator;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,7 +33,7 @@ public class BookingServiceImplTest {
     private KosService kosService;
 
     @Mock
-    private PaymentService paymentService;
+    private TransactionService transactionService;
 
     @Mock
     private BookingRepository bookingRepository;
@@ -55,7 +56,7 @@ public class BookingServiceImplTest {
     @BeforeEach
     public void setUp() {
         // Create a real BookingServiceImpl with mocked dependencies
-        bookingService = new BookingServiceImpl(bookingRepository, kosService, paymentService,stateValidator, bookingAccessValidator);
+        bookingService = new BookingServiceImpl(bookingRepository, kosService, transactionService,stateValidator, bookingAccessValidator);
 
         // Initialize test data
         monthlyPrice = 1200000.0;
@@ -190,7 +191,7 @@ public class BookingServiceImplTest {
     }
 
     @Test
-    public void testEditBookingAfterPaymentBeforeApproval() {
+    public void testEditBookingAfterPaymentBeforeApproval() throws Exception {
         // Create booking with test kos
         Booking booking = new Booking(
                 UUID.randomUUID(),
@@ -231,7 +232,7 @@ public class BookingServiceImplTest {
             when(bookingRepository.findById(booking.getBookingId())).thenReturn(Optional.of(paidBooking));
             when(bookingRepository.save(any(Booking.class))).thenReturn(paidBooking);
             return null;
-        }).when(paymentService).createPayment(any(UUID.class), any(UUID.class), any(BigDecimal.class));
+        }).when(transactionService).createPayment(any(UUID.class), any(UUID.class), any(BigDecimal.class));
 
         // Now pay the booking - this transitions from PENDING to PAID
         bookingService.payBooking(createdBooking.getBookingId());
@@ -263,7 +264,7 @@ public class BookingServiceImplTest {
     }
 
     @Test
-    public void testEditBookingAfterApprovalShouldFail() {
+    public void testEditBookingAfterApprovalShouldFail() throws Exception {
         // Create booking with test kos
         Booking booking = new Booking(
                 UUID.randomUUID(),
@@ -418,7 +419,7 @@ public class BookingServiceImplTest {
     }
 
     @Test
-    public void testPayBooking() {
+    public void testPayBooking() throws Exception {
         // Create a booking
         Booking booking = new Booking(
                 UUID.randomUUID(),
@@ -439,7 +440,7 @@ public class BookingServiceImplTest {
         bookingService.payBooking(booking.getBookingId());
 
         // Verify payment was created with correct parameters
-        verify(paymentService).createPayment(any(UUID.class), any(UUID.class), any(BigDecimal.class));
+        verify(transactionService).createPayment(any(UUID.class), any(UUID.class), any(BigDecimal.class));
 
         // Verify booking was updated
         ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);

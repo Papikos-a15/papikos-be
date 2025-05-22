@@ -156,7 +156,9 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public List<Booking> findBookingsByUserId(UUID userId) {
-        return null;
+        return bookingRepository.findAll().stream()
+                .filter(booking -> booking.getUserId().equals(userId))
+                .collect(Collectors.toList());
     }
 
 

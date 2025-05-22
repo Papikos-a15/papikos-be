@@ -76,25 +76,29 @@ public class BookingController {
         }
     }
 
-//    @PostMapping("/{id}/approve")
-//    public ResponseEntity<Booking> approveBooking(@PathVariable UUID id) {
-//        try {
-//            // Call service to approve the booking
+    @PostMapping("/{id}/approve")
+    public ResponseEntity<Booking> approveBooking(@PathVariable UUID id) {
+        try {
+            // Call service to approve the booking
 //            bookingService.approveBooking(id);
-//
-//            // Fetch the updated booking to return in response
-//            return bookingService.findBookingById(id)
-//                    .map(ResponseEntity::ok)
-//                    .orElse(ResponseEntity.notFound().build());
-//        } catch (EntityNotFoundException e) {
-//            // Booking not found
-//            return ResponseEntity.notFound().build();
-//        } catch (IllegalStateException e) {
-//            // Invalid status transition (e.g., trying to approve unpaid booking)
-//            return ResponseEntity.status(403).build(); // Forbidden
-//        }
-//    }
 
+            // Fetch the updated booking to return in response
+            return bookingService.findBookingById(id)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (EntityNotFoundException e) {
+            // Booking not found
+            return ResponseEntity.notFound().build();
+        } catch (IllegalStateException e) {
+            // Invalid status transition (e.g., trying to approve unpaid booking)
+            return ResponseEntity.status(403).build(); // Forbidden
+        }
+    }
+
+    @GetMapping("/owner/{ownerId}")
+    public ResponseEntity<List<Booking>> getBookingsByOwnerId(@PathVariable UUID ownerId) {
+        return ResponseEntity.status(403).build();
+    }
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancelBooking(@PathVariable UUID id) {
         try {

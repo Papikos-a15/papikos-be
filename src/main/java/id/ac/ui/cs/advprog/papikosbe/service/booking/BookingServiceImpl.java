@@ -78,12 +78,17 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public void payBooking(UUID bookingId) {
+    public void payBooking(UUID bookingId, UUID requesterId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 
         if (booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
             throw new IllegalStateException("Only bookings in PENDING_PAYMENT status can be paid");
+        }
+
+        // Verify requester is the tenant who made the booking
+        if (!booking.getUserId().equals(requesterId)) {
+            throw new IllegalStateException("Only the tenant who made the booking can pay for it");
         }
 
         // Get kos to find the owner
@@ -100,12 +105,45 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public void approveBooking(UUID bookingId, UUID requesterId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
+
+        // Verify booking is in PAID status
+        if (booking.getStatus() != BookingStatus.PAID) {
+            throw new IllegalStateException("Only PAID bookings can be approved");
+        }
+
+        // Get the kos to verify ownership
+        Kos kos = kosService.getKosById(booking.getKosId())
+                .orElseThrow(() -> new EntityNotFoundException("Kos not found"));
+
+        // Verify requester is the owner of the kos
+        if (!kos.getOwnerId().equals(requesterId)) {
+            throw new IllegalStateException("Only the kos owner can approve this booking");
+        }
+
+        booking.setStatus(BookingStatus.APPROVED);
+        bookingRepository.save(booking);
     }
 
     @Override
     public List<Booking> findBookingsByOwnerId(UUID ownerId) {
-    return null;
+        // Get all kos owned by this owner
+        List<Kos> ownerKosList = kosService.getAllKos().stream()
+                .filter(kos -> kos.getOwnerId().equals(ownerId))
+                .toList();
+
+        // Get all kos IDs owned by this owner
+        List<UUID> ownerKosIds = ownerKosList.stream()
+                .map(Kos::getId)
+                .toList();
+
+        // Filter all bookings to only include those for the owner's kos
+        return bookingRepository.findAll().stream()
+                .filter(booking -> ownerKosIds.contains(booking.getKosId()))
+                .toList();
     }
+
 
     @Override
     public void cancelBooking(UUID bookingId) {

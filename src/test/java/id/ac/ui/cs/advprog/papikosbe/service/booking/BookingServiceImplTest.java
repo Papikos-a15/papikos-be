@@ -241,7 +241,7 @@ public class BookingServiceImplTest {
         }).when(paymentService).createPayment(eq(userId), eq(ownerId), any(BigDecimal.class));
 
         // Now pay the booking - this transitions from PENDING to PAID
-        bookingService.payBooking(createdBooking.getBookingId());
+        bookingService.payBooking(createdBooking.getBookingId(), userId);
 
         // Edit after payment
         Booking updatedBooking = new Booking(
@@ -313,7 +313,7 @@ public class BookingServiceImplTest {
         }).when(paymentService).createPayment(eq(userId), eq(ownerId), any(BigDecimal.class));
 
         // Pay the booking
-        bookingService.payBooking(createdBooking.getBookingId());
+        bookingService.payBooking(createdBooking.getBookingId(), userId);
 
         // Prepare for approval
         Booking approvedBooking = new Booking(
@@ -458,6 +458,64 @@ public class BookingServiceImplTest {
     }
 
     @Test
+    public void testPayBookingWithWrongUser() {
+        // Create a booking
+        Booking booking = new Booking(
+                UUID.randomUUID(),
+                userId,
+                kosId,
+                LocalDate.now().plusDays(7),
+                3,
+                monthlyPrice,
+                fullName,
+                phoneNumber,
+                BookingStatus.PENDING_PAYMENT
+        );
+
+        UUID wrongUserId = UUID.randomUUID(); // Different user
+
+        when(bookingRepository.findById(booking.getBookingId())).thenReturn(Optional.of(booking));
+
+        // Should throw exception when wrong user tries to pay
+        assertThrows(IllegalStateException.class, () ->
+                bookingService.payBooking(booking.getBookingId(), wrongUserId));
+
+        // Verify payment was never created
+        verify(paymentService, never()).createPayment(any(), any(), any());
+        verify(bookingRepository, never()).save(any());
+    }
+
+    @Test
+    public void testPayBookingWithCorrectUser() {
+        // Create a booking
+        Booking booking = new Booking(
+                UUID.randomUUID(),
+                userId,
+                kosId,
+                LocalDate.now().plusDays(7),
+                3,
+                monthlyPrice,
+                fullName,
+                phoneNumber,
+                BookingStatus.PENDING_PAYMENT
+        );
+
+        when(bookingRepository.findById(booking.getBookingId())).thenReturn(Optional.of(booking));
+        when(kosService.getKosById(kosId)).thenReturn(Optional.of(testKos));
+
+        // Pay with correct user ID
+        bookingService.payBooking(booking.getBookingId(), userId);
+
+        // Verify payment was created
+        verify(paymentService).createPayment(eq(userId), eq(ownerId), any(BigDecimal.class));
+
+        // Verify booking was updated
+        ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
+        verify(bookingRepository).save(bookingCaptor.capture());
+        assertEquals(BookingStatus.PAID, bookingCaptor.getValue().getStatus());
+    }
+
+    @Test
     public void testPayBookingWithInvalidStatus() {
         // Create a booking that's already paid
         Booking booking = new Booking(
@@ -476,7 +534,7 @@ public class BookingServiceImplTest {
 
         // Should throw exception when trying to pay already paid booking
         assertThrows(IllegalStateException.class, () ->
-                bookingService.payBooking(booking.getBookingId()));
+                bookingService.payBooking(booking.getBookingId(),userId));
 
         // Verify payment was never created
         verify(paymentService, never()).createPayment(any(), any(), any());

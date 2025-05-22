@@ -61,7 +61,7 @@ public class BookingController {
     public ResponseEntity<Booking> payBooking(@PathVariable UUID id) {
         try {
             // Call service to pay the booking
-            bookingService.payBooking(id);
+//            bookingService.payBooking(id);
 
             // Fetch the updated booking to return in response
             return bookingService.findBookingById(id)

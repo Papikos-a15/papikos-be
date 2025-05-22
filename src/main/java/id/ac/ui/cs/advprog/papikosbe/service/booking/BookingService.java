@@ -12,7 +12,7 @@ public interface BookingService {
     void updateBooking(Booking booking);
 
     // Specific status transition methods (following OCP)
-    void payBooking(UUID bookingId);
+    void payBooking(UUID bookingId, UUID requesterId);
     void approveBooking(UUID bookingId, UUID requesterId);
     void cancelBooking(UUID bookingId);
     // Add method to find bookings by owner ID

@@ -31,19 +31,16 @@ public class WishlistController {
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, String>> addWishlist(
-            @RequestParam(required = false) UUID userId,
-            @RequestParam(required = false) UUID kosId)
-    {
+    public ResponseEntity<Map<String, String>> addWishlist(@RequestBody(required = false) Wishlist wishlist) {
         Map<String, String> response = new HashMap<>();
 
-        if (userId == null || kosId == null) {
+        if (wishlist == null) {
             response.put("message", "Wishlist cannot be null");
             return ResponseEntity.badRequest().body(response);
         }
 
         try {
-            wishlistService.addWishlist(userId, kosId);
+            wishlistService.addWishlist(wishlist);
             response.put("message", "Wishlist added successfully");
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IllegalArgumentException e) {

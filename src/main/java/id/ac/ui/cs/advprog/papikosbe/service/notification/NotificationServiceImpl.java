@@ -3,6 +3,7 @@ package id.ac.ui.cs.advprog.papikosbe.service.notification;
 import id.ac.ui.cs.advprog.papikosbe.enums.NotificationType;
 import id.ac.ui.cs.advprog.papikosbe.model.notification.Notification;
 import id.ac.ui.cs.advprog.papikosbe.repository.notification.NotificationRepository;
+import id.ac.ui.cs.advprog.papikosbe.observer.NotificationPublisher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,10 +16,12 @@ import java.util.UUID;
 public class NotificationServiceImpl implements NotificationService {
 
     private final NotificationRepository notificationRepository;
+    private final NotificationPublisher notificationPublisher;
 
     @Autowired
-    public NotificationServiceImpl(NotificationRepository notificationRepository) {
+    public NotificationServiceImpl(NotificationRepository notificationRepository, NotificationPublisher notificationPublisher) {
         this.notificationRepository = notificationRepository;
+        this.notificationPublisher = notificationPublisher;
     }
 
     @Override
@@ -32,7 +35,11 @@ public class NotificationServiceImpl implements NotificationService {
                 .type(type)
                 .isRead(false)
                 .build();
-        return notificationRepository.save(notification);
+        Notification saved = notificationRepository.save(notification);
+
+        notificationPublisher.publish(saved);
+
+        return saved;
     }
 
     @Override

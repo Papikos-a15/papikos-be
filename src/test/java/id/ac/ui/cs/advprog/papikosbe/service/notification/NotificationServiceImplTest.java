@@ -2,6 +2,7 @@ package id.ac.ui.cs.advprog.papikosbe.service.notification;
 
 import id.ac.ui.cs.advprog.papikosbe.enums.NotificationType;
 import id.ac.ui.cs.advprog.papikosbe.model.notification.Notification;
+import id.ac.ui.cs.advprog.papikosbe.observer.NotificationPublisher;
 import id.ac.ui.cs.advprog.papikosbe.repository.notification.NotificationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,6 +17,9 @@ class NotificationServiceImplTest {
 
     @Mock
     private NotificationRepository notificationRepository;
+
+    @Mock
+    private NotificationPublisher notificationPublisher;
 
     @InjectMocks
     private NotificationServiceImpl notificationService;

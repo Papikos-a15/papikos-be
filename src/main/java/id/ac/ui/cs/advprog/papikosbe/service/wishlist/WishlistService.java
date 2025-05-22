@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface WishlistService {
-    public void addWishlist(Wishlist wishlist);
-    public void removeWishlist(UUID wishlistId);
-    public List<Wishlist> getAllWishlists();
+    Wishlist addWishlist(UUID userId, UUID kosId);
+    void removeWishlist(UUID wishlistId);
+    List<Wishlist> getAllWishlists();
 }

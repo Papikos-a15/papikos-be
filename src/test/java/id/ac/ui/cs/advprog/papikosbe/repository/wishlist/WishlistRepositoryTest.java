@@ -19,12 +19,13 @@ public class WishlistRepositoryTest {
     private WishlistRepository wishlistRepository;
     private Wishlist wishlist1;
     private Wishlist wishlist2;
+    private UUID kosId1;
 
     @BeforeEach
     public void setUp() {
 
         UUID userId1 = UUID.randomUUID();
-        UUID kosId1 = UUID.randomUUID();
+        kosId1 = UUID.randomUUID();
         UUID userId2 = UUID.randomUUID();
         UUID kosId2 = UUID.randomUUID();
 
@@ -67,5 +68,12 @@ public class WishlistRepositoryTest {
     public void testFindAll() {
         List<Wishlist> allWishlist = wishlistRepository.findAll();
         assertEquals(2, allWishlist.size());
+    }
+
+    @Test
+    public void testFindAllByKosId() {
+        List<Wishlist> wishlistByKos = wishlistRepository.findByKosId(kosId1);
+        assertEquals(1, wishlistByKos.size());
+        assertEquals(kosId1, wishlistByKos.getFirst().getKosId());
     }
 }

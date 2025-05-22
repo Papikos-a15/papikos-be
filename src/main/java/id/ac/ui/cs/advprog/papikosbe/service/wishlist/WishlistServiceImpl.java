@@ -16,8 +16,10 @@ public class WishlistServiceImpl implements WishlistService {
         this.wishlistRepository = wishlistRepository;
     }
 
-    public void addWishlist(Wishlist wishlist) {
+    public Wishlist addWishlist(UUID userId, UUID kosId) {
+        Wishlist wishlist = new Wishlist(userId, kosId);
         wishlistRepository.save(wishlist);
+        return wishlist;
     }
 
     public void removeWishlist(UUID wishlistId) {

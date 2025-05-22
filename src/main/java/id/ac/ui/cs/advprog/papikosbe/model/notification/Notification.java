@@ -40,10 +40,6 @@ public class Notification {
     @Column(name = "is_read", nullable = false)
     private boolean isRead;
 
-    /**
-     * @deprecated Use the new constructor with full details instead.
-     * This constructor is kept for backward compatibility and will be removed in future updates.
-     */
     @Deprecated
     public Notification(UUID id, UUID userId, String title, String message, LocalDateTime createdAt, NotificationType type, boolean isRead) {
         this.id = id;

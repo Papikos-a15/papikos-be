@@ -61,51 +61,60 @@ class WishlistControllerTest {
 
     @Test
     void testAddWishlist() {
-        doNothing().when(wishlistService).addWishlist(any(Wishlist.class));
 
-        ResponseEntity<Map<String, String>> response = wishlistController.addWishlist(testWishlist);
+        ResponseEntity<Map<String, String>> response = wishlistController.addWishlist(userId, kosId);
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals("Wishlist added successfully", response.getBody().get("message"));
-        verify(wishlistService, times(1)).addWishlist(testWishlist);
+        verify(wishlistService, times(1)).addWishlist(userId, kosId);
     }
 
     @Test
     void testAddWishlist_WithIllegalArgumentException() {
         doThrow(new IllegalArgumentException("Invalid wishlist fields"))
-                .when(wishlistService).addWishlist(any(Wishlist.class));
+                .when(wishlistService).addWishlist(eq(userId), eq(kosId));
 
-        ResponseEntity<Map<String, String>> response = wishlistController.addWishlist(testWishlist);
+        ResponseEntity<Map<String, String>> response = wishlistController.addWishlist(userId, kosId);
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals("Invalid wishlist fields", response.getBody().get("message"));
-        verify(wishlistService, times(1)).addWishlist(testWishlist);
+        verify(wishlistService, times(1)).addWishlist(userId, kosId);
     }
 
     @Test
-    void testAddWishlist_WithNullWishlist() {
-        ResponseEntity<Map<String, String>> response = wishlistController.addWishlist(null);
+    void testAddWishlist_WithNullUserId() {
+        ResponseEntity<Map<String, String>> response = wishlistController.addWishlist(null, kosId);
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals("Wishlist cannot be null", response.getBody().get("message"));
-        verify(wishlistService, never()).addWishlist(any());
+        verify(wishlistService, never()).addWishlist(any(), any());
+    }
+
+    @Test
+    void testAddWishlist_WithNullKosId() {
+        ResponseEntity<Map<String, String>> response = wishlistController.addWishlist(kosId,null);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("Wishlist cannot be null", response.getBody().get("message"));
+        verify(wishlistService, never()).addWishlist(any(), any());
     }
 
     @Test
     void testAddWishlist_WithException() {
         Map<String, String> response = new HashMap<>();
         doThrow(new RuntimeException("Unexpected error"))
-                .when(wishlistService).addWishlist(any(Wishlist.class));
+                .when(wishlistService).addWishlist(eq(userId), eq(kosId));
 
-        ResponseEntity<Map<String, String>> result = wishlistController.addWishlist(testWishlist);
+        ResponseEntity<Map<String, String>> result = wishlistController.addWishlist(userId, kosId);
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, result.getStatusCode());
         assertNotNull(result.getBody());
         assertEquals("An error occurred while adding the wishlist", result.getBody().get("message"));
-        verify(wishlistService, times(1)).addWishlist(testWishlist);
+        verify(wishlistService, times(1)).addWishlist(userId, kosId);
     }
 
     @Test

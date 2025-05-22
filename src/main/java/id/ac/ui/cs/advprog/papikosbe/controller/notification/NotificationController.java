@@ -35,14 +35,22 @@ public class NotificationController {
     }
 
     @PostMapping
-    public ResponseEntity<Notification> createNotification(
-            @RequestParam(required = false) UUID userId,
-            @RequestParam(required = false) String title,
-            @RequestParam(required = false) String message,
-            @RequestParam(required = false) NotificationType type) {
+    public ResponseEntity<Notification> createNotification(@RequestBody Map<String, Object> notificationData) {
+        UUID userId;
+        String title;
+        String message;
+        NotificationType type;
+        try{
+            userId = UUID.fromString((String) notificationData.get("userId"));
+            title = (String) notificationData.get("title");
+            message = (String) notificationData.get("message");
+            type = NotificationType.valueOf((String) notificationData.get("type"));
 
-        if (userId == null || title == null || message == null || type == null) {
-            return ResponseEntity.badRequest().build();
+            if (userId == null || title == null || message == null || type == null) {
+                return ResponseEntity.badRequest().build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
         try {
@@ -52,6 +60,7 @@ public class NotificationController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
 
     @PatchMapping("/{notificationId}/read")
     public ResponseEntity<Map<String, String>> markAsRead(@PathVariable(required = false) UUID notificationId) {

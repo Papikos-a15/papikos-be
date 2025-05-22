@@ -6,6 +6,7 @@ import id.ac.ui.cs.advprog.papikosbe.service.booking.BookingService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -58,10 +59,13 @@ public class BookingController {
     }
 
     @PostMapping("/{id}/pay")
-    public ResponseEntity<Booking> payBooking(@PathVariable UUID id) {
+    public ResponseEntity<Booking> payBooking(@PathVariable UUID id, Authentication authentication) {
         try {
+            // Extract user ID from authentication
+            UUID requesterId = UUID.randomUUID(); // This should come from the authentication object
+
             // Call service to pay the booking
-//            bookingService.payBooking(id);
+            bookingService.payBooking(id, requesterId);
 
             // Fetch the updated booking to return in response
             return bookingService.findBookingById(id)
@@ -71,16 +75,19 @@ public class BookingController {
             // Booking not found
             return ResponseEntity.notFound().build();
         } catch (IllegalStateException e) {
-            // Invalid status transition (e.g., trying to pay an already paid booking)
+            // Invalid status transition or wrong user
             return ResponseEntity.status(403).build(); // Forbidden
         }
     }
 
     @PostMapping("/{id}/approve")
-    public ResponseEntity<Booking> approveBooking(@PathVariable UUID id) {
+    public ResponseEntity<Booking> approveBooking(@PathVariable UUID id, Authentication authentication) {
         try {
+            // Extract owner ID from authentication
+            UUID ownerId = UUID.randomUUID(); // This should come from the authentication object
+
             // Call service to approve the booking
-//            bookingService.approveBooking(id);
+            bookingService.approveBooking(id, ownerId);
 
             // Fetch the updated booking to return in response
             return bookingService.findBookingById(id)
@@ -90,15 +97,17 @@ public class BookingController {
             // Booking not found
             return ResponseEntity.notFound().build();
         } catch (IllegalStateException e) {
-            // Invalid status transition (e.g., trying to approve unpaid booking)
+            // Invalid status transition or not the owner
             return ResponseEntity.status(403).build(); // Forbidden
         }
     }
 
     @GetMapping("/owner/{ownerId}")
     public ResponseEntity<List<Booking>> getBookingsByOwnerId(@PathVariable UUID ownerId) {
-        return ResponseEntity.status(403).build();
+        List<Booking> bookings = bookingService.findBookingsByOwnerId(ownerId);
+        return ResponseEntity.ok(bookings);
     }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancelBooking(@PathVariable UUID id) {
         try {

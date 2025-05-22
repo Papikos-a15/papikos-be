@@ -4,7 +4,7 @@ import id.ac.ui.cs.advprog.papikosbe.model.booking.Booking;
 import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
 import id.ac.ui.cs.advprog.papikosbe.repository.booking.BookingRepository;
 import id.ac.ui.cs.advprog.papikosbe.service.kos.KosService;
-import id.ac.ui.cs.advprog.papikosbe.service.transaction.PaymentService;
+import id.ac.ui.cs.advprog.papikosbe.service.transaction.TransactionService;
 import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
 import id.ac.ui.cs.advprog.papikosbe.validator.booking.BookingValidator;
 import id.ac.ui.cs.advprog.papikosbe.validator.booking.BookingAccessValidator;
@@ -23,18 +23,18 @@ public class BookingServiceImpl implements BookingService {
 
     private final BookingRepository bookingRepository;
     private final KosService kosService;
-    private final PaymentService paymentService;
+    private final TransactionService transactionService;
     private final BookingValidator stateValidator;
 
     @Autowired
     public BookingServiceImpl(BookingRepository bookingRepository,
                               KosService kosService,
-                              PaymentService paymentService,
+                              TransactionService transactionService,
                               BookingValidator stateValidator,
                               BookingAccessValidator bookingAccessValidator) {
         this.bookingRepository = bookingRepository;
         this.kosService = kosService;
-        this.paymentService = paymentService;
+        this.transactionService = transactionService;
         this.stateValidator = stateValidator;}
 
     @Override
@@ -87,7 +87,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public void payBooking(UUID bookingId) {
+    public void payBooking(UUID bookingId) throws Exception {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 
@@ -99,7 +99,7 @@ public class BookingServiceImpl implements BookingService {
                 .orElseThrow(() -> new EntityNotFoundException("Kos not found"));
 
         // Create payment
-        paymentService.createPayment(
+        transactionService.createPayment(
                 booking.getUserId(),
                 kos.getOwnerId(),
                 BigDecimal.valueOf(booking.getTotalPrice())

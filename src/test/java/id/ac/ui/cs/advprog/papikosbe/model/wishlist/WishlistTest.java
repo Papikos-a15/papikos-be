@@ -18,7 +18,8 @@ public class WishlistTest {
         dummyUserId = UUID.randomUUID();
         dummyKosId = UUID.randomUUID();
 
-        wishlist = new Wishlist(UUID.randomUUID(), dummyUserId, dummyKosId);
+        wishlist = new Wishlist(dummyUserId, dummyKosId);
+        wishlist.setId(UUID.randomUUID());
     }
 
     @Test

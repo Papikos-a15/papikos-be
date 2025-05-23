@@ -5,6 +5,7 @@ import id.ac.ui.cs.advprog.papikosbe.repository.chat.RoomChatRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -109,4 +110,45 @@ public class RoomChatServiceImplTest {
         assertTrue(result.contains(pemilikRoom));
     }
 
+    @Test
+    void testFindOrCreateRoomChat_shouldReturnExistingRoom() {
+        RoomChat existingRoom = RoomChat.builder()
+                .id(UUID.randomUUID())
+                .penyewaId(penyewaId)
+                .pemilikKosId(pemilikKosId)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        when(roomChatRepository.findByPenyewaIdAndPemilikKosId(penyewaId, pemilikKosId))
+                .thenReturn(Optional.of(existingRoom));
+
+        RoomChat result = roomChatService.findOrCreateRoomChat(penyewaId, pemilikKosId);
+
+        assertEquals(existingRoom, result);
+        verify(roomChatRepository, never()).save(any());
+    }
+
+    @Test
+    void testFindOrCreateRoomChat_shouldCreateNewRoomIfNotExists() {
+        when(roomChatRepository.findByPenyewaIdAndPemilikKosId(penyewaId, pemilikKosId))
+                .thenReturn(Optional.empty());
+
+        RoomChat savedRoom = RoomChat.builder()
+                .id(UUID.randomUUID())
+                .penyewaId(penyewaId)
+                .pemilikKosId(pemilikKosId)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        when(roomChatRepository.save(any(RoomChat.class))).thenReturn(savedRoom);
+
+        RoomChat result = roomChatService.findOrCreateRoomChat(penyewaId, pemilikKosId);
+
+        assertNotNull(result);
+        assertEquals(savedRoom.getId(), result.getId());
+        assertEquals(savedRoom.getPenyewaId(), result.getPenyewaId());
+        assertEquals(savedRoom.getPemilikKosId(), result.getPemilikKosId());
+
+        verify(roomChatRepository).save(any(RoomChat.class));
+    }
 }

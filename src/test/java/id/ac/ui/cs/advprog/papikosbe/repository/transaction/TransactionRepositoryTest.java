@@ -1,102 +1,154 @@
 package id.ac.ui.cs.advprog.papikosbe.repository.transaction;
 
+import id.ac.ui.cs.advprog.papikosbe.enums.TransactionStatus;
+import id.ac.ui.cs.advprog.papikosbe.model.transaction.Payment;
+import id.ac.ui.cs.advprog.papikosbe.model.transaction.TopUp;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Transaction;
-import id.ac.ui.cs.advprog.papikosbe.enums.TransactionType;
+import id.ac.ui.cs.advprog.papikosbe.model.user.Owner;
+import id.ac.ui.cs.advprog.papikosbe.model.user.Tenant;
+import id.ac.ui.cs.advprog.papikosbe.repository.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
-class TransactionRepositoryTest {
+@DataJpaTest
+public class TransactionRepositoryTest {
 
+    @Autowired
     private TransactionRepository transactionRepository;
-    private UUID userId;
-    private Transaction topUp;
-    private Transaction payment;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    private Tenant tenant;
+    private Owner owner;
 
     @BeforeEach
     void setUp() {
-        transactionRepository = new TransactionRepository(); // Gunakan implementasi nyata, bukan mock
-        userId = UUID.randomUUID();
+        tenant = Tenant.builder()
+                .email("tenant@example.com")
+                .password("pass")
+                .build();
+        owner = Owner.builder()
+                .email("owner@example.com")
+                .password("pass")
+                .build();
+        userRepository.save(tenant);
+        userRepository.save(owner);
+    }
 
-        topUp = new Transaction(UUID.randomUUID(), userId, new BigDecimal("500.00"), TransactionType.TOP_UP, LocalDateTime.now());
-        payment = new Transaction(UUID.randomUUID(), userId, new BigDecimal("200.00"), TransactionType.PAYMENT, LocalDateTime.now());
+    @Test
+    void testFindByDate() {
+        Payment payment = new Payment();
+        payment.setUser(tenant);
+        payment.setOwner(owner);
+        payment.setAmount(new BigDecimal("10000"));
+        payment.setStatus(TransactionStatus.COMPLETED);
+        payment.setCreatedAt(LocalDateTime.now());
+
+        transactionRepository.save(payment);
+
+        List<Transaction> transactions = transactionRepository.findByDate(LocalDate.now());
+        assertFalse(transactions.isEmpty());
+        assertEquals(1, transactions.size());
+    }
+
+    @Test
+    void testFindPaymentsByUser() {
+        Payment payment = new Payment();
+        payment.setUser(tenant);
+        payment.setOwner(owner);
+        payment.setAmount(new BigDecimal("10000"));
+        payment.setStatus(TransactionStatus.COMPLETED);
+        payment.setCreatedAt(LocalDateTime.now());
+
+        transactionRepository.save(payment);
+
+        List<Payment> byTenant = transactionRepository.findPaymentsByUser(tenant.getId());
+        List<Payment> byOwner = transactionRepository.findPaymentsByUser(owner.getId());
+
+        assertEquals(1, byTenant.size());
+        assertEquals(1, byOwner.size());
+    }
+
+    @Test
+    void testCountByStatus() {
+        Payment payment1 = new Payment();
+        payment1.setUser(tenant);
+        payment1.setOwner(owner);
+        payment1.setAmount(new BigDecimal("5000"));
+        payment1.setStatus(TransactionStatus.COMPLETED);
+        payment1.setCreatedAt(LocalDateTime.now());
+
+        Payment payment2 = new Payment();
+        payment2.setUser(tenant);
+        payment2.setOwner(owner);
+        payment2.setAmount(new BigDecimal("5000"));
+        payment2.setStatus(TransactionStatus.PENDING);
+        payment2.setCreatedAt(LocalDateTime.now());
+
+        transactionRepository.save(payment1);
+        transactionRepository.save(payment2);
+
+        long completedCount = transactionRepository.countByStatus(TransactionStatus.COMPLETED);
+        long pendingCount = transactionRepository.countByStatus(TransactionStatus.PENDING);
+
+        assertEquals(1, completedCount);
+        assertEquals(1, pendingCount);
+    }
+
+    @Test
+    void testFindPaymentsByTenant() {
+        Payment payment = new Payment();
+        payment.setUser(tenant);
+        payment.setOwner(owner);
+        payment.setAmount(new BigDecimal("10000"));
+        payment.setStatus(TransactionStatus.COMPLETED);
+        payment.setCreatedAt(LocalDateTime.now());
+
+        transactionRepository.save(payment);
+
+        List<Payment> payments = transactionRepository.findPaymentsByTenant(tenant.getId());
+        assertEquals(1, payments.size());
+        assertEquals(tenant.getId(), payments.get(0).getUser().getId());
+    }
+
+    @Test
+    void testFindPaymentsByOwner() {
+        Payment payment = new Payment();
+        payment.setUser(tenant);
+        payment.setOwner(owner);
+        payment.setAmount(new BigDecimal("10000"));
+        payment.setStatus(TransactionStatus.COMPLETED);
+        payment.setCreatedAt(LocalDateTime.now());
+
+        transactionRepository.save(payment);
+
+        List<Payment> payments = transactionRepository.findPaymentsByOwner(owner.getId());
+        assertEquals(1, payments.size());
+        assertEquals(owner.getId(), payments.get(0).getOwner().getId());
+    }
+
+    @Test
+    void testFindTopUpsByUser() {
+        TopUp topUp = new TopUp();
+        topUp.setUser(tenant);
+        topUp.setAmount(new BigDecimal("20000"));
+        topUp.setStatus(TransactionStatus.COMPLETED);
+        topUp.setCreatedAt(LocalDateTime.now());
 
         transactionRepository.save(topUp);
-        transactionRepository.save(payment);
-    }
 
-    @Test
-    void testSaveAndFindById() {
-        Transaction transaction = new Transaction(UUID.randomUUID(), userId, new BigDecimal("100.00"), TransactionType.PAYMENT, LocalDateTime.now());
-        transactionRepository.save(transaction);
-
-        Optional<Transaction> found = transactionRepository.findById(transaction.getId());
-
-        assertTrue(found.isPresent());
-        assertEquals(transaction.getAmount(), found.get().getAmount());
-    }
-
-    @Test
-    void testFindAll() {
-        Iterator<Transaction> all = transactionRepository.findAll();
-        List<Transaction> resultList = new ArrayList<>();
-        all.forEachRemaining(resultList::add);
-
-        assertEquals(2, resultList.size());
-    }
-
-    @Test
-    void testFindByIdNotFound() {
-        Optional<Transaction> result = transactionRepository.findById(UUID.randomUUID());
-        assertFalse(result.isPresent());
-    }
-
-    @Test
-    void testFindAllByUserIdSuccess() {
-        List<Transaction> transactions = transactionRepository.findAllByUserId(userId);
-
-        assertFalse(transactions.isEmpty());
-        assertEquals(2, transactions.size());
-    }
-
-    @Test
-    void testFindAllByUserIdEmpty() {
-        List<Transaction> transactions = transactionRepository.findAllByUserId(UUID.randomUUID());
-        assertTrue(transactions.isEmpty());
-    }
-
-    @Test
-    void testFindAllByUserIdAndTypeSuccess() {
-        List<Transaction> transactions = transactionRepository.findAllByUserIdAndTransactionType(userId, TransactionType.TOP_UP);
-
-        assertEquals(1, transactions.size());
-        assertEquals(TransactionType.TOP_UP, transactions.get(0).getType());
-    }
-
-    @Test
-    void testFindAllByUserIdAndTypeEmpty() {
-        List<Transaction> transactions = transactionRepository.findAllByUserIdAndTransactionType(UUID.randomUUID(), TransactionType.TOP_UP);
-        assertTrue(transactions.isEmpty());
-    }
-
-    @Test
-    void testDeleteTransaction() {
-        transactionRepository.delete(topUp.getId());
-
-        Optional<Transaction> result = transactionRepository.findById(topUp.getId());
-        assertFalse(result.isPresent());
-    }
-
-    @Test
-    void testDeleteTransactionNotFound() {
-        // No exception should be thrown even if ID not found
-        transactionRepository.delete(UUID.randomUUID());
+        List<TopUp> topUps = transactionRepository.findTopUpsByUser(tenant.getId());
+        assertEquals(1, topUps.size());
+        assertEquals(tenant.getId(), topUps.get(0).getUser().getId());
     }
 }

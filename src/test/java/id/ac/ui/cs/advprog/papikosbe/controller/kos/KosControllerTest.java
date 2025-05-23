@@ -56,12 +56,11 @@ public class KosControllerTest {
         dummy = new Kos(
                 UUID.randomUUID(),
                 UUID.randomUUID(),
-                UUID.randomUUID(),
                 "Kos1",
                 "Addr Kos1",
                 "Description",
                 1500000.0,
-                true
+                30
         );
 
         when(jwtProvider.validate("tok")).thenReturn(true);
@@ -119,12 +118,11 @@ public class KosControllerTest {
         Kos newKos = new Kos(
             dummy.getId(),
             UUID.randomUUID(),
-            UUID.randomUUID(),
             "Kos2",
             "Addr Kos2",
             "Description Kos2",
             1200000.0,
-            true
+            30
         );
         when(kosService.updateKos(any(), any())).thenReturn(Optional.ofNullable(dummy));
 
@@ -135,6 +133,32 @@ public class KosControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(newKos.getId().toString()))
                 .andExpect(jsonPath("$.available").value(dummy.isAvailable()));
+    }
+
+    @Test
+    void addAvailable_returnsAdded() throws Exception {
+        when(kosService.getKosById(any())).thenReturn(Optional.ofNullable(dummy));
+
+        mockMvc.perform(post("/api/management/addAvailable"+dummy.getId().toString())
+                    .header("Authorization", "Bearer tok")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(dummy)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(dummy.getId().toString()))
+                .andExpect(jsonPath("$.availableRooms").value(dummy.getAvailableRooms()));
+    }
+
+    @Test
+    void subtractAvailable_returnsRemoved() throws Exception {
+        when(kosService.getKosById(any())).thenReturn(Optional.ofNullable(dummy));
+
+        mockMvc.perform(post("/api/management/subtractAvailable"+dummy.getId().toString())
+                        .header("Authorization", "Bearer tok")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dummy)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(dummy.getId().toString()))
+                .andExpect(jsonPath("$.availableRooms").value(dummy.getAvailableRooms()));
     }
 
     @Test

@@ -147,4 +147,68 @@ public class MessageControllerTest {
                 .andExpect(jsonPath("$[0].senderId").value(senderId.toString()))
                 .andExpect(jsonPath("$[0].senderEmail").value("sender@email.com"));
     }
+
+    @Test
+    void testSendMessage_ToAll_WithOwnerRole_ShouldReturnCreated() throws Exception {
+        String requestBody = """
+            {
+                "roomChatId": "00000000-0000-0000-0000-000000000001", 
+                "senderId": "00000000-0000-0000-0000-000000000002",
+                "content": "Halo semua!",
+                "sendType": "TO_ALL",
+                "role": "OWNER"
+            }
+            """;
+
+        mockMvc.perform(post("/api/messages")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isCreated());
+
+        verify(messageService).saveMessage(any(Message.class));
+    }
+
+    @Test
+    void testSendMessage_ToAll_WithNonOwnerRole_ShouldReturnForbidden() throws Exception {
+        String requestBody = """
+            {
+                "roomChatId": "00000000-0000-0000-0000-000000000001",
+                "senderId": "00000000-0000-0000-0000-000000000002",
+                "content": "Broadcast ini tidak boleh!",
+                "sendType": "TO_ALL",
+                "role": "TENANT"
+            }
+            """;
+
+        mockMvc.perform(post("/api/messages")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isForbidden());
+
+        verify(messageService, never()).saveMessage(any(Message.class));
+    }
+
+    @Test
+    void testSendMessage_ToOne_WithInvalidRoomChat_ShouldReturnBadRequest() throws Exception {
+        String requestBody = """
+            {
+                "roomChatId": "00000000-0000-0000-0000-000000000001",
+                "senderId": "00000000-0000-0000-0000-000000000002",
+                "content": "Halo!",
+                "sendType": "TO_ONE",
+                "role": "TENANT"
+            }
+            """;
+
+        UUID roomChatId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+
+        when(roomChatRepository.findById(roomChatId)).thenReturn(Optional.empty());
+
+        mockMvc.perform(post("/api/messages")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest()); // atau isNotFound(), tergantung yang kamu mau
+
+        verify(messageService, never()).saveMessage(any(Message.class));
+    }
 }

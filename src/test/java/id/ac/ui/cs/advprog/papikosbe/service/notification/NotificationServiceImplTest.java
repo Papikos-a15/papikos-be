@@ -2,84 +2,132 @@ package id.ac.ui.cs.advprog.papikosbe.service.notification;
 
 import id.ac.ui.cs.advprog.papikosbe.enums.NotificationType;
 import id.ac.ui.cs.advprog.papikosbe.model.notification.Notification;
+import id.ac.ui.cs.advprog.papikosbe.observer.NotificationPublisher;
+import id.ac.ui.cs.advprog.papikosbe.repository.notification.NotificationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
+import org.mockito.*;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-public class NotificationServiceImplTest {
+class NotificationServiceImplTest {
 
+    @Mock
+    private NotificationRepository notificationRepository;
+
+    @Mock
+    private NotificationPublisher notificationPublisher;
+
+    @InjectMocks
     private NotificationServiceImpl notificationService;
 
     @BeforeEach
     void setUp() {
-        notificationService = mock(NotificationServiceImpl.class);
+        MockitoAnnotations.openMocks(this);
     }
 
     @Test
-    void testCreateNotification() {
+    void testCreateNotification_Success() {
         UUID userId = UUID.randomUUID();
-        String title = "Welcome";
-        String message = "Welcome to Papikos!";
+        String title = "Test Title";
+        String message = "Test Message";
         NotificationType type = NotificationType.SYSTEM;
 
-        Notification dummyNotification = new Notification(
-                UUID.randomUUID(),
-                userId,
-                title,
-                message,
-                LocalDateTime.now(),
-                type,
-                false
-        );
-
-        when(notificationService.createNotification(userId, title, message, type)).thenReturn(dummyNotification);
+        // We simulate repository.save() returning the same notification
+        when(notificationRepository.save(any(Notification.class))).thenAnswer(i -> i.getArgument(0));
 
         Notification result = notificationService.createNotification(userId, title, message, type);
 
+        // Basic assertions to check that the returned Notification is correct
         assertNotNull(result.getId());
         assertEquals(userId, result.getUserId());
         assertEquals(title, result.getTitle());
         assertEquals(message, result.getMessage());
         assertEquals(type, result.getType());
         assertFalse(result.isRead());
+        assertNotNull(result.getCreatedAt());
+
+        // Verify that repository.save was called
+        verify(notificationRepository, times(1)).save(any(Notification.class));
     }
 
-    @Test
-    void testGetAllNotificationsForUser() {
-        UUID userId = UUID.randomUUID();
-        Notification notif1 = new Notification(UUID.randomUUID(), userId, "Title 1", "Message 1", LocalDateTime.now(), NotificationType.OTHER, false);
-        Notification notif2 = new Notification(UUID.randomUUID(), userId, "Title 2", "Message 2", LocalDateTime.now(), NotificationType.SYSTEM, true);
 
-        when(notificationService.getNotificationsForUser(userId)).thenReturn(List.of(notif1, notif2));
+    @Test
+    void testGetNotificationsForUser_FiltersCorrectly() {
+        UUID userId = UUID.randomUUID();
+        UUID otherUserId = UUID.randomUUID();
+
+        Notification userNotif = Notification.builder()
+                .id(UUID.randomUUID())
+                .userId(userId)
+                .title("Title 1")
+                .message("Message 1")
+                .type(NotificationType.SYSTEM)
+                .isRead(false)
+                .build();
+
+        Notification otherNotif = Notification.builder()
+                .id(UUID.randomUUID())
+                .userId(otherUserId)
+                .title("Title 2")
+                .message("Message 2")
+                .type(NotificationType.BOOKING)
+                .isRead(false)
+                .build();
+
+        when(notificationRepository.findByUserId(userId)).thenReturn(List.of(userNotif));
 
         List<Notification> result = notificationService.getNotificationsForUser(userId);
 
-        assertEquals(2, result.size());
-        assertTrue(result.contains(notif1));
-        assertTrue(result.contains(notif2));
+        assertEquals(1, result.size());
+        assertEquals(userId, result.getFirst().getUserId());
     }
 
     @Test
-    void testMarkAsRead() {
-        UUID notificationId = UUID.randomUUID();
-        doNothing().when(notificationService).markAsRead(notificationId);
+    void testMarkAsRead_NotificationExists() {
+        UUID notifId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
 
-        assertDoesNotThrow(() -> notificationService.markAsRead(notificationId));
-        verify(notificationService, times(1)).markAsRead(notificationId);
+        Notification notif = Notification.builder()
+                .id(notifId)
+                .userId(userId)
+                .title("Unread")
+                .message("Message")
+                .type(NotificationType.PAYMENT)
+                .isRead(false)
+                .build();
+
+
+        when(notificationRepository.findById(notifId)).thenReturn(Optional.ofNullable(notif));
+        when(notificationRepository.save(any(Notification.class))).thenAnswer(i -> i.getArgument(0));
+
+        notificationService.markAsRead(notifId);
+
+        assert notif != null;
+        assertTrue(notif.isRead());
+        verify(notificationRepository).save(notif);
     }
 
     @Test
-    void testDeleteNotification() {
-        UUID notificationId = UUID.randomUUID();
-        doNothing().when(notificationService).deleteNotification(notificationId);
+    void testMarkAsRead_NotificationDoesNotExist() {
+        UUID notifId = UUID.randomUUID();
 
-        assertDoesNotThrow(() -> notificationService.deleteNotification(notificationId));
-        verify(notificationService, times(1)).deleteNotification(notificationId);
+        when(notificationRepository.findById(notifId)).thenReturn(Optional.empty());
+
+        notificationService.markAsRead(notifId);
+
+        verify(notificationRepository, never()).save(any());
+    }
+
+    @Test
+    void testDeleteNotification_CallsRepository() {
+        UUID notifId = UUID.randomUUID();
+
+        notificationService.deleteNotification(notifId);
+
+        verify(notificationRepository).deleteById(notifId);
     }
 }

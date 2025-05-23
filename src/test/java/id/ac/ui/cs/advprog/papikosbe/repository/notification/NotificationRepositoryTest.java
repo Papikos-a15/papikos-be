@@ -4,67 +4,98 @@ import id.ac.ui.cs.advprog.papikosbe.enums.NotificationType;
 import id.ac.ui.cs.advprog.papikosbe.model.notification.Notification;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class NotificationRepositoryTest {
+@DataJpaTest
+class NotificationRepositoryTest {
 
+    @Autowired
     private NotificationRepository repository;
-    private Notification sampleNotif;
+
+    private UUID dummyUserId;
+    private Notification sampleNotification1;
+    private Notification sampleNotification2;
 
     @BeforeEach
-    public void setUp() {
-        repository = new NotificationRepository();
-        sampleNotif = new Notification(
-                UUID.randomUUID(),
-                UUID.randomUUID(),
-                "Welcome",
-                "Thanks for joining!",
-                LocalDateTime.now(),
-                NotificationType.OTHER,
-                false
-        );
+    void setUp() {
+        dummyUserId = UUID.randomUUID();
+
+        sampleNotification1 = Notification.builder()
+                .id(UUID.randomUUID())
+                .userId(dummyUserId)
+                .title("Welcome")
+                .message("Thanks for joining!")
+                .createdAt(LocalDateTime.now())
+                .type(NotificationType.OTHER)
+                .isRead(false)
+                .build();
+
+        sampleNotification2 = Notification.builder()
+                .id(UUID.randomUUID())
+                .userId(dummyUserId)
+                .title("Reminder")
+                .message("Don't forget to check the system.")
+                .createdAt(LocalDateTime.now().plusDays(1))
+                .type(NotificationType.OTHER)
+                .isRead(true)
+                .build();
     }
 
     @Test
-    public void testSaveNotification() {
-        Notification result = repository.save(sampleNotif);
-        assertEquals(sampleNotif, result);
+    void testSaveAndFindById() {
+        repository.save(sampleNotification1);
+        Optional<Notification> retrieved = repository.findById(sampleNotification1.getId());
+
+        assertTrue(retrieved.isPresent());
+        assertEquals(sampleNotification1.getId(), retrieved.get().getId());
+        assertEquals("Welcome", retrieved.get().getTitle());
+        assertEquals("Thanks for joining!", retrieved.get().getMessage());
     }
 
     @Test
-    public void testFindById() {
-        repository.save(sampleNotif);
-        Notification found = repository.findById(sampleNotif.getId());
-        assertNotNull(found);
-        assertEquals(sampleNotif.getId(), found.getId());
+    void testFindByIdReturnsEmptyIfNotFound() {
+        Optional<Notification> retrieved = repository.findById(UUID.randomUUID());
+        assertFalse(retrieved.isPresent());
     }
 
     @Test
-    public void testFindAll() {
-        repository.save(sampleNotif);
-        List<Notification> all = repository.findAll();
-        assertEquals(1, all.size());
-        assertTrue(all.contains(sampleNotif));
+    void testFindByUserId() {
+        repository.save(sampleNotification1);
+        repository.save(sampleNotification2);
+
+        List<Notification> notifications = repository.findByUserId(dummyUserId);
+
+        assertEquals(2, notifications.size());
+        notifications.forEach(notification -> assertEquals(dummyUserId, notification.getUserId()));
     }
 
     @Test
-    public void testDeleteById() {
-        repository.save(sampleNotif);
-        repository.deleteById(sampleNotif.getId());
-        assertNull(repository.findById(sampleNotif.getId()));
+    void testDeleteById() {
+        repository.save(sampleNotification1);
+        assertTrue(repository.findById(sampleNotification1.getId()).isPresent());
+
+        repository.deleteById(sampleNotification1.getId());
+        assertFalse(repository.findById(sampleNotification1.getId()).isPresent());
     }
 
     @Test
-    public void testFindByUserId() {
-        UUID userId = sampleNotif.getUserId();
-        repository.save(sampleNotif);
-        List<Notification> userNotifs = repository.findByUserId(userId);
-        assertEquals(1, userNotifs.size());
-        assertEquals(userId, userNotifs.get(0).getUserId());
+    void testFindAllNotifications() {
+        repository.save(sampleNotification1);
+        repository.save(sampleNotification2);
+
+        List<Notification> allNotifications = repository.findAll();
+
+        assertEquals(2, allNotifications.size());
+        assertTrue(allNotifications.contains(sampleNotification1));
+        assertTrue(allNotifications.contains(sampleNotification2));
     }
 }

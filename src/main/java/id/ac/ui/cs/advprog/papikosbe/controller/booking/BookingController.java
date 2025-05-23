@@ -162,6 +162,8 @@ public class BookingController {
             return ResponseEntity.notFound().build();
         } catch (IllegalStateException e) {
             return ResponseEntity.status(403).build();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 

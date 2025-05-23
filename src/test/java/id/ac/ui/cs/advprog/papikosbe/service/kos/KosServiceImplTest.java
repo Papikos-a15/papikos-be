@@ -36,6 +36,7 @@ public class KosServiceImplTest {
         kos1.setName("Kos1");
         kos1.setAddress("AlamatKos1");
         kos1.setDescription("DeskripsiKos1");
+        kos1.setMaxCapacity(30);
         kos1.setPrice(50000.0);
 
         kos2 = new Kos();
@@ -54,8 +55,9 @@ public class KosServiceImplTest {
         Kos addedKos = kosService.addKos(kos1);
 
         assertNotNull(addedKos, "The added Kos should not be null");
-        assertEquals(kos.getId(), addedKos.getId(), "The Kos ID should be 1L");
+        assertEquals(kos.getId(), addedKos.getId(), "The Kos ID should be the same");
         assertEquals(kos.getName(), addedKos.getName());
+        assertEquals(kos.getMaxCapacity(), addedKos.getAvailableRooms(), "Available rooms should be equal to max initially");
         verify(kosRepository, times(1)).save(kos1);
     }
 
@@ -91,12 +93,51 @@ public class KosServiceImplTest {
         assertNotNull(result, "The updated Kos should not be null");
         if (result.isPresent()) {
             assertEquals(kos.getId(), result.get().getId());
-            assertEquals("UpdatedKos", result.get().getName());
-            assertEquals("UpdatedAlamatKos", result.get().getAddress());
-            assertEquals("UpdatedDeskripsiKos", result.get().getDescription());
+            assertEquals("Kos2", result.get().getName());
+            assertEquals("AlamatKos2", result.get().getAddress());
+            assertEquals("DeskripsiKos2", result.get().getDescription());
             assertEquals(75000.0, result.get().getPrice());
             verify(kosRepository, times(1)).save(kos);
         }
+    }
+
+    @Test
+    public void testSubtractAvailableRooms() {
+        Kos kos = kos1;
+        doReturn(Optional.of(kos)).when(kosRepository).findById(kos1.getId());
+
+        kosService.subtractAvailabeRoom(kos.getId());
+
+        Optional<Kos> result = kosService.getKosById(kos.getId());
+        assertNotNull(result, "Kos should be present for the given ID");
+        if (result.isPresent()) {
+            assertEquals(kos.getId(), result.get().getId());
+            assertEquals("Kos1", result.get().getName());
+            assertEquals("AlamatKos1", result.get().getAddress());
+            assertEquals("DeskripsiKos1", result.get().getDescription());
+            assertEquals(29, result.get().getAvailableRooms());
+            assertEquals(75000.0, result.get().getPrice());
+        }
+    }
+
+    @Test
+    public void testAddAvailableRoom() {
+        Kos kos = kos1;
+        doReturn(Optional.of(kos)).when(kosRepository).findById(kos1.getId());
+
+        kosService.addAvailableRoom(kos.getId());
+
+        Optional<Kos> result = kosService.getKosById(kos.getId());
+        assertNotNull(result, "Kos should be present for the given ID");
+        if (result.isPresent()) {
+            assertEquals(kos.getId(), result.get().getId());
+            assertEquals("Kos1", result.get().getName());
+            assertEquals("AlamatKos1", result.get().getAddress());
+            assertEquals("DeskripsiKos1", result.get().getDescription());
+            assertEquals(30, result.get().getAvailableRooms());
+            assertEquals(75000.0, result.get().getPrice());
+        }
+
     }
 
     @Test
@@ -113,5 +154,6 @@ public class KosServiceImplTest {
         assertNull(result, "The deleted Kos should be null");
         verify(kosRepository, times(1)).deleteById(kos.getId()); ;
     }
+
 }
 

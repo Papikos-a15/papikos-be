@@ -7,7 +7,10 @@ public enum NotificationType {
     BOOKING("BOOKING"),
     PAYMENT("PAYMENT"),
     SYSTEM("SYSTEM"),
-    OTHER("OTHER");
+    OTHER("OTHER"),
+    WISHLIST("WISHLIST"),
+    ADMIN("ADMIN");
+
 
     private final String value;
 

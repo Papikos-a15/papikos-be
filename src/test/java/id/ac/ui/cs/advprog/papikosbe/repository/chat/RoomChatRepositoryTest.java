@@ -35,4 +35,30 @@ public class RoomChatRepositoryTest {
         assertEquals(1, result.size());
         assertEquals(pemilikId, result.get(0).getPemilikKosId());
     }
+
+    @Test
+    public void testFindByPenyewaIdAndPemilikKosId() {
+        UUID penyewaId = UUID.randomUUID();
+        UUID pemilikKosId = UUID.randomUUID();
+
+        RoomChat savedRoom = repository.save(new RoomChat(penyewaId, pemilikKosId));
+
+        var result = repository.findByPenyewaIdAndPemilikKosId(penyewaId, pemilikKosId);
+
+        assertTrue(result.isPresent());
+        assertEquals(savedRoom.getId(), result.get().getId());
+        assertEquals(penyewaId, result.get().getPenyewaId());
+        assertEquals(pemilikKosId, result.get().getPemilikKosId());
+    }
+
+    @Test
+    public void testFindByPenyewaIdAndPemilikKosId_NotFound() {
+        UUID penyewaId = UUID.randomUUID();
+        UUID pemilikKosId = UUID.randomUUID();
+
+        // Jangan simpan apa-apa, langsung test pencarian yang gagal
+        var result = repository.findByPenyewaIdAndPemilikKosId(penyewaId, pemilikKosId);
+
+        assertTrue(result.isEmpty());
+    }
 }

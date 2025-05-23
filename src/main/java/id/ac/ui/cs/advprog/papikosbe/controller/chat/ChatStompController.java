@@ -7,7 +7,6 @@ import id.ac.ui.cs.advprog.papikosbe.model.chat.Message;
 import id.ac.ui.cs.advprog.papikosbe.model.chat.RoomChat;
 import id.ac.ui.cs.advprog.papikosbe.service.chat.MessageService;
 import id.ac.ui.cs.advprog.papikosbe.service.user.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -21,10 +20,12 @@ public class ChatStompController {
 
     private final MessageService messageService;
     private final UserService userService;
+    private final SimpMessagingTemplate messagingTemplate;
 
-    public ChatStompController(MessageService messageService, UserService userService) {
+    public ChatStompController(MessageService messageService, UserService userService, SimpMessagingTemplate messagingTemplate) {
         this.messageService = messageService;
         this.userService = userService;
+        this.messagingTemplate = messagingTemplate;
     }
 
     @MessageMapping("/chat.send")
@@ -58,7 +59,4 @@ public class ChatStompController {
         String destination = "/queue/room." + response.getRoomChatId();
         messagingTemplate.convertAndSend(destination, response);
     }
-
-    @Autowired
-    private SimpMessagingTemplate messagingTemplate;
 }

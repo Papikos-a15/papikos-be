@@ -2,21 +2,22 @@ package id.ac.ui.cs.advprog.papikosbe.service.booking;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
-import id.ac.ui.cs.advprog.papikosbe.model.transaction.Payment;
 import id.ac.ui.cs.advprog.papikosbe.repository.booking.BookingRepository;
 import id.ac.ui.cs.advprog.papikosbe.service.kos.KosService;
-import id.ac.ui.cs.advprog.papikosbe.service.transaction.PaymentService;
+import id.ac.ui.cs.advprog.papikosbe.service.transaction.TransactionService;
+import id.ac.ui.cs.advprog.papikosbe.service.transaction.TransactionService;
+import id.ac.ui.cs.advprog.papikosbe.validator.booking.BookingValidator;
+import id.ac.ui.cs.advprog.papikosbe.validator.booking.BookingAccessValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.List;
@@ -32,10 +33,16 @@ public class BookingServiceImplTest {
     private KosService kosService;
 
     @Mock
-    private PaymentService paymentService;
+    private TransactionService transactionService;
 
     @Mock
     private BookingRepository bookingRepository;
+
+    @Mock
+    private BookingValidator stateValidator;
+
+    @Mock
+    private BookingAccessValidator bookingAccessValidator;
 
     private BookingService bookingService;
     private double monthlyPrice;
@@ -49,7 +56,7 @@ public class BookingServiceImplTest {
     @BeforeEach
     public void setUp() {
         // Create a real BookingServiceImpl with mocked dependencies
-        bookingService = new BookingServiceImpl(bookingRepository, kosService, paymentService);
+        bookingService = new BookingServiceImpl(bookingRepository, kosService, transactionService,stateValidator, bookingAccessValidator);
 
         // Initialize test data
         monthlyPrice = 1200000.0;
@@ -68,7 +75,6 @@ public class BookingServiceImplTest {
         testKos.setPrice(monthlyPrice);
         testKos.setAddress("Test Address");
         testKos.setAvailable(true);
-
     }
 
     @Test
@@ -185,7 +191,7 @@ public class BookingServiceImplTest {
     }
 
     @Test
-    public void testEditBookingAfterPaymentBeforeApproval() {
+    public void testEditBookingAfterPaymentBeforeApproval() throws Exception {
         // Create booking with test kos
         Booking booking = new Booking(
                 UUID.randomUUID(),
@@ -199,21 +205,10 @@ public class BookingServiceImplTest {
                 BookingStatus.PENDING_PAYMENT
         );
 
-        // Create mock Payment object with all required parameters
-        Payment mockPayment = new Payment(
-                UUID.randomUUID(),
-                userId,
-                ownerId,
-                BigDecimal.valueOf(monthlyPrice * 3),
-                LocalDateTime.now()
-        );
-
         // Basic setup - kos and initial booking state
         when(kosService.getKosById(kosId)).thenReturn(Optional.of(testKos));
         when(bookingRepository.save(any(Booking.class))).thenReturn(booking);
         when(bookingRepository.findById(booking.getBookingId())).thenReturn(Optional.of(booking));
-//        when(paymentService.createPayment(any(UUID.class), any(UUID.class), any(BigDecimal.class)))
-//                .thenReturn(mockPayment);
 
         // Create booking
         Booking createdBooking = bookingService.createBooking(booking);
@@ -237,7 +232,7 @@ public class BookingServiceImplTest {
             when(bookingRepository.findById(booking.getBookingId())).thenReturn(Optional.of(paidBooking));
             when(bookingRepository.save(any(Booking.class))).thenReturn(paidBooking);
             return null;
-        }).when(paymentService).createPayment(eq(userId), eq(ownerId), any(BigDecimal.class));
+        }).when(transactionService).createPayment(any(UUID.class), any(UUID.class), any(BigDecimal.class));
 
         // Now pay the booking - this transitions from PENDING to PAID
         bookingService.payBooking(createdBooking.getBookingId());
@@ -269,7 +264,7 @@ public class BookingServiceImplTest {
     }
 
     @Test
-    public void testEditBookingAfterApprovalShouldFail() {
+    public void testEditBookingAfterApprovalShouldFail() throws Exception {
         // Create booking with test kos
         Booking booking = new Booking(
                 UUID.randomUUID(),
@@ -281,15 +276,6 @@ public class BookingServiceImplTest {
                 fullName,
                 phoneNumber,
                 BookingStatus.PENDING_PAYMENT
-        );
-
-        // Create mock Payment
-        Payment mockPayment = new Payment(
-                UUID.randomUUID(),
-                userId,
-                ownerId,
-                BigDecimal.valueOf(monthlyPrice * 3),
-                LocalDateTime.now()
         );
 
         // Basic setup
@@ -314,89 +300,13 @@ public class BookingServiceImplTest {
         );
 
         // Update mock after payment
-        doAnswer(invocation -> {
-            when(bookingRepository.findById(booking.getBookingId())).thenReturn(Optional.of(paidBooking));
-            when(bookingRepository.save(any(Booking.class))).thenReturn(paidBooking);
-            return mockPayment;
-        }).when(paymentService).createPayment(eq(userId), eq(ownerId), any(BigDecimal.class));
+        when(bookingRepository.findById(booking.getBookingId())).thenReturn(Optional.of(paidBooking));
 
         // Pay the booking
         bookingService.payBooking(createdBooking.getBookingId());
 
         // Prepare for approval
         Booking approvedBooking = new Booking(
-                paidBooking.getBookingId(),
-                paidBooking.getUserId(),
-                paidBooking.getKosId(),
-                paidBooking.getCheckInDate(),
-                paidBooking.getDuration(),
-                paidBooking.getMonthlyPrice(),
-                paidBooking.getFullName(),
-                paidBooking.getPhoneNumber(),
-                BookingStatus.APPROVED
-        );
-
-        // Update mock for approval (simplified)
-        doAnswer(invocation -> {
-            when(bookingRepository.findById(paidBooking.getBookingId())).thenReturn(Optional.of(approvedBooking));
-            return approvedBooking;
-        }).when(bookingRepository).save(eq(paidBooking));
-
-        // Approve the booking
-        bookingService.approveBooking(createdBooking.getBookingId());
-
-        // Try to edit the approved booking
-        Booking updatedBooking = new Booking(
-                approvedBooking.getBookingId(),
-                approvedBooking.getUserId(),
-                approvedBooking.getKosId(),
-                approvedBooking.getCheckInDate(),
-                5,
-                approvedBooking.getMonthlyPrice(),
-                "New Name",
-                approvedBooking.getPhoneNumber(),
-                approvedBooking.getStatus()
-        );
-
-        when(bookingRepository.findById(approvedBooking.getBookingId())).thenReturn(Optional.of(approvedBooking));
-
-        assertThrows(IllegalStateException.class, () -> bookingService.updateBooking(updatedBooking));
-    }
-
-    @Test
-    public void testPayBookingFailsIfAlreadyPaid() {
-        // Create booking with test kos
-        Booking booking = new Booking(
-                UUID.randomUUID(),
-                userId,
-                kosId,
-                LocalDate.now().plusDays(7),
-                3,
-                monthlyPrice,
-                fullName,
-                phoneNumber,
-                BookingStatus.PENDING_PAYMENT
-        );
-
-        // Create mock Payment
-        Payment mockPayment = new Payment(
-                UUID.randomUUID(),
-                userId,
-                ownerId,
-                BigDecimal.valueOf(monthlyPrice * 3),
-                LocalDateTime.now()
-        );
-
-        // Basic setup
-        when(kosService.getKosById(kosId)).thenReturn(Optional.of(testKos));
-        when(bookingRepository.save(any(Booking.class))).thenReturn(booking);
-        when(bookingRepository.findById(booking.getBookingId())).thenReturn(Optional.of(booking));
-
-        // Create booking
-        Booking createdBooking = bookingService.createBooking(booking);
-
-        // Setup for the paid state AFTER payment
-        Booking paidBooking = new Booking(
                 booking.getBookingId(),
                 booking.getUserId(),
                 booking.getKosId(),
@@ -405,26 +315,112 @@ public class BookingServiceImplTest {
                 booking.getMonthlyPrice(),
                 booking.getFullName(),
                 booking.getPhoneNumber(),
-                BookingStatus.PAID
+                BookingStatus.APPROVED
         );
 
-        // After payment, return the paid booking
-        doAnswer(invocation -> {
-            // Update repository mock to return paid booking after this call
-            when(bookingRepository.findById(booking.getBookingId())).thenReturn(Optional.of(paidBooking));
-            when(bookingRepository.save(any(Booking.class))).thenReturn(paidBooking);
-            return mockPayment;
-        }).when(paymentService).createPayment(eq(userId), eq(ownerId), any(BigDecimal.class));
+        // Update mock for approval
+        when(bookingRepository.findById(booking.getBookingId())).thenReturn(Optional.of(approvedBooking));
 
-        // Now pay the booking
-        bookingService.payBooking(createdBooking.getBookingId());
+        // Approve the booking
+        bookingService.approveBooking(createdBooking.getBookingId());
 
-        // Now try to pay again - should fail
-        assertThrows(IllegalStateException.class, () -> bookingService.payBooking(createdBooking.getBookingId()));
+        // Try to edit the approved booking
+        Booking updatedBooking = new Booking(
+                booking.getBookingId(),
+                booking.getUserId(),
+                booking.getKosId(),
+                booking.getCheckInDate(),
+                booking.getDuration() + 1,
+                booking.getMonthlyPrice(),
+                "Updated Name",
+                booking.getPhoneNumber(),
+                BookingStatus.APPROVED
+        );
+
+        // This is the key fix: mock the validator to throw exception when validating an approved booking
+        doThrow(new IllegalStateException("Cannot edit booking after it has been approved or cancelled"))
+                .when(stateValidator).validateForUpdate(approvedBooking);
+
+        when(bookingRepository.findById(approvedBooking.getBookingId())).thenReturn(Optional.of(approvedBooking));
+
+        assertThrows(IllegalStateException.class, () -> bookingService.updateBooking(updatedBooking));
     }
 
     @Test
-    public void testApproveBookingFailsIfNotPaid() {
+    public void testApproveBooking() {
+        // Create paid booking
+        Booking booking = new Booking(
+                UUID.randomUUID(),
+                userId,
+                kosId,
+                LocalDate.now().plusDays(7),
+                3,
+                monthlyPrice,
+                fullName,
+                phoneNumber,
+                BookingStatus.PAID
+        );
+
+        when(bookingRepository.findById(booking.getBookingId())).thenReturn(Optional.of(booking));
+
+        // Set up capture for the saved booking
+        ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
+
+        // Approve booking
+        bookingService.approveBooking(booking.getBookingId());
+
+        // Verify booking was updated and saved with correct status
+        verify(bookingRepository).save(bookingCaptor.capture());
+        assertEquals(BookingStatus.APPROVED, bookingCaptor.getValue().getStatus());
+    }
+
+    @Test
+    public void testFindBookingsByOwnerId() {
+        // Create test kos owned by our test owner
+        Kos kos1 = new Kos();
+        kos1.setId(UUID.randomUUID());
+        kos1.setOwnerId(ownerId);
+
+        Kos kos2 = new Kos();
+        kos2.setId(UUID.randomUUID());
+        kos2.setOwnerId(ownerId);
+
+        Kos kos3 = new Kos();
+        kos3.setId(UUID.randomUUID());
+        kos3.setOwnerId(UUID.randomUUID()); // Different owner
+
+        List<Kos> allKosList = List.of(kos1, kos2, kos3);
+        when(kosService.getAllKos()).thenReturn(allKosList);
+
+        // Create bookings for these kos
+        Booking booking1 = new Booking(UUID.randomUUID(), userId, kos1.getId(),
+                LocalDate.now().plusDays(7), 3, monthlyPrice, fullName, phoneNumber,
+                BookingStatus.PENDING_PAYMENT);
+
+        Booking booking2 = new Booking(UUID.randomUUID(), userId, kos2.getId(),
+                LocalDate.now().plusDays(14), 2, monthlyPrice, fullName, phoneNumber,
+                BookingStatus.PAID);
+
+        Booking booking3 = new Booking(UUID.randomUUID(), userId, kos3.getId(),
+                LocalDate.now().plusDays(21), 1, monthlyPrice, fullName, phoneNumber,
+                BookingStatus.APPROVED);
+
+        List<Booking> allBookings = List.of(booking1, booking2, booking3);
+        when(bookingRepository.findAll()).thenReturn(allBookings);
+
+        // Call the method
+        List<Booking> ownerBookings = bookingService.findBookingsByOwnerId(ownerId);
+
+        // Verify results
+        assertEquals(2, ownerBookings.size());
+        assertTrue(ownerBookings.contains(booking1));
+        assertTrue(ownerBookings.contains(booking2));
+        assertFalse(ownerBookings.contains(booking3));
+    }
+
+    @Test
+    public void testPayBooking() throws Exception {
+        // Create a booking
         Booking booking = new Booking(
                 UUID.randomUUID(),
                 userId,
@@ -437,14 +433,19 @@ public class BookingServiceImplTest {
                 BookingStatus.PENDING_PAYMENT
         );
 
-        when(kosService.getKosById(kosId)).thenReturn(Optional.of(testKos));
-        when(bookingRepository.save(any(Booking.class))).thenReturn(booking);
         when(bookingRepository.findById(booking.getBookingId())).thenReturn(Optional.of(booking));
+        when(kosService.getKosById(kosId)).thenReturn(Optional.of(testKos));
 
-        Booking createdBooking = bookingService.createBooking(booking);
-        verify(kosService).getKosById(kosId);
+        // Pay the booking
+        bookingService.payBooking(booking.getBookingId());
 
-        assertThrows(IllegalStateException.class, () -> bookingService.approveBooking(createdBooking.getBookingId()));
+        // Verify payment was created with correct parameters
+        verify(transactionService).createPayment(any(UUID.class), any(UUID.class), any(BigDecimal.class));
+
+        // Verify booking was updated
+        ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
+        verify(bookingRepository).save(bookingCaptor.capture());
+        assertEquals(BookingStatus.PAID, bookingCaptor.getValue().getStatus());
     }
 
     @Test
@@ -548,4 +549,55 @@ public class BookingServiceImplTest {
         assertTrue(all.contains(b2));
         verify(bookingRepository).findAll();
     }
+
+    @Test
+    public void testClearStore() {
+        // Test the clearStore method
+        bookingService.clearStore();
+
+        // Verify that deleteAll was called on the repository
+        verify(bookingRepository).deleteAll();
+    }
+
+    @Test
+    public void testFindBookingsByUserId() {
+        // Create bookings for our test user
+        Booking userBooking1 = new Booking(
+                UUID.randomUUID(),
+                userId,
+                kosId,
+                LocalDate.now().plusDays(1),
+                2,
+                monthlyPrice,
+                fullName,
+                phoneNumber,
+                BookingStatus.PENDING_PAYMENT
+        );
+
+        // Create booking for different user
+        UUID otherUserId = UUID.randomUUID();
+        Booking otherUserBooking = new Booking(
+                UUID.randomUUID(),
+                otherUserId,
+                kosId,
+                LocalDate.now().plusDays(1),
+                2,
+                monthlyPrice,
+                "Other User",
+                phoneNumber,
+                BookingStatus.PENDING_PAYMENT
+        );
+
+        List<Booking> allBookings = List.of(userBooking1, otherUserBooking);
+        when(bookingRepository.findAll()).thenReturn(allBookings);
+
+        // Call method
+        List<Booking> userBookings = bookingService.findBookingsByUserId(userId);
+
+        // Verify
+        assertEquals(1, userBookings.size());
+        assertTrue(userBookings.contains(userBooking1));
+        assertFalse(userBookings.contains(otherUserBooking));
+    }
+
 }

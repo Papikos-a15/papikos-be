@@ -14,39 +14,56 @@ import java.util.Map;
 import java.util.UUID;
 
 @RestController
+@RequestMapping("/api/notifications")
 public class NotificationController {
 
-    @Autowired
-    private NotificationService notificationService;
+    private final NotificationService notificationService;
 
-    @RequestMapping(value = "/api/notifications/user/{userId}", method = RequestMethod.GET)
-    public ResponseEntity<List<Notification>> getNotificationsForUser(@PathVariable UUID userId) {
+    @Autowired
+    public NotificationController(NotificationService notificationService) {
+        this.notificationService = notificationService;
+    }
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<Notification>> getNotificationsForUser(@PathVariable(required = false) UUID userId) {
+        if (userId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
         List<Notification> notifications = notificationService.getNotificationsForUser(userId);
         return ResponseEntity.ok(notifications);
     }
 
-    @RequestMapping(value = "/api/notifications", method = RequestMethod.POST)
-    public ResponseEntity<Notification> createNotification(
-            @RequestParam(required = false) UUID userId,
-            @RequestParam(required = false) String title,
-            @RequestParam(required = false) String message,
-            @RequestParam(required = false) NotificationType type) {
+    @PostMapping
+    public ResponseEntity<Notification> createNotification(@RequestBody Map<String, Object> notificationData) {
+        UUID userId;
+        String title;
+        String message;
+        NotificationType type;
+        try{
+            userId = UUID.fromString((String) notificationData.get("userId"));
+            title = (String) notificationData.get("title");
+            message = (String) notificationData.get("message");
+            type = NotificationType.valueOf((String) notificationData.get("type"));
 
-        if (userId == null || title == null || message == null || type == null) {
-            return ResponseEntity.badRequest().build();
+            if (userId == null || title == null || message == null || type == null) {
+                return ResponseEntity.badRequest().build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
         try {
             Notification notification = notificationService.createNotification(userId, title, message, type);
             return new ResponseEntity<>(notification, HttpStatus.CREATED);
         } catch (Exception e) {
-            System.out.println("Error in creating notification!");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    @RequestMapping(value = "/api/notifications/{notificationId}/read", method = RequestMethod.PATCH)
-    public ResponseEntity<Map<String, String>> markAsRead(@PathVariable UUID notificationId) {
+
+    @PatchMapping("/{notificationId}/read")
+    public ResponseEntity<Map<String, String>> markAsRead(@PathVariable(required = false) UUID notificationId) {
         Map<String, String> response = new HashMap<>();
 
         if (notificationId == null) {
@@ -59,13 +76,13 @@ public class NotificationController {
             response.put("message", "Notification marked as read");
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            System.out.println("Error in marking notification as read!");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            response.put("message", "Error in marking notification as read");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 
-    @RequestMapping(value = "/api/notifications/{notificationId}", method = RequestMethod.DELETE)
-    public ResponseEntity<Map<String, String>> deleteNotification(@PathVariable UUID notificationId) {
+    @DeleteMapping("/{notificationId}")
+    public ResponseEntity<Map<String, String>> deleteNotification(@PathVariable(required = false) UUID notificationId) {
         Map<String, String> response = new HashMap<>();
 
         if (notificationId == null) {
@@ -78,8 +95,8 @@ public class NotificationController {
             response.put("message", "Notification deleted successfully");
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            System.out.println("Error in deleting notification!");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            response.put("message", "Error in deleting notification");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 }

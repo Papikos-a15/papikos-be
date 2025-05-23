@@ -29,7 +29,7 @@ public class WishlistServiceImplTest {
         UUID userId = UUID.randomUUID();
         UUID kosId = UUID.randomUUID();
 
-        Wishlist wishlist = new Wishlist(wishlistId, userId, kosId);
+        Wishlist wishlist = new Wishlist(userId, kosId);
         wishlistServiceImpl.addWishlist(wishlist);
 
         verify(wishlistRepository, times(1)).save(wishlist);
@@ -53,7 +53,7 @@ public class WishlistServiceImplTest {
         UUID user2Id = UUID.randomUUID();
         UUID kos2Id = UUID.randomUUID();
 
-        List<Wishlist> dummyWishlists = List.of(new Wishlist(wishlistId, userId, kosId), new Wishlist(wishlist2Id, user2Id, kos2Id));
+        List<Wishlist> dummyWishlists = List.of(new Wishlist(userId, kosId), new Wishlist(user2Id, kos2Id));
         when(wishlistRepository.findAll()).thenReturn(dummyWishlists);
 
         List<Wishlist> result = wishlistServiceImpl.getAllWishlists();

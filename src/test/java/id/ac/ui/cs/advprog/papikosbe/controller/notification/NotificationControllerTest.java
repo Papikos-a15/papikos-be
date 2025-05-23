@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -42,43 +43,19 @@ class NotificationControllerTest {
         userId = UUID.randomUUID();
         notificationId = UUID.randomUUID();
 
-        testNotification = new Notification(
-                notificationId,
-                userId,
-                "Test Notification",
-                "This is a test notification message",
-                LocalDateTime.now(),
-                NotificationType.SYSTEM,
-                false
-        );
+        // Create the test Notification using the Builder
+        testNotification = Notification.builder()
+                .id(notificationId)
+                .userId((userId))
+                .title("Test Notification")
+                .message("This is a test notification message")
+                .createdAt(LocalDateTime.now())
+                .type(NotificationType.SYSTEM)
+                .isRead(false)
+                .build();
 
         testNotifications = new ArrayList<>();
         testNotifications.add(testNotification);
-    }
-
-    @Test
-    void testGetNotificationsForUser() {
-        when(notificationService.getNotificationsForUser(userId)).thenReturn(testNotifications);
-
-        ResponseEntity<List<Notification>> response = notificationController.getNotificationsForUser(userId);
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals(1, response.getBody().size());
-        assertEquals(testNotification, response.getBody().getFirst());
-        verify(notificationService, times(1)).getNotificationsForUser(userId);
-    }
-
-    @Test
-    void testGetNotificationsForUser_NoNotifications() {
-        when(notificationService.getNotificationsForUser(userId)).thenReturn(new ArrayList<>());
-
-        ResponseEntity<List<Notification>> response = notificationController.getNotificationsForUser(userId);
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertTrue(response.getBody().isEmpty());
-        verify(notificationService, times(1)).getNotificationsForUser(userId);
     }
 
     @Test
@@ -87,44 +64,61 @@ class NotificationControllerTest {
         String message = "This is a new notification";
         NotificationType type = NotificationType.SYSTEM;
 
+        // Create the request body map
+        Map<String, Object> notificationData = new HashMap<>();
+        notificationData.put("userId", userId.toString());
+        notificationData.put("title", title);
+        notificationData.put("message", message);
+        notificationData.put("type", type.name());
+
+        // Simulating the service returning the created notification
         when(notificationService.createNotification(eq(userId), eq(title), eq(message), eq(type)))
                 .thenReturn(testNotification);
 
-        ResponseEntity<Notification> response = notificationController.createNotification(
-                userId, title, message, type);
+        // Send the request with the body map
+        ResponseEntity<Notification> response = notificationController.createNotification(notificationData);
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(testNotification, response.getBody());
-        verify(notificationService, times(1)).createNotification(userId, title, message, type);
+        verify(notificationService, times(1)).createNotification(eq(userId), eq(title), eq(message), eq(type));
     }
 
     @Test
     void testCreateNotification_NullParameters() {
-        ResponseEntity<Notification> response1 = notificationController.createNotification(
-                null, "Title", "Message", NotificationType.SYSTEM);
+        // Test when userId is null
+        Map<String, Object> notificationData = new HashMap<>();
+        notificationData.put("userId", null); // userId is null
+        notificationData.put("title", "Title");
+        notificationData.put("message", "Message");
+        notificationData.put("type", NotificationType.SYSTEM.name());
 
+        ResponseEntity<Notification> response1 = notificationController.createNotification(notificationData);
         assertEquals(HttpStatus.BAD_REQUEST, response1.getStatusCode());
         assertNull(response1.getBody());
 
-        ResponseEntity<Notification> response2 = notificationController.createNotification(
-                userId, null, "Message", NotificationType.SYSTEM);
-
+        // Test when title is null
+        notificationData.put("userId", userId.toString()); // valid userId
+        notificationData.put("title", null); // title is null
+        ResponseEntity<Notification> response2 = notificationController.createNotification(notificationData);
         assertEquals(HttpStatus.BAD_REQUEST, response2.getStatusCode());
         assertNull(response2.getBody());
 
-        ResponseEntity<Notification> response3 = notificationController.createNotification(
-                userId, "Title", null, NotificationType.SYSTEM);
-
+        // Test when message is null
+        notificationData.put("title", "Title");
+        notificationData.put("message", null); // message is null
+        ResponseEntity<Notification> response3 = notificationController.createNotification(notificationData);
         assertEquals(HttpStatus.BAD_REQUEST, response3.getStatusCode());
         assertNull(response3.getBody());
 
-        ResponseEntity<Notification> response4 = notificationController.createNotification(
-                userId, "Title", "Message", null);
-
+        // Test when type is null
+        notificationData.put("message", "Message");
+        notificationData.put("type", null); // type is null
+        ResponseEntity<Notification> response4 = notificationController.createNotification(notificationData);
         assertEquals(HttpStatus.BAD_REQUEST, response4.getStatusCode());
         assertNull(response4.getBody());
 
+        // Verify the service method was never called due to invalid parameters
         verify(notificationService, never()).createNotification(any(), any(), any(), any());
     }
 

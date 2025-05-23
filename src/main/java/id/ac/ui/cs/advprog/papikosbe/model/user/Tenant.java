@@ -1,6 +1,7 @@
 // src/main/java/id/ac/ui/cs/advprog/papikosbe/model/Tenant.java
 package id.ac.ui.cs.advprog.papikosbe.model.user;
 import id.ac.ui.cs.advprog.papikosbe.enums.Role;
+import id.ac.ui.cs.advprog.papikosbe.model.transaction.Wallet;
 
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;

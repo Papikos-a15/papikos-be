@@ -26,6 +26,7 @@ public class KosTest {
         kos.setAddress("Example Address");
         kos.setDescription("Example Description");
         kos.setMaxCapacity(30);
+        kos.setAvailableRooms(30);
         kos.setPrice(75000.0);
 
         // Verify getters return the expected values.

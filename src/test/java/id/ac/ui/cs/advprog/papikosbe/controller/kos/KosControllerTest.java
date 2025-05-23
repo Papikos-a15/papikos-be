@@ -137,8 +137,10 @@ public class KosControllerTest {
     @Test
     void addAvailable_returnsAdded() throws Exception {
         when(kosService.getKosById(any())).thenReturn(Optional.ofNullable(dummy));
+        when(kosService.addAvailableRoom(dummy.getId())).thenReturn(Optional.of(dummy));
 
-        mockMvc.perform(post("/api/management/addAvailable"+dummy.getId().toString())
+
+        mockMvc.perform(patch("/api/management/addAvailable")
                     .header("Authorization", "Bearer tok")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(dummy)))
@@ -150,8 +152,9 @@ public class KosControllerTest {
     @Test
     void subtractAvailable_returnsRemoved() throws Exception {
         when(kosService.getKosById(any())).thenReturn(Optional.ofNullable(dummy));
+        when(kosService.subtractAvailableRoom(dummy.getId())).thenReturn(Optional.of(dummy));
 
-        mockMvc.perform(post("/api/management/subtractAvailable"+dummy.getId().toString())
+        mockMvc.perform(patch("/api/management/subtractAvailable")
                         .header("Authorization", "Bearer tok")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dummy)))

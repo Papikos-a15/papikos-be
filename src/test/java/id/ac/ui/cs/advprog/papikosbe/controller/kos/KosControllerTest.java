@@ -8,7 +8,6 @@ import id.ac.ui.cs.advprog.papikosbe.service.kos.KosService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -108,7 +107,7 @@ public class KosControllerTest {
         UUID randomId = UUID.randomUUID();
         when(kosService.getKosById(randomId)).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/api/management/"+randomId.toString())
+        mockMvc.perform(get("/api/management/"+randomId)
                         .header("Authorization", "Bearer tok"))
                 .andExpect(status().isNotFound());
     }
@@ -138,8 +137,10 @@ public class KosControllerTest {
     @Test
     void addAvailable_returnsAdded() throws Exception {
         when(kosService.getKosById(any())).thenReturn(Optional.ofNullable(dummy));
+        when(kosService.addAvailableRoom(dummy.getId())).thenReturn(Optional.of(dummy));
 
-        mockMvc.perform(post("/api/management/addAvailable"+dummy.getId().toString())
+
+        mockMvc.perform(patch("/api/management/addAvailable")
                     .header("Authorization", "Bearer tok")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(dummy)))
@@ -151,8 +152,9 @@ public class KosControllerTest {
     @Test
     void subtractAvailable_returnsRemoved() throws Exception {
         when(kosService.getKosById(any())).thenReturn(Optional.ofNullable(dummy));
+        when(kosService.subtractAvailableRoom(dummy.getId())).thenReturn(Optional.of(dummy));
 
-        mockMvc.perform(post("/api/management/subtractAvailable"+dummy.getId().toString())
+        mockMvc.perform(patch("/api/management/subtractAvailable")
                         .header("Authorization", "Bearer tok")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dummy)))

@@ -208,7 +208,7 @@ public class KosControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(dummy.getId().toString()))
                 .andExpect(jsonPath("$.availableRooms").value(dummy.getAvailableRooms()));
-
+    }
     @Test
     void deleteKos_returnsDeleted() throws Exception {
         mockMvc.perform(delete("/api/management/delete/"+dummy.getId().toString())

@@ -127,6 +127,7 @@ public class KosServiceImplTest {
     public void testAddAvailableRoom() {
         Kos kos = kos1;
         doReturn(Optional.of(kos)).when(kosRepository).findById(kos1.getId());
+        kos.setAvailableRooms(29);
 
         kosService.addAvailableRoom(kos.getId());
 
@@ -137,7 +138,7 @@ public class KosServiceImplTest {
             assertEquals("Kos1", result.get().getName());
             assertEquals("AlamatKos1", result.get().getAddress());
             assertEquals("DeskripsiKos1", result.get().getDescription());
-            assertEquals(31, result.get().getAvailableRooms());
+            assertEquals(30, result.get().getAvailableRooms());
             assertEquals(50000.0, result.get().getPrice());
         }
     }

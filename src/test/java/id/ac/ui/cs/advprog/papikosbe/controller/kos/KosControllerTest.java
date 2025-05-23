@@ -138,6 +138,7 @@ public class KosControllerTest {
     void addAvailable_returnsAdded() throws Exception {
         when(kosService.getKosById(any())).thenReturn(Optional.ofNullable(dummy));
         when(kosService.addAvailableRoom(dummy.getId())).thenReturn(Optional.of(dummy));
+        dummy.setAvailableRooms(29);
 
 
         mockMvc.perform(patch("/api/management/addAvailable")

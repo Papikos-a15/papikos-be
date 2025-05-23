@@ -4,10 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import id.ac.ui.cs.advprog.papikosbe.config.SecurityConfig;
 import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
 import id.ac.ui.cs.advprog.papikosbe.security.JwtTokenProvider;
+import id.ac.ui.cs.advprog.papikosbe.service.kos.KosSearchService;
 import id.ac.ui.cs.advprog.papikosbe.service.kos.KosService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -19,11 +21,10 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -48,6 +49,12 @@ public class KosControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Mock
+    private KosSearchService kosSearchService;
+
+    private List<Kos> testKosList;
+    private Kos kos1, kos2;
+
     private Kos dummy;
 
     @BeforeEach
@@ -61,6 +68,22 @@ public class KosControllerTest {
                 1500000.0,
                 30
         );
+
+        kos1 = new Kos();
+        kos1.setId(UUID.randomUUID());
+        kos1.setName("Kos A");
+        kos1.setAddress("Jalan Margonda 10");
+        kos1.setPrice(1000000.0);
+        kos1.setAvailable(true);
+
+        kos2 = new Kos();
+        kos2.setId(UUID.randomUUID());
+        kos2.setName("Kos B");
+        kos2.setAddress("Jalan Pondok Cina 20");
+        kos2.setPrice(1500000.0);
+        kos2.setAvailable(false);
+
+        testKosList = Arrays.asList(kos1, kos2);
 
         when(jwtProvider.validate("tok")).thenReturn(true);
         Authentication auth = new UsernamePasswordAuthenticationToken(
@@ -168,5 +191,66 @@ public class KosControllerTest {
         mockMvc.perform(delete("/api/management/delete/"+dummy.getId().toString())
                         .header("Authorization", "Bearer tok"))
                 .andExpect(status().isNoContent());
+    }
+
+        // Add existing test methods for CRUD operations here...
+
+    @Test
+    void searchKosBySingleCriteria_ShouldReturnFilteredResults() throws Exception {
+        // Mock service response
+        when(kosService.getAllKos()).thenReturn(testKosList);
+        when(kosSearchService.search(eq(testKosList), eq("name"), eq("Kos A")))
+                .thenReturn(Collections.singletonList(kos1));
+
+        // Perform request and validate response
+        mockMvc.perform(get("/api/kos/search")
+                        .param("name", "Kos A")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(kos1.getId().toString()))
+                .andExpect(jsonPath("$[0].name").value("Kos A"));
+    }
+
+    @Test
+    void searchKosByPriceRange_ShouldReturnFilteredResults() throws Exception {
+        // Mock service response for price range search
+        when(kosService.getAllKos()).thenReturn(testKosList);
+        
+        // Mock search with price range criteria
+        when(kosSearchService.multiSearch(eq(testKosList), any(Map.class)))
+                .thenReturn(Collections.singletonList(kos1));
+
+        mockMvc.perform(get("/api/kos/search")
+                        .param("minPrice", "800000")
+                        .param("maxPrice", "1200000")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].name").value("Kos A"));
+    }
+
+    @Test
+    void searchKosWithMultipleCriteria_ShouldReturnFilteredResults() throws Exception {
+        when(kosService.getAllKos()).thenReturn(testKosList);
+        when(kosSearchService.multiSearch(eq(testKosList), any(Map.class)))
+                .thenReturn(Collections.singletonList(kos1));
+
+        mockMvc.perform(get("/api/kos/search")
+                        .param("name", "Kos")
+                        .param("location", "Margonda")
+                        .param("availability", "true")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(kos1.getId().toString()));
+    }
+
+    @Test
+    void searchKosWithNoParameters_ShouldReturnAllKos() throws Exception {
+        when(kosService.getAllKos()).thenReturn(testKosList);
+
+        mockMvc.perform(get("/api/kos/search")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(kos1.getId().toString()))
+                .andExpect(jsonPath("$[1].id").value(kos2.getId().toString()));
     }
 }

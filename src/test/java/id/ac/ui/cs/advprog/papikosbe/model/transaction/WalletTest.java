@@ -1,27 +1,41 @@
 package id.ac.ui.cs.advprog.papikosbe.model.transaction;
 
-import static org.junit.jupiter.api.Assertions.*;
-
+import id.ac.ui.cs.advprog.papikosbe.model.user.Tenant;
+import id.ac.ui.cs.advprog.papikosbe.model.user.User;
 import org.junit.jupiter.api.Test;
+
 import java.math.BigDecimal;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 class WalletTest {
-    UUID walletId = UUID.randomUUID();
-    UUID userId = UUID.randomUUID();
 
     @Test
     void testCreateWalletSuccess() {
-        Wallet wallet = new Wallet(walletId, userId, new BigDecimal("100.00"));
+        UUID walletId = UUID.randomUUID();
+
+        User user = Tenant.builder()
+                .email("nae@example.com")
+                .password("securepass123")
+                .build();
+
+        Wallet wallet = new Wallet(user, new BigDecimal("100.00"));
+        wallet.setId(walletId);
 
         assertEquals(walletId, wallet.getId());
-        assertEquals(userId, wallet.getUserId());
+        assertEquals(user, wallet.getUser());
         assertEquals(new BigDecimal("100.00"), wallet.getBalance());
     }
 
     @Test
     void testUpdateBalanceSuccess() {
-        Wallet wallet = new Wallet(walletId, userId, new BigDecimal("100.00"));
+        User user = Tenant.builder()
+                .email("nae@example.com")
+                .password("securepass123")
+                .build();
+
+        Wallet wallet = new Wallet(user, new BigDecimal("100.00"));
         wallet.setBalance(new BigDecimal("150.00"));
 
         assertEquals(new BigDecimal("150.00"), wallet.getBalance());
@@ -29,11 +43,15 @@ class WalletTest {
 
     @Test
     void testCreateWalletNullBalance() {
+        User user = Tenant.builder()
+                .email("nae@example.com")
+                .password("securepass123")
+                .build();
+
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            new Wallet(walletId, userId, null);
+            new Wallet(user, null);
         });
 
         assertEquals("Balance cannot be null", exception.getMessage());
     }
 }
-

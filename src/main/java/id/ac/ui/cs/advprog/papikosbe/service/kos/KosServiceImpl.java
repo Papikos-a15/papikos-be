@@ -64,6 +64,20 @@ public class KosServiceImpl implements KosService {
     }
 
     @Override
+    public Optional<Kos> addAvailableRoom(UUID id) {
+        Optional<Kos> foundKos = kosRepository.findById(id);
+        foundKos.ifPresent(kos -> kos.setAvailableRooms(kos.getAvailableRooms() + 1));
+        return foundKos;
+    }
+
+    @Override
+    public Optional<Kos> subtractAvailableRoom(UUID id) {
+        Optional<Kos> foundKos = kosRepository.findById(id);
+        foundKos.ifPresent(kos -> kos.setAvailableRooms(kos.getAvailableRooms() - 1));
+        return foundKos;
+    }
+
+    @Override
     public void deleteKos(UUID id) {
         kosRepository.deleteById(id);
     }

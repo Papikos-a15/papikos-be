@@ -67,4 +67,20 @@ class UserRepositoryTest {
         assertThatThrownBy(() -> userRepo.saveAndFlush(t2))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
+
+    @Test
+    @DisplayName("findById returns user when exists")
+    void testFindByIdReturnsUser() {
+        Tenant tenant = Tenant.builder()
+                .email("user123@mail.com")
+                .password("securepass").build();
+
+        User saved = userRepo.saveAndFlush(tenant);
+
+        Optional<User> found = userRepo.findById(saved.getId());
+
+        assertThat(found).isPresent();
+        assertThat(found.get().getEmail()).isEqualTo("user123@mail.com");
+        assertThat(found.get()).isInstanceOf(Tenant.class);
+    }
 }

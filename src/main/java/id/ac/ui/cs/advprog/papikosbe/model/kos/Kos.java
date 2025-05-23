@@ -7,7 +7,6 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "kos")
-@Builder
 @Setter @Getter
 public class Kos {
 
@@ -19,9 +18,6 @@ public class Kos {
     @Column(updatable = false, nullable = false)
     private UUID ownerId;
 
-    @Column(updatable = false)
-    private UUID tenantId;
-
     @Column(nullable = false)
     private String name;
 
@@ -30,6 +26,12 @@ public class Kos {
 
     @Column()
     private String description;
+
+    @Column(nullable=false)
+    private Integer maxCapacity;
+
+    @Column(nullable=false)
+    private Integer availableRooms;
 
     @Column(nullable = false)
     private Double price;
@@ -41,23 +43,27 @@ public class Kos {
     // Constructors
     public Kos() {}
 
-    public Kos(UUID id, String name, String address, String description, Double price, boolean isAvailable) {
+    public Kos(UUID id, String name, String address, String description, Double price, Integer maxCapacity) {
         this.id = id;
         this.name = name;
         this.address = address;
         this.description = description;
         this.price = price;
-        this.isAvailable = isAvailable;
+        this.maxCapacity = maxCapacity;
+        this.availableRooms = maxCapacity;
+        this.isAvailable = true;
     }
 
-    public Kos(UUID id, UUID ownerId, UUID tenantId, String name, String address, String description, Double price, boolean isAvailable) {
+    @Builder
+    public Kos(UUID id, UUID ownerId, String name, String address, String description, Double price, Integer maxCapacity) {
         this.id = id;
         this.ownerId = ownerId;
-        this.tenantId = tenantId;
         this.name = name;
         this.address = address;
         this.description = description;
         this.price = price;
-        this.isAvailable = isAvailable;
+        this.maxCapacity = maxCapacity;
+        this.availableRooms = maxCapacity;
+        this.isAvailable = true;
     }
 }

@@ -4,8 +4,8 @@ import id.ac.ui.cs.advprog.papikosbe.model.chat.RoomChat;
 import id.ac.ui.cs.advprog.papikosbe.repository.chat.RoomChatRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.UUID;
+import java.time.LocalDateTime;
+import java.util.*;
 
 @Service
 public class RoomChatServiceImpl implements RoomChatService {
@@ -18,27 +18,48 @@ public class RoomChatServiceImpl implements RoomChatService {
 
     @Override
     public boolean createRoomChatIfNotExists(RoomChat roomChat) {
-        List<RoomChat> existingChats = roomChatRepository.getRoomChatsByUser(roomChat.getPenyewaId());
+        List<RoomChat> existing = roomChatRepository.findAllByPenyewaId(roomChat.getPenyewaId());
 
-        boolean alreadyExists = existingChats.stream().anyMatch(chat ->
-                chat.getPenyewaId().equals(roomChat.getPenyewaId()) &&
-                        chat.getPemilikKosId().equals(roomChat.getPemilikKosId()));
+        boolean alreadyExists = existing.stream().anyMatch(room ->
+                room.getPemilikKosId().equals(roomChat.getPemilikKosId())
+        );
 
-        if (alreadyExists) {
-            return false;
-        }
+        if (alreadyExists) return false;
 
-        roomChatRepository.createRoomChat(roomChat);
+        roomChatRepository.save(roomChat);
         return true;
     }
 
     @Override
+    public RoomChat findOrCreateRoomChat(UUID penyewaId, UUID pemilikKosId) {
+        return roomChatRepository
+                .findByPenyewaIdAndPemilikKosId(penyewaId, pemilikKosId)
+                .orElseGet(() -> {
+                    RoomChat newRoom = RoomChat.builder()
+                            .id(UUID.randomUUID())
+                            .penyewaId(penyewaId)
+                            .pemilikKosId(pemilikKosId)
+                            .createdAt(LocalDateTime.now())
+                            .build();
+                    return roomChatRepository.save(newRoom);
+                });
+    }
+
+    @Override
     public RoomChat getRoomChatById(UUID id) {
-        return roomChatRepository.getRoomChatById(id);
+        return roomChatRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Room not found"));
     }
 
     @Override
     public List<RoomChat> getRoomChatsByUser(UUID userId) {
-        return roomChatRepository.getRoomChatsByUser(userId);
+        List<RoomChat> asPenyewa = roomChatRepository.findAllByPenyewaId(userId);
+        List<RoomChat> asPemilik = roomChatRepository.findAllByPemilikKosId(userId);
+
+        Set<RoomChat> merged = new HashSet<>();
+        merged.addAll(asPenyewa);
+        merged.addAll(asPemilik);
+
+        return new ArrayList<>(merged);
     }
 }

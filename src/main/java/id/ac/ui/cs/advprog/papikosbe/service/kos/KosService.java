@@ -11,5 +11,7 @@ public interface KosService {
     List<Kos> getAllKos();
     Optional<Kos> getKosById(UUID id);
     Optional<Kos> updateKos(UUID id, Kos updatedKos);
+    Optional<Kos> addAvailableRoom(UUID id);
+    Optional<Kos> subtractAvailableRoom(UUID id);
     void deleteKos(UUID id);
 }

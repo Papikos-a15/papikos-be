@@ -29,19 +29,21 @@ public class KosRepositoryTest {
 
         Kos kos1 = new Kos();
         kos1.setOwnerId(UUID.randomUUID());
-        kos1.setTenantId(UUID.randomUUID());
         kos1.setName("Kos1");
         kos1.setAddress("AlamatKos1");
         kos1.setDescription("DeskripsiKos1");
+        kos1.setMaxCapacity(30);
+        kos1.setAvailableRooms(30);
         kos1.setPrice(50000.00);
         kosList.add(kos1);
 
         Kos kos2 = new Kos();
         kos2.setOwnerId(UUID.randomUUID());
-        kos2.setTenantId(UUID.randomUUID());
         kos2.setName("Kos2");
         kos2.setAddress("AlamatKos2");
         kos2.setDescription("DeskripsiKos2");
+        kos2.setMaxCapacity(20);
+        kos2.setAvailableRooms(20);
         kos2.setPrice(50000.00);
         kosList.add(kos2);
     }
@@ -57,6 +59,8 @@ public class KosRepositoryTest {
         assertEquals("Kos1", savedKos.getName());
         assertEquals("AlamatKos1", savedKos.getAddress());
         assertEquals("DeskripsiKos1", savedKos.getDescription());
+        assertEquals(30, savedKos.getMaxCapacity());
+        assertEquals(savedKos.getMaxCapacity(), savedKos.getAvailableRooms());
         assertEquals(50000.00, savedKos.getPrice());
     }
 
@@ -73,6 +77,8 @@ public class KosRepositoryTest {
             assertEquals("Kos2", foundKos.get().getName());
             assertEquals("AlamatKos2", foundKos.get().getAddress());
             assertEquals("DeskripsiKos2", foundKos.get().getDescription());
+            assertEquals(20, foundKos.get().getMaxCapacity());
+            assertEquals(savedKos.getMaxCapacity(), foundKos.get().getAvailableRooms());
             assertEquals(50000.00, foundKos.get().getPrice());
         }
     }
@@ -100,6 +106,7 @@ public class KosRepositoryTest {
             foundKos.get().setName("UpdatedKos");
             foundKos.get().setAddress("UpdatedAlamat");
             foundKos.get().setDescription("UpdatedDeskripsi");
+            foundKos.get().setAvailableRooms(25);
             foundKos.get().setPrice(75000.00);
 
             // Verify that the updated fields match.
@@ -107,6 +114,7 @@ public class KosRepositoryTest {
             assertEquals("UpdatedKos", foundKos.get().getName());
             assertEquals("UpdatedAlamat", foundKos.get().getAddress());
             assertEquals("UpdatedDeskripsi", foundKos.get().getDescription());
+            assertEquals(25, foundKos.get().getAvailableRooms());
             assertEquals(75000.00, foundKos.get().getPrice());
         }
 

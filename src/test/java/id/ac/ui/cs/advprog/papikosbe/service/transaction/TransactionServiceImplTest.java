@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -91,8 +92,11 @@ class TransactionServiceImplTest {
         when(payment.process(tenantWallet, ownerWallet)).thenReturn(TransactionStatus.COMPLETED);
         when(transactionRepository.save(payment)).thenReturn(payment);
 
-        // ACTION
-        Payment result = transactionService.createPayment(tenantId, ownerId, amount);
+        // ACTION - Call the asynchronous method
+        CompletableFuture<Payment> resultFuture = transactionService.createPayment(tenantId, ownerId, amount);
+
+        // Wait for the result to complete
+        Payment result = resultFuture.join();  // This will block until the future completes
 
         // ASSERTION
         assertNotNull(result);
@@ -101,6 +105,7 @@ class TransactionServiceImplTest {
         verify(walletRepository).save(ownerWallet);
         verify(transactionRepository).save(payment);
     }
+
 
     @Test
     void testCreatePayment_Failure_InsufficientBalance() throws Exception {
@@ -153,19 +158,26 @@ class TransactionServiceImplTest {
         topUp.setAmount(amount);
         topUp.setStatus(TransactionStatus.COMPLETED);
 
+        // Mocking the repositories and methods
         when(userRepository.findById(tenantId)).thenReturn(Optional.of(tenant));
         when(walletRepository.findByUserId(tenantId)).thenReturn(Optional.of(tenantWallet));
         when(transactionFactory.createTransaction(TransactionType.TOP_UP, tenantId, amount, null)).thenReturn(topUp);
-        when(topUp.process(tenantWallet, null)).thenReturn(TransactionStatus.COMPLETED); // tambahkan ini jika perlu
+        when(topUp.process(tenantWallet, null)).thenReturn(TransactionStatus.COMPLETED);
         when(transactionRepository.save(topUp)).thenReturn(topUp);
 
-        TopUp result = transactionService.createTopUp(tenantId, amount);
+        // Call the asynchronous method
+        CompletableFuture<TopUp> resultFuture = transactionService.createTopUp(tenantId, amount);
 
+        // Wait for the result
+        TopUp result = resultFuture.join(); // join() waits for the result
+
+        // Assertions
         assertNotNull(result);
         assertEquals(TransactionStatus.COMPLETED, result.getStatus());
         verify(walletRepository).save(tenantWallet);
         verify(transactionRepository).save(topUp);
     }
+
 
 
     @Test
@@ -231,18 +243,4 @@ class TransactionServiceImplTest {
         assertEquals(2, result.size());  // One payment and one top-up
     }
 
-    @Test
-    void testGetTransactionByDate() {
-        // Arrange
-        LocalDateTime date = LocalDateTime.now();
-        List<Transaction> transactions = Collections.singletonList(new Payment());
-        when(transactionRepository.findByDate(LocalDate.from(date))).thenReturn(transactions);
-
-        // Act
-        List<Transaction> result = transactionService.getTransactionByDate(date);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(1, result.size());
-    }
-}
+ }

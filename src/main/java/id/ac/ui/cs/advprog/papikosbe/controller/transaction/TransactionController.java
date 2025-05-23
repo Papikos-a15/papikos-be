@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @RestController
@@ -25,18 +26,18 @@ public class TransactionController {
     TransactionService transactionService;
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getTransactionById(@PathVariable UUID id) {
+    public ResponseEntity<TransactionResponse> getTransactionById(@PathVariable UUID id) {
         try {
             Transaction transaction = transactionService.getTransactionById(id);
             TransactionResponse response = mapToTransactionResponse(transaction);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<?> getUserTransactions(@PathVariable UUID userId) {
+    public ResponseEntity<List<TransactionResponse>> getUserTransactions(@PathVariable UUID userId) {
         try {
             List<Transaction> transactions = transactionService.getUserTransactions(userId);
             List<TransactionResponse> responses = transactions.stream()
@@ -44,78 +45,70 @@ public class TransactionController {
                     .collect(Collectors.toList());
             return ResponseEntity.ok(responses);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
     }
 
     @PostMapping("/payment")
-    public ResponseEntity<?> createPayment(@RequestBody PaymentRequest paymentRequest) {
-        try {
-            Payment payment = transactionService.createPayment(
-                    paymentRequest.getTenantId(),
-                    paymentRequest.getOwnerId(),
-                    paymentRequest.getAmount()
-            );
-            TransactionResponse response = mapToTransactionResponse(payment);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        }
+    public CompletableFuture<ResponseEntity<TransactionResponse>> createPayment(@RequestBody PaymentRequest paymentRequest) throws Exception {
+        return transactionService.createPayment(paymentRequest.getTenantId(), paymentRequest.getOwnerId(), paymentRequest.getAmount())
+                .thenApply(payment -> {
+                    TransactionResponse response = mapToTransactionResponse(payment);
+                    return ResponseEntity.status(HttpStatus.CREATED).body(response);
+                })
+                .exceptionally(ex -> {
+                    TransactionResponse errorResponse = new TransactionResponse("Error processing payment", ex.getMessage());
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+                });
     }
 
     @GetMapping("/payment/tenant/{tenantId}")
-    public ResponseEntity<?> getPaymentsByTenant(@PathVariable UUID tenantId) {
-        try {
-            List<Payment> payments = transactionService.getPaymentsByTenant(tenantId);
-            List<TransactionResponse> responses = payments.stream()
-                    .map(this::mapToTransactionResponse)
-                    .collect(Collectors.toList());
-            return ResponseEntity.ok(responses);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        }
+    public CompletableFuture<ResponseEntity<List<TransactionResponse>>> getPaymentsByTenant(@PathVariable UUID tenantId) {
+        return transactionService.getPaymentsByTenant(tenantId)
+                .thenApply(payments -> payments.stream()
+                        .map(this::mapToTransactionResponse)
+                        .collect(Collectors.toList()))
+                .thenApply(responses -> ResponseEntity.ok(responses))
+                .exceptionally(ex -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(null));
     }
 
     @GetMapping("/payment/owner/{ownerId}")
-    public ResponseEntity<?> getPaymentsByOwner(@PathVariable UUID ownerId) {
-        try {
-            List<Payment> payments = transactionService.getPaymentsByOwner(ownerId);
-            List<TransactionResponse> responses = payments.stream()
-                    .map(this::mapToTransactionResponse)
-                    .collect(Collectors.toList());
-            return ResponseEntity.ok(responses);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        }
+    public CompletableFuture<ResponseEntity<List<TransactionResponse>>> getPaymentsByOwner(@PathVariable UUID ownerId) {
+        return transactionService.getPaymentsByOwner(ownerId)
+                .thenApply(payments -> payments.stream()
+                        .map(this::mapToTransactionResponse)
+                        .collect(Collectors.toList()))
+                .thenApply(responses -> ResponseEntity.ok(responses))
+                .exceptionally(ex -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(null));
     }
 
     @PostMapping("/topup")
-    public ResponseEntity<?> createTopUp(@RequestBody TopUpRequest topUpRequest) {
-        try {
-            TopUp topUp = transactionService.createTopUp(
-                    topUpRequest.getUserId(),
-                    topUpRequest.getAmount()
-            );
-            TransactionResponse response = mapToTransactionResponse(topUp);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        }
+    public CompletableFuture<ResponseEntity<TransactionResponse>> createTopUp(@RequestBody TopUpRequest topUpRequest) throws Exception {
+        // Asynchronous service call
+        return transactionService.createTopUp(topUpRequest.getUserId(), topUpRequest.getAmount())
+                .thenApply(topUp -> {
+                    // Map to response and set status code to CREATED (201)
+                    TransactionResponse response = mapToTransactionResponse(topUp);
+                    return ResponseEntity.status(HttpStatus.CREATED).body(response);
+                })
+                .exceptionally(ex -> {
+                    // Handle exception and return error response
+                    TransactionResponse errorResponse = new TransactionResponse("Error processing top-up", ex.getMessage());
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+                });
     }
 
     @GetMapping("/topup/user/{userId}")
-    public ResponseEntity<?> getTopUpsByUser(@PathVariable UUID userId) {
-        try {
-            List<TopUp> topUps = transactionService.getTopUpsByUser(userId);
-            List<TransactionResponse> responses = topUps.stream()
-                    .map(this::mapToTransactionResponse)
-                    .collect(Collectors.toList());
-            return ResponseEntity.ok(responses);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        }
+    public CompletableFuture<ResponseEntity<List<TransactionResponse>>> getTopUpsByUser(@PathVariable UUID userId) {
+        return transactionService.getTopUpsByUser(userId)
+                .thenApply(topUps -> topUps.stream()
+                        .map(this::mapToTransactionResponse)
+                        .collect(Collectors.toList()))
+                .thenApply(responses -> ResponseEntity.ok(responses))
+                .exceptionally(ex -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(null));
     }
 
+    // Helper method to map Transaction to TransactionResponse
     private TransactionResponse mapToTransactionResponse(Transaction transaction) {
         TransactionResponse response = new TransactionResponse();
         response.setId(transaction.getId());

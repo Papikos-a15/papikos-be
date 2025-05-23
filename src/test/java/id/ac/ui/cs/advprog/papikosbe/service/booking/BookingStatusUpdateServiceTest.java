@@ -6,10 +6,8 @@ import id.ac.ui.cs.advprog.papikosbe.repository.booking.BookingRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
@@ -18,6 +16,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
@@ -29,35 +28,47 @@ public class BookingStatusUpdateServiceTest {
     private BookingRepository bookingRepository;
 
     @InjectMocks
-    private BookingStatusUpdateService bookingStatusUpdateService;
+    private BookingStatusUpdateServiceImpl bookingStatusUpdateService;
 
+    private List<Booking> mockApprovedBookings;
     private List<Booking> expiredBookings;
 
     @BeforeEach
     void setUp() {
-        // Use mocked bookings instead of real constructor
-        expiredBookings = new ArrayList<>();
+        // Create mock approved bookings
+        mockApprovedBookings = new ArrayList<>();
         
-        // Create mocked bookings
-        Booking expiredBooking1 = Mockito.mock(Booking.class);
-        Booking expiredBooking2 = Mockito.mock(Booking.class);
+        // Create a mock booking that's expired (created 3 months ago with 2 month duration)
+        Booking expiredBooking = mock(Booking.class);
+        when(expiredBooking.getBookingId()).thenReturn(UUID.randomUUID());
+        when(expiredBooking.getStatus()).thenReturn(BookingStatus.APPROVED);
+        when(expiredBooking.getCheckInDate()).thenReturn(LocalDate.now().minusMonths(3));
+        when(expiredBooking.getDuration()).thenReturn(2);
         
-        // Configure the mocks to return appropriate data
-        when(expiredBooking1.getBookingId()).thenReturn(UUID.randomUUID());
-        when(expiredBooking1.getStatus()).thenReturn(BookingStatus.APPROVED);
+        // Create a mock booking that's not expired yet (created 1 month ago with 3 month duration)
+        Booking validBooking = mock(Booking.class);
+        when(validBooking.getBookingId()).thenReturn(UUID.randomUUID());
+        when(validBooking.getStatus()).thenReturn(BookingStatus.APPROVED);
+        when(validBooking.getCheckInDate()).thenReturn(LocalDate.now().minusMonths(1));
+        when(validBooking.getDuration()).thenReturn(3);
         
-        when(expiredBooking2.getBookingId()).thenReturn(UUID.randomUUID());
-        when(expiredBooking2.getStatus()).thenReturn(BookingStatus.APPROVED);
+        mockApprovedBookings.add(expiredBooking);
+        mockApprovedBookings.add(validBooking);
         
-        expiredBookings.add(expiredBooking1);
-        expiredBookings.add(expiredBooking2);
+        // Pre-filter the expired bookings for our test expectations
+        expiredBookings = mockApprovedBookings.stream()
+            .filter(booking -> {
+                LocalDate endDate = booking.getCheckInDate().plusMonths(booking.getDuration());
+                return endDate.isBefore(LocalDate.now());
+            })
+            .collect(Collectors.toList());
     }
 
     @Test
     void testUpdateExpiredBookings_ShouldChangeStatusToInactive() throws ExecutionException, InterruptedException {
-        // Setup repository mock to return our expired bookings
-        when(bookingRepository.findBookingsToDeactivate(any(LocalDate.class)))
-                .thenReturn(expiredBookings);
+        // Setup repository mock to return our approved bookings
+        when(bookingRepository.findByStatus(BookingStatus.APPROVED))
+                .thenReturn(mockApprovedBookings);
         
         // Execute the service method
         CompletableFuture<Integer> result = bookingStatusUpdateService.updateExpiredBookingsAsync();
@@ -65,23 +76,30 @@ public class BookingStatusUpdateServiceTest {
         // Wait for the async operation to complete and get the result
         int updatedCount = result.get();
         
-        // Verify the correct number of bookings were updated
-        assertEquals(2, updatedCount);
+        // Verify only expired bookings were updated (should be 1)
+        assertEquals(expiredBookings.size(), updatedCount);
         
-        // Verify status was set on each booking
-        for (Booking booking : expiredBookings) {
-            verify(booking).setStatus(BookingStatus.INACTIVE);
-        }
+        // Verify status was set to INACTIVE only on expired booking
+        verify(expiredBookings.get(0)).setStatus(BookingStatus.INACTIVE);
         
-        // Verify each booking was saved
-        verify(bookingRepository, times(2)).save(any(Booking.class));
+        // Make sure we didn't update the valid booking
+        verify(mockApprovedBookings.get(1), never()).setStatus(any(BookingStatus.class));
+        
+        // Verify booking was saved
+        verify(bookingRepository, times(expiredBookings.size())).save(any(Booking.class));
     }
 
     @Test
     void testUpdateExpiredBookings_NoExpiredBookings_ShouldReturnZero() throws ExecutionException, InterruptedException {
-        // Setup repository to return empty list (no expired bookings)
-        when(bookingRepository.findBookingsToDeactivate(any(LocalDate.class)))
-                .thenReturn(new ArrayList<>());
+        // Setup all bookings as non-expired
+        List<Booking> nonExpiredBookings = new ArrayList<>();
+        Booking validBooking = mock(Booking.class);
+        when(validBooking.getCheckInDate()).thenReturn(LocalDate.now().minusMonths(1));
+        when(validBooking.getDuration()).thenReturn(3);
+        nonExpiredBookings.add(validBooking);
+        
+        when(bookingRepository.findByStatus(BookingStatus.APPROVED))
+                .thenReturn(nonExpiredBookings);
         
         // Execute the service method
         CompletableFuture<Integer> result = bookingStatusUpdateService.updateExpiredBookingsAsync();

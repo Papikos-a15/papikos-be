@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -75,9 +76,11 @@ class NotificationControllerTest {
         notificationData.put("message", message);
         notificationData.put("type", type.name());
 
+        CompletableFuture<Notification> futureNotification = CompletableFuture.completedFuture(testNotification);
+
         // Simulating the service returning the created notification
-//        when(notificationService.createNotification(eq(userId), eq(title), eq(message), eq(type)))
-//                .thenReturn(testNotification);
+        when(notificationService.createNotification(eq(userId), eq(title), eq(message), eq(type)))
+                .thenReturn(futureNotification);
 
         // Send the request with the body map
         ResponseEntity<Notification> response = notificationController.createNotification(notificationData);
@@ -152,7 +155,7 @@ class NotificationControllerTest {
     @Test
     void testCreateNotificationForAllUser_InvalidData() {
         Map<String, Object> notificationData = new HashMap<>();
-        notificationData.put("title", null); // invalid
+        notificationData.put("title", null);
 
         ResponseEntity<Map<String, String>> response = notificationController.createNotificationForAllUser(notificationData);
 

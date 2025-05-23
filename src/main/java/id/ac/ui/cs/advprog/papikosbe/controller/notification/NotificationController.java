@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api/notifications")
@@ -59,11 +60,39 @@ public class NotificationController {
         }
 
         try {
-            Notification notification = notificationService.createNotification(userId, title, message, type);
+            CompletableFuture<Notification> notification = notificationService.createNotification(userId, title, message, type);
 
-            notificationPublisher.publish(notification);
+            notificationPublisher.publish(notification.get());
 
-            return new ResponseEntity<>(notification, HttpStatus.CREATED);
+            return new ResponseEntity<>(notification.get(), HttpStatus.CREATED);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PostMapping("/broadcast")
+    public ResponseEntity<Map<String, String>> createNotificationForAllUser(@RequestBody Map<String, Object> notificationData) {
+        String title;
+        String message;
+        NotificationType type;
+
+        try {
+            title = (String) notificationData.get("title");
+            message = (String) notificationData.get("message");
+            type = NotificationType.valueOf((String) notificationData.get("type"));
+
+            if (title == null || message == null || type == null) {
+                return ResponseEntity.badRequest().build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+
+        try {
+            notificationService.createNotificationForAllUser(title, message, type);
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Notification broadcasted to all users");
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }

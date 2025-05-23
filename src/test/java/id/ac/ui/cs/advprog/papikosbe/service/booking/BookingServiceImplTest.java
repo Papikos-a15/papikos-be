@@ -55,27 +55,27 @@ public class BookingServiceImplTest {
 
     @BeforeEach
     public void setUp() {
-        // Create a real BookingServiceImpl with mocked dependencies
-        bookingService = new BookingServiceImpl(bookingRepository, kosService, transactionService,stateValidator, bookingAccessValidator);
+        bookingService = new BookingServiceImpl(bookingRepository, kosService, stateValidator, bookingAccessValidator, transactionService);
 
-        // Initialize test data
-        monthlyPrice = 1200000.0;
+        monthlyPrice = 1500000.0;
         fullName = "John Doe";
         phoneNumber = "081234567890";
-
-        // Create a test Kos object with known owner
         ownerId = UUID.randomUUID();
         kosId = UUID.randomUUID();
         userId = UUID.randomUUID();
 
+        // Setup test Kos with all required fields
         testKos = new Kos();
         testKos.setId(kosId);
         testKos.setOwnerId(ownerId);
         testKos.setName("Test Kos");
-        testKos.setPrice(monthlyPrice);
         testKos.setAddress("Test Address");
-        testKos.setAvailable(true);
-    }
+        testKos.setDescription("Test Description");
+        testKos.setPrice(monthlyPrice);
+        testKos.setMaxCapacity(10);
+        testKos.setAvailableRooms(5); // Set available rooms
+        testKos.setAvailable(true);   // Set as available
+}
 
     @Test
     public void testCreateBookingWithPersonalDetails() {

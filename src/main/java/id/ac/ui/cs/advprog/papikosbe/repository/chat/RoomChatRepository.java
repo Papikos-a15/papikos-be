@@ -5,10 +5,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface RoomChatRepository extends JpaRepository<RoomChat, UUID> {
     List<RoomChat> findAllByPenyewaId(UUID penyewaId);
     List<RoomChat> findAllByPemilikKosId(UUID pemilikKosId);
+    Optional<RoomChat> findByPenyewaIdAndPemilikKosId(UUID penyewaId, UUID pemilikKosId);
 }

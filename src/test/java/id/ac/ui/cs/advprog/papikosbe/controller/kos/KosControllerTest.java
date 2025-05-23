@@ -61,6 +61,8 @@ public class KosControllerTest {
                 1500000.0,
                 30
         );
+        dummy.setAvailableRooms(30);
+        dummy.setAvailable(true);
 
         when(jwtProvider.validate("tok")).thenReturn(true);
         Authentication auth = new UsernamePasswordAuthenticationToken(

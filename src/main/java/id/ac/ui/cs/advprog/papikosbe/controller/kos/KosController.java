@@ -29,9 +29,9 @@ public class KosController {
     }
 
     @GetMapping("/list")
-    public CompletableFuture<ResponseEntity<List<Kos>>> getAllKos() {
-        return kosService.getAllKos()
-                .thenApply(ResponseEntity::ok);
+    public ResponseEntity<List<Kos>> getAllKos() {
+        List<Kos> kosList = kosService.getAllKos().join();
+        return ResponseEntity.status(200).body(kosList);
     }
 
     @GetMapping("/{id}")

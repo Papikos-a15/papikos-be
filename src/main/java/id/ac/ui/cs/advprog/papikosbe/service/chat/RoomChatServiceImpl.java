@@ -4,6 +4,7 @@ import id.ac.ui.cs.advprog.papikosbe.model.chat.RoomChat;
 import id.ac.ui.cs.advprog.papikosbe.repository.chat.RoomChatRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -27,6 +28,21 @@ public class RoomChatServiceImpl implements RoomChatService {
 
         roomChatRepository.save(roomChat);
         return true;
+    }
+
+    @Override
+    public RoomChat findOrCreateRoomChat(UUID penyewaId, UUID pemilikKosId) {
+        return roomChatRepository
+                .findByPenyewaIdAndPemilikKosId(penyewaId, pemilikKosId)
+                .orElseGet(() -> {
+                    RoomChat newRoom = RoomChat.builder()
+                            .id(UUID.randomUUID())
+                            .penyewaId(penyewaId)
+                            .pemilikKosId(pemilikKosId)
+                            .createdAt(LocalDateTime.now())
+                            .build();
+                    return roomChatRepository.save(newRoom);
+                });
     }
 
     @Override

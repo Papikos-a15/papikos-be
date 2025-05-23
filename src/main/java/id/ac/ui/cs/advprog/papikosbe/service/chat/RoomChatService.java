@@ -22,4 +22,6 @@ public interface RoomChatService {
      * Mengambil semua RoomChat yang melibatkan user (sebagai penyewa atau pemilik).
      */
     List<RoomChat> getRoomChatsByUser(UUID userId);
+
+    RoomChat findOrCreateRoomChat(UUID penyewaId, UUID pemilikKosId);
 }

@@ -101,4 +101,6 @@ class BookingValidatorKosAvailabilityTest {
                 () -> validator.validateForCreation(booking, kos));
         assertTrue(exception.getMessage().contains("No rooms available for booking"));
     }
+
+    
 }

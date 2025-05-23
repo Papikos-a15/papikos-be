@@ -30,8 +30,7 @@ public class BookingServiceImpl implements BookingService {
     public BookingServiceImpl(BookingRepository bookingRepository,
                               KosService kosService,
                               TransactionService transactionService,
-                              BookingValidator stateValidator,
-                              BookingAccessValidator bookingAccessValidator) {
+                              BookingValidator stateValidator) {
         this.bookingRepository = bookingRepository;
         this.kosService = kosService;
         this.transactionService = transactionService;

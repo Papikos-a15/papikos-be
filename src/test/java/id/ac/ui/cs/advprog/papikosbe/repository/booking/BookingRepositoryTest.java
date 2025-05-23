@@ -164,4 +164,64 @@ class BookingRepositoryTest {
         double expectedTotal = monthlyPrice * sampleBooking.getDuration();
         assertEquals(expectedTotal, retrieved.get().getTotalPrice());
     }
+
+    @Test
+    void testFindBookingsToDeactivate() {
+        // Create an active booking with end date in the past
+        LocalDate pastCheckIn = LocalDate.now().minusMonths(3);
+        int duration = 2; // 2 months
+
+        Booking expiredBooking = new Booking(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                pastCheckIn,
+                duration,
+                1500000.0,
+                "Test User",
+                "081234567890",
+                BookingStatus.APPROVED
+        );
+
+        // Create an active booking that is still valid
+        LocalDate currentCheckIn = LocalDate.now().minusMonths(1);
+        int currentDuration = 3; // 3 months, still valid
+
+        Booking validBooking = new Booking(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                currentCheckIn,
+                currentDuration,
+                1500000.0,
+                "Active User",
+                "082345678901",
+                BookingStatus.APPROVED
+        );
+
+        // Create an already inactive booking
+        Booking inactiveBooking = new Booking(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                pastCheckIn,
+                duration,
+                1500000.0,
+                "Inactive User",
+                "083456789012",
+                BookingStatus.INACTIVE
+        );
+
+        // Save all bookings
+        repository.save(expiredBooking);
+        repository.save(validBooking);
+        repository.save(inactiveBooking);
+
+        // Test the finder method
+        List<Booking> expiredBookings = repository.findBookingsToDeactivate(LocalDate.now());
+
+        // Should only find the expired booking, not the valid one or already inactive one
+        assertEquals(1, expiredBookings.size());
+        assertEquals(expiredBooking.getBookingId(), expiredBookings.get(0).getBookingId());
+    }
 }

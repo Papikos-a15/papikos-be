@@ -15,11 +15,59 @@ public class KosSearchStrategyTest {
 
     @BeforeEach
     void setUp() {
-        // Setup test data
-        kos1 = new Kos(UUID.randomUUID(), UUID.randomUUID(), null, "Kos Permata", "Jl. Margonda Raya No. 10", "Kos pria dekat kampus", 1200000.0, true);
-        kos2 = new Kos(UUID.randomUUID(), UUID.randomUUID(), null, "Kos Melati", "Jl. Pondok Cina No. 5", "Kos wanita dengan AC", 1500000.0, true);
-        kos3 = new Kos(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "Kos Dahlia", "Jl. Margonda Raya No. 25", "Kos exclusive dengan kamar mandi dalam", 1800000.0, false);
-        kos4 = new Kos(UUID.randomUUID(), UUID.randomUUID(), null, "Kos Permata Biru", "Jl. Jatiwaringin No. 8", "Kos pria/wanita", 1000000.0, true);
+        // Setup test data using builder and manual field setting
+        
+        // Kos 1
+        kos1 = Kos.builder()
+                .id(UUID.randomUUID())
+                .ownerId(UUID.randomUUID())
+                .name("Kos Permata")
+                .address("Jl. Margonda Raya No. 10")
+                .description("Kos pria dekat kampus")
+                .price(1200000.0)
+                .maxCapacity(5)
+                .build();
+        kos1.setAvailableRooms(5);
+        kos1.setAvailable(true);
+        
+        // Kos 2
+        kos2 = Kos.builder()
+                .id(UUID.randomUUID())
+                .ownerId(UUID.randomUUID())
+                .name("Kos Melati")
+                .address("Jl. Pondok Cina No. 5")
+                .description("Kos wanita dengan AC")
+                .price(1500000.0)
+                .maxCapacity(8)
+                .build();
+        kos2.setAvailableRooms(8);
+        kos2.setAvailable(true);
+        
+        // Kos 3 - Unavailable
+        kos3 = Kos.builder()
+                .id(UUID.randomUUID())
+                .ownerId(UUID.randomUUID())
+                .name("Kos Dahlia")
+                .address("Jl. Margonda Raya No. 25")
+                .description("Kos exclusive dengan kamar mandi dalam")
+                .price(1800000.0)
+                .maxCapacity(10)
+                .build();
+        kos3.setAvailableRooms(0);  // No rooms available
+        kos3.setAvailable(false);
+        
+        // Kos 4
+        kos4 = Kos.builder()
+                .id(UUID.randomUUID())
+                .ownerId(UUID.randomUUID())
+                .name("Kos Permata Biru")
+                .address("Jl. Jatiwaringin No. 8")
+                .description("Kos pria/wanita")
+                .price(1000000.0)
+                .maxCapacity(6)
+                .build();
+        kos4.setAvailableRooms(6);
+        kos4.setAvailable(true);
         
         testKosList = Arrays.asList(kos1, kos2, kos3, kos4);
     }

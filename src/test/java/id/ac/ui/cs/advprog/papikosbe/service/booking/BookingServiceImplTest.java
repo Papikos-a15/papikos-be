@@ -55,7 +55,7 @@ public class BookingServiceImplTest {
 
     @BeforeEach
     public void setUp() {
-        bookingService = new BookingServiceImpl(bookingRepository, kosService, stateValidator, bookingAccessValidator, transactionService);
+        bookingService = new BookingServiceImpl(bookingRepository, kosService,transactionService, stateValidator);
 
         monthlyPrice = 1500000.0;
         fullName = "John Doe";
@@ -65,16 +65,15 @@ public class BookingServiceImplTest {
         userId = UUID.randomUUID();
 
         // Setup test Kos with all required fields
-        testKos = new Kos();
-        testKos.setId(kosId);
-        testKos.setOwnerId(ownerId);
-        testKos.setName("Test Kos");
-        testKos.setAddress("Test Address");
-        testKos.setDescription("Test Description");
-        testKos.setPrice(monthlyPrice);
-        testKos.setMaxCapacity(10);
-        testKos.setAvailableRooms(5); // Set available rooms
-        testKos.setAvailable(true);   // Set as available
+        testKos = Kos.builder()
+        .id(kosId)
+        .ownerId(ownerId)
+        .name("Test Kos")
+        .address("Test Address")
+        .description("Test Description")
+        .price(monthlyPrice)
+        .maxCapacity(10)
+        .build();
 }
 
     @Test
@@ -377,17 +376,35 @@ public class BookingServiceImplTest {
     @Test
     public void testFindBookingsByOwnerId() {
         // Create test kos owned by our test owner
-        Kos kos1 = new Kos();
-        kos1.setId(UUID.randomUUID());
-        kos1.setOwnerId(ownerId);
+        Kos kos1 = Kos.builder()
+        .id(UUID.randomUUID())
+        .ownerId(ownerId)
+        .name("Kos 1")
+        .address("Address 1")
+        .description("Description 1")
+        .price(1200000.0)
+        .maxCapacity(5)
+        .build();
 
-        Kos kos2 = new Kos();
-        kos2.setId(UUID.randomUUID());
-        kos2.setOwnerId(ownerId);
+        Kos kos2 = Kos.builder()
+        .id(UUID.randomUUID())
+        .ownerId(ownerId)
+        .name("Kos 2")
+        .address("Address 2")
+        .description("Description 2")
+        .price(1500000.0)
+        .maxCapacity(8)
+        .build();
 
-        Kos kos3 = new Kos();
-        kos3.setId(UUID.randomUUID());
-        kos3.setOwnerId(UUID.randomUUID()); // Different owner
+        Kos kos3 = Kos.builder()
+        .id(UUID.randomUUID())
+        .ownerId(UUID.randomUUID()) // Different owner
+        .name("Kos 3")
+        .address("Address 3")
+        .description("Description 3")
+        .price(1800000.0)
+        .maxCapacity(10)
+        .build();
 
         List<Kos> allKosList = List.of(kos1, kos2, kos3);
         when(kosService.getAllKos()).thenReturn(allKosList);

@@ -25,13 +25,12 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import static org.hamcrest.Matchers.hasSize;
 import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -431,12 +430,16 @@ class BookingControllerTest {
 
     @Test
     void getBookingsByOwnerId_returnsList() throws Exception {
-        List<Booking> ownerBookings = Arrays.asList(sample);
+        List<Booking> ownerBookings = Collections.singletonList(sample);
         when(bookingService.findBookingsByOwnerId(ownerId))
-                .thenReturn(ownerBookings);
+                .thenReturn(CompletableFuture.completedFuture(ownerBookings));
 
-        mockMvc.perform(get("/api/bookings/owner/{ownerId}", ownerId)
+        MvcResult mvcResult = mockMvc.perform(get("/api/bookings/owner/{ownerId}", ownerId)
                         .header("Authorization", "Bearer tok"))
+                        .andExpect(request().asyncStarted()) // check async started
+                        .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult)) // wait for async completion
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].bookingId").value(sample.getBookingId().toString()));
     }

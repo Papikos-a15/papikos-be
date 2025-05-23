@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api/bookings")
@@ -201,9 +202,9 @@ public class BookingController {
     }
 
     @GetMapping("/owner/{ownerId}")
-    public ResponseEntity<List<Booking>> getBookingsByOwnerId(@PathVariable UUID ownerId) {
-        List<Booking> bookings = bookingService.findBookingsByOwnerId(ownerId);
-        return ResponseEntity.ok(bookings);
+    public CompletableFuture<ResponseEntity<List<Booking>>> getBookingsByOwnerId(@PathVariable UUID ownerId) {
+        return bookingService.findBookingsByOwnerId(ownerId)
+                .thenApply(ResponseEntity::ok);
     }
 
     @DeleteMapping("/{id}")

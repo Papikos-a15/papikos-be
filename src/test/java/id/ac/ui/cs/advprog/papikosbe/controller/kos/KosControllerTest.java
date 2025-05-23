@@ -6,6 +6,7 @@ import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
 import id.ac.ui.cs.advprog.papikosbe.security.JwtTokenProvider;
 import id.ac.ui.cs.advprog.papikosbe.service.kos.KosSearchService;
 import id.ac.ui.cs.advprog.papikosbe.service.kos.KosService;
+import id.ac.ui.cs.advprog.papikosbe.util.AuthenticationUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -18,21 +19,28 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(KosController.class)
 @Import(SecurityConfig.class)
 @AutoConfigureMockMvc
+@WithMockUser
 public class KosControllerTest {
     @Autowired
     private MockMvc mockMvc;
@@ -42,6 +50,9 @@ public class KosControllerTest {
 
     @MockitoBean
     private JwtTokenProvider jwtProvider;
+
+    @MockitoBean
+    private AuthenticationUtils authUtils;
 
     @InjectMocks
     private KosController kosController;
@@ -53,9 +64,10 @@ public class KosControllerTest {
     private KosSearchService kosSearchService;
 
     private List<Kos> testKosList;
-    private Kos kos1, kos2;
+    private Kos testKos1, testKos2;
 
     private Kos dummy;
+    private UUID userId;
 
     @BeforeEach
     void setUp() {
@@ -68,28 +80,35 @@ public class KosControllerTest {
                 1500000.0,
                 30
         );
+        dummy.setAvailableRooms(30);
+        dummy.setAvailable(true);
 
-        kos1 = new Kos();
-        kos1.setId(UUID.randomUUID());
-        kos1.setName("Kos A");
-        kos1.setAddress("Jalan Margonda 10");
-        kos1.setPrice(1000000.0);
-        kos1.setAvailable(true);
+        // Set up test data
+        testKos1 = new Kos();
+        testKos1.setId(UUID.randomUUID());
+        testKos1.setName("Kos A");
+        testKos1.setAddress("Jalan Margonda 10");
+        testKos1.setPrice(1000000.0);
+        testKos1.setAvailable(true);
 
-        kos2 = new Kos();
-        kos2.setId(UUID.randomUUID());
-        kos2.setName("Kos B");
-        kos2.setAddress("Jalan Pondok Cina 20");
-        kos2.setPrice(1500000.0);
-        kos2.setAvailable(false);
+        testKos2 = new Kos();
+        testKos2.setId(UUID.randomUUID());
+        testKos2.setName("Kos B");
+        testKos2.setAddress("Jalan Pondok Cina 20");
+        testKos2.setPrice(1500000.0);
+        testKos2.setAvailable(false);
 
-        testKosList = Arrays.asList(kos1, kos2);
+        testKosList = Arrays.asList(testKos1, testKos2);
+
 
         when(jwtProvider.validate("tok")).thenReturn(true);
         Authentication auth = new UsernamePasswordAuthenticationToken(
-                "user", null, List.of(new SimpleGrantedAuthority("ROLE_USER"))
+                "user", null, List.of(new SimpleGrantedAuthority("ROLE_OWNER"))
         );
         when(jwtProvider.getAuthentication("tok")).thenReturn(auth);
+
+        // Authentication utils stubs
+        when(authUtils.getUserIdFromAuth(any())).thenReturn(userId);
     }
 
     @Test
@@ -107,10 +126,14 @@ public class KosControllerTest {
 
     @Test
     void getAllKos_returnsList() throws Exception {
-        when(kosService.getAllKos()).thenReturn(List.of(dummy));
+        when(kosService.getAllKos()).thenReturn(CompletableFuture.completedFuture(List.of(dummy)));
 
-        mockMvc.perform(get("/api/management/list")
+        MvcResult mvcResult = mockMvc.perform(get("/api/management/list")
                         .header("Authorization", "Bearer tok"))
+                        .andExpect(request().asyncStarted())  // Check async started
+                        .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))  // Dispatch async result
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(dummy.getId().toString()));
     }
@@ -161,6 +184,7 @@ public class KosControllerTest {
     void addAvailable_returnsAdded() throws Exception {
         when(kosService.getKosById(any())).thenReturn(Optional.ofNullable(dummy));
         when(kosService.addAvailableRoom(dummy.getId())).thenReturn(Optional.of(dummy));
+        dummy.setAvailableRooms(29);
 
 
         mockMvc.perform(patch("/api/management/addAvailable")
@@ -193,64 +217,88 @@ public class KosControllerTest {
                 .andExpect(status().isNoContent());
     }
 
-        // Add existing test methods for CRUD operations here...
-
     @Test
+    @WithMockUser
     void searchKosBySingleCriteria_ShouldReturnFilteredResults() throws Exception {
-        // Mock service response
-        when(kosService.getAllKos()).thenReturn(testKosList);
+        // Mock service response with CompletableFuture
+        when(kosService.getAllKos()).thenReturn(CompletableFuture.completedFuture(testKosList));
         when(kosSearchService.search(eq(testKosList), eq("name"), eq("Kos A")))
-                .thenReturn(Collections.singletonList(kos1));
+                .thenReturn(Collections.singletonList(testKos1));
 
-        // Perform request and validate response
-        mockMvc.perform(get("/api/kos/search")
+        // Perform request - expect async started
+        MvcResult mvcResult = mockMvc.perform(get("/api/management/search")
                         .param("name", "Kos A")
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer tok"))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        // Handle async result
+        mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(kos1.getId().toString()))
+                .andExpect(jsonPath("$[0].id").value(testKos1.getId().toString()))
                 .andExpect(jsonPath("$[0].name").value("Kos A"));
     }
 
     @Test
+    @WithMockUser
     void searchKosByPriceRange_ShouldReturnFilteredResults() throws Exception {
-        // Mock service response for price range search
-        when(kosService.getAllKos()).thenReturn(testKosList);
-        
+        // Mock service response for price range search with CompletableFuture
+        when(kosService.getAllKos()).thenReturn(CompletableFuture.completedFuture(testKosList));
+
         // Mock search with price range criteria
         when(kosSearchService.multiSearch(eq(testKosList), any(Map.class)))
-                .thenReturn(Collections.singletonList(kos1));
+                .thenReturn(Collections.singletonList(testKos1));
 
-        mockMvc.perform(get("/api/kos/search")
+        MvcResult mvcResult = mockMvc.perform(get("/api/management/search")
                         .param("minPrice", "800000")
                         .param("maxPrice", "1200000")
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer tok"))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("Kos A"));
     }
 
     @Test
+    @WithMockUser
     void searchKosWithMultipleCriteria_ShouldReturnFilteredResults() throws Exception {
-        when(kosService.getAllKos()).thenReturn(testKosList);
+        when(kosService.getAllKos()).thenReturn(CompletableFuture.completedFuture(testKosList));
         when(kosSearchService.multiSearch(eq(testKosList), any(Map.class)))
-                .thenReturn(Collections.singletonList(kos1));
+                .thenReturn(Collections.singletonList(testKos1));
 
-        mockMvc.perform(get("/api/kos/search")
+        MvcResult mvcResult = mockMvc.perform(get("/api/management/search")
                         .param("name", "Kos")
                         .param("location", "Margonda")
                         .param("availability", "true")
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer tok"))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(kos1.getId().toString()));
+                .andExpect(jsonPath("$[0].id").value(testKos1.getId().toString()));
     }
 
     @Test
+    @WithMockUser
     void searchKosWithNoParameters_ShouldReturnAllKos() throws Exception {
-        when(kosService.getAllKos()).thenReturn(testKosList);
+        when(kosService.getAllKos()).thenReturn(CompletableFuture.completedFuture(testKosList));
 
-        mockMvc.perform(get("/api/kos/search")
-                        .contentType(MediaType.APPLICATION_JSON))
+        MvcResult mvcResult = mockMvc.perform(get("/api/management/search")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer tok"))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(kos1.getId().toString()))
-                .andExpect(jsonPath("$[1].id").value(kos2.getId().toString()));
+                .andExpect(jsonPath("$[0].id").value(testKos1.getId().toString()))
+                .andExpect(jsonPath("$[1].id").value(testKos2.getId().toString()));
     }
+    
 }

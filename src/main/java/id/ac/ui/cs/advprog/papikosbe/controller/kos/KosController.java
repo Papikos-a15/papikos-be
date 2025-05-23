@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api/management")
@@ -24,9 +25,9 @@ public class KosController {
     }
 
     @GetMapping("/list")
-    public ResponseEntity<List<Kos>> getAllKos() {
-        List<Kos> kosList = kosService.getAllKos();
-        return ResponseEntity.status(200).body(kosList);
+    public CompletableFuture<ResponseEntity<List<Kos>>> getAllKos() {
+        return kosService.getAllKos()
+                .thenApply(ResponseEntity::ok);
     }
 
     @GetMapping("/{id}")
@@ -53,7 +54,10 @@ public class KosController {
 
     @PatchMapping("/addAvailable")
     public ResponseEntity<Kos> addAvailableRooms(@RequestBody Kos kos) {
-        System.out.println(">>> kos.getId(): " + kos.getId());
+        if (kos.getAvailableRooms().equals(kos.getMaxCapacity())) {
+            return ResponseEntity.internalServerError().body(kos);
+        }
+
         Optional<Kos> kosUpdated = kosService.addAvailableRoom(kos.getId());
         if (kosUpdated.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -65,6 +69,10 @@ public class KosController {
 
     @PatchMapping("/subtractAvailable")
     public ResponseEntity<Kos> subtractAvailableRooms(@RequestBody Kos kos) {
+        if (kos.getAvailableRooms().equals(0)) {
+            return ResponseEntity.internalServerError().body(kos);
+        }
+
         Optional<Kos> kosUpdated = kosService.subtractAvailableRoom(kos.getId());
         if (kosUpdated.isEmpty()) {
             return ResponseEntity.notFound().build();

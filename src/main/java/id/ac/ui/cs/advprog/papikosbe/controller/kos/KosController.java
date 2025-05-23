@@ -51,6 +51,28 @@ public class KosController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    @PatchMapping("addAvailable/{id}")
+    public ResponseEntity<Kos> addAvailableRooms(@PathVariable UUID id) {
+        Optional<Kos> kosUpdated = kosService.addAvailableRoom(id);
+        if (kosUpdated.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return kosUpdated.map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PatchMapping("subtractAvailable/{id}")
+    public ResponseEntity<Kos> subtractAvailableRooms(@PathVariable UUID id) {
+        Optional<Kos> kosUpdated = kosService.subtractAvailableRoom(id);
+        if (kosUpdated.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return kosUpdated.map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<Nullable> deleteKos(@PathVariable UUID id) {
         kosService.deleteKos(id);

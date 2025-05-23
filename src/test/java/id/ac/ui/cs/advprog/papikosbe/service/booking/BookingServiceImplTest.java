@@ -23,6 +23,9 @@ import java.util.UUID;
 import java.util.List;
 import java.util.ArrayList;
 import java.math.BigDecimal;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+
 import id.ac.ui.cs.advprog.papikosbe.model.booking.Booking;
 import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
 
@@ -374,7 +377,7 @@ public class BookingServiceImplTest {
     }
 
     @Test
-    public void testFindBookingsByOwnerId() {
+    public void testFindBookingsByOwnerId() throws ExecutionException, InterruptedException {
         // Create test kos owned by our test owner
         Kos kos1 = Kos.builder()
         .id(UUID.randomUUID())
@@ -407,7 +410,7 @@ public class BookingServiceImplTest {
         .build();
 
         List<Kos> allKosList = List.of(kos1, kos2, kos3);
-        when(kosService.getAllKos()).thenReturn(allKosList);
+        when(kosService.getAllKos()).thenReturn(CompletableFuture.completedFuture(allKosList));
 
         // Create bookings for these kos
         Booking booking1 = new Booking(UUID.randomUUID(), userId, kos1.getId(),
@@ -426,7 +429,7 @@ public class BookingServiceImplTest {
         when(bookingRepository.findAll()).thenReturn(allBookings);
 
         // Call the method
-        List<Booking> ownerBookings = bookingService.findBookingsByOwnerId(ownerId);
+        List<Booking> ownerBookings = bookingService.findBookingsByOwnerId(ownerId).get();
 
         // Verify results
         assertEquals(2, ownerBookings.size());

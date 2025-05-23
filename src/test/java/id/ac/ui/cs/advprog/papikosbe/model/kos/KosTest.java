@@ -18,12 +18,14 @@ public class KosTest {
         assertNull(kos.getName(), "Name should be null initially");
         assertNull(kos.getAddress(), "Address should be null initially");
         assertNull(kos.getDescription(), "Description should be null initially");
+        assertNull(kos.getMaxCapacity(), "Max Capacity should be null initially");
         assertNull(kos.getPrice(), "Price should be null initially");
 
         // Use setters to assign values
         kos.setName("Kos Example");
         kos.setAddress("Example Address");
         kos.setDescription("Example Description");
+        kos.setMaxCapacity(30);
         kos.setPrice(75000.0);
 
         // Verify getters return the expected values.
@@ -31,12 +33,14 @@ public class KosTest {
         assertEquals("Example Address", kos.getAddress(), "Address should match the value set");
         assertEquals("Example Description", kos.getDescription(), "Description should match the value set");
         assertEquals(75000.0, kos.getPrice(), "Price should match the value set");
+        assertEquals(30, kos.getMaxCapacity(), "Max capacity should match the value set");
+        assertEquals(kos.getMaxCapacity(), kos.getAvailableRooms(), "Available rooms should match the max value");
     }
 
     @Test
     public void testParameterizedConstructor() {
         // Create a new instance using the parameterized constructor.
-        Kos kos = new Kos(UUID.randomUUID(), "Kos Param", "Param Address", "Param Description", 90000.0, true);
+        Kos kos = new Kos(UUID.randomUUID(), "Kos Param", "Param Address", "Param Description", 90000.0, 30);
 
         // The fields should be set as provided
         assertNotNull(kos.getId(), "ID should be not null when explicitly set");
@@ -44,5 +48,6 @@ public class KosTest {
         assertEquals("Param Address", kos.getAddress(), "Address should match constructor argument");
         assertEquals("Param Description", kos.getDescription(), "Description should match constructor argument");
         assertEquals(90000.0, kos.getPrice(), "Price should match constructor argument");
+        assertEquals(30, kos.getMaxCapacity(), "Max capacity should match the constructor argument");
     }
 }

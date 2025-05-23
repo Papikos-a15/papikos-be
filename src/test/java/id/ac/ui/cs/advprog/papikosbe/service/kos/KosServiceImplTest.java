@@ -106,7 +106,7 @@ public class KosServiceImplTest {
         Kos kos = kos1;
         doReturn(Optional.of(kos)).when(kosRepository).findById(kos1.getId());
 
-        kosService.subtractAvailabeRoom();
+        kosService.subtractAvailabeRoom(kos.getId());
 
         Optional<Kos> result = kosService.getKosById(kos.getId());
         assertNotNull(result, "Kos should be present for the given ID");
@@ -125,7 +125,7 @@ public class KosServiceImplTest {
         Kos kos = kos1;
         doReturn(Optional.of(kos)).when(kosRepository).findById(kos1.getId());
 
-        kosService.addAvailableRoom();
+        kosService.addAvailableRoom(kos.getId());
 
         Optional<Kos> result = kosService.getKosById(kos.getId());
         assertNotNull(result, "Kos should be present for the given ID");

@@ -139,7 +139,7 @@ public class KosControllerTest {
     void addAvailable_returnsAdded() throws Exception {
         when(kosService.getKosById(any())).thenReturn(Optional.ofNullable(dummy));
 
-        mockMvc.perform(post("/api/management/addAvailable")
+        mockMvc.perform(post("/api/management/addAvailable"+dummy.getId().toString())
                     .header("Authorization", "Bearer tok")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(dummy)))
@@ -152,7 +152,7 @@ public class KosControllerTest {
     void subtractAvailable_returnsRemoved() throws Exception {
         when(kosService.getKosById(any())).thenReturn(Optional.ofNullable(dummy));
 
-        mockMvc.perform(post("/api/management/subtractAvailable")
+        mockMvc.perform(post("/api/management/subtractAvailable"+dummy.getId().toString())
                         .header("Authorization", "Bearer tok")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dummy)))

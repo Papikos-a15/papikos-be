@@ -1,9 +1,11 @@
 package id.ac.ui.cs.advprog.papikosbe.controller.chat;
 
+import id.ac.ui.cs.advprog.papikosbe.controller.chat.dto.RoomChatRequest;
 import id.ac.ui.cs.advprog.papikosbe.controller.chat.dto.RoomChatResponse;
 import id.ac.ui.cs.advprog.papikosbe.model.chat.RoomChat;
 import id.ac.ui.cs.advprog.papikosbe.service.chat.RoomChatService;
 import id.ac.ui.cs.advprog.papikosbe.service.user.UserService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -51,8 +53,8 @@ public class RoomChatController {
     }
 
     @PostMapping
-    public ResponseEntity<Boolean> createRoomChat(@RequestBody RoomChat roomChat) {
-        boolean created = roomChatService.createRoomChatIfNotExists(roomChat);
-        return ResponseEntity.status(created ? 201 : 200).body(created);
+    public ResponseEntity<UUID> createOrFindRoomChat(@RequestBody RoomChatRequest request) {
+        RoomChat result = roomChatService.findOrCreateRoomChat(request.getPenyewaId(), request.getPemilikKosId());
+        return ResponseEntity.status(HttpStatus.CREATED).body(result.getId());
     }
 }

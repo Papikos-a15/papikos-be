@@ -60,37 +60,46 @@ public class RoomChatControllerTest {
     }
 
     @Test
-    void testCreateRoomChat_shouldReturn201IfCreated() throws Exception {
-        String requestBody = """
-                {
-                    "penyewaId": "00000000-0000-0000-0000-000000000001",
-                    "pemilikKosId": "00000000-0000-0000-0000-000000000002"
-                }
-                """;
+    void testCreateOrFindRoomChat_shouldReturn201AndRoomId() throws Exception {
+        UUID roomChatId = UUID.fromString("11111111-1111-1111-1111-111111111111");
 
-        when(roomChatService.createRoomChatIfNotExists(any(RoomChat.class))).thenReturn(true);
+        when(roomChatService.findOrCreateRoomChat(any(), any()))
+                .thenReturn(RoomChat.builder().id(roomChatId).build());
+
+        String requestBody = """
+            {
+                "penyewaId": "00000000-0000-0000-0000-000000000001",
+                "pemilikKosId": "00000000-0000-0000-0000-000000000002"
+            }
+            """;
 
         mockMvc.perform(post("/api/roomchats")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
-                .andExpect(status().isCreated());
+                .andExpect(status().isCreated())
+                .andExpect(content().json("\"" + roomChatId.toString() + "\"")); // karena response berupa JSON string literal
     }
 
-    @Test
-    void testCreateRoomChat_shouldReturn200IfAlreadyExists() throws Exception {
-        String requestBody = """
-                {
-                    "penyewaId": "00000000-0000-0000-0000-000000000001",
-                    "pemilikKosId": "00000000-0000-0000-0000-000000000002"
-                }
-                """;
 
-        when(roomChatService.createRoomChatIfNotExists(any(RoomChat.class))).thenReturn(false);
+    @Test
+    void testCreateOrFindRoomChat_shouldReturnExistingRoomIdIfAlreadyExists() throws Exception {
+        UUID existingRoomId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+
+        when(roomChatService.findOrCreateRoomChat(any(), any()))
+                .thenReturn(RoomChat.builder().id(existingRoomId).build());
+
+        String requestBody = """
+            {
+                "penyewaId": "00000000-0000-0000-0000-000000000001",
+                "pemilikKosId": "00000000-0000-0000-0000-000000000002"
+            }
+            """;
 
         mockMvc.perform(post("/api/roomchats")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated())
+                .andExpect(content().json("\"" + existingRoomId.toString() + "\""));
     }
 
     @Test
@@ -144,5 +153,4 @@ public class RoomChatControllerTest {
         mockMvc.perform(get("/api/roomchats/user/" + userId))
                 .andExpect(status().isOk());
     }
-
 }

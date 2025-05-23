@@ -2,15 +2,19 @@ package id.ac.ui.cs.advprog.papikosbe.controller.chat;
 
 import id.ac.ui.cs.advprog.papikosbe.controller.chat.dto.MessageResponse;
 import id.ac.ui.cs.advprog.papikosbe.controller.chat.dto.SendMessageRequest;
+import id.ac.ui.cs.advprog.papikosbe.enums.Role;
 import id.ac.ui.cs.advprog.papikosbe.enums.SendType;
 import id.ac.ui.cs.advprog.papikosbe.model.chat.Message;
 import id.ac.ui.cs.advprog.papikosbe.model.chat.RoomChat;
 import id.ac.ui.cs.advprog.papikosbe.repository.chat.RoomChatRepository;
 import id.ac.ui.cs.advprog.papikosbe.service.chat.MessageService;
 import id.ac.ui.cs.advprog.papikosbe.service.user.UserService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -30,18 +34,27 @@ public class MessageController {
 
     @PostMapping
     public ResponseEntity<Void> sendMessage(@RequestBody SendMessageRequest request) {
-        RoomChat room = roomChatRepository.findById(request.getRoomChatId())
-                .orElseThrow(() -> new IllegalArgumentException("RoomChat not found"));
+        if (request.getSendType() == SendType.TO_ALL && request.getRole() != Role.OWNER) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
-        Message message = new Message(
-                room,
-                request.getSenderId(),
-                request.getContent(),
-                request.getSendType()
-        );
+        Message message = Message.builder()
+                .id(UUID.randomUUID())
+                .senderId(request.getSenderId())
+                .content(request.getContent())
+                .timestamp(LocalDateTime.now())
+                .isEdited(false)
+                .sendType(request.getSendType())
+                .build();
+
+        if (request.getSendType() == SendType.TO_ONE) {
+            RoomChat room = roomChatRepository.findById(request.getRoomChatId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "RoomChat not found"));
+            message.setRoomChat(room);
+        }
 
         messageService.saveMessage(message);
-        return ResponseEntity.status(201).build();
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @PutMapping("/{id}")

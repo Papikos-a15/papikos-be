@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -68,10 +69,12 @@ public class KosServiceImplTest {
     public void testGetAllKos() {
         doReturn(Arrays.asList(kos1, kos2)).when(kosRepository).findAll();
 
-        List<Kos> result = kosService.getAllKos();
-        assertNotNull(result, "The returned list should not be null");
-        assertEquals(2, result.size(), "There should be two Kos entries");
-        verify(kosRepository, times(1)).findAll();
+        CompletableFuture<List<Kos>> result = kosService.getAllKos();
+        result.thenAccept(kosList -> {
+            assertNotNull(kosList, "The returned list should not be null");
+            assertEquals(2, kosList.size(), "There should be two Kos entries");
+            verify(kosRepository, times(1)).findAll();
+        });
     }
 
     @Test

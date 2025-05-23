@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api/management")
@@ -24,9 +25,9 @@ public class KosController {
     }
 
     @GetMapping("/list")
-    public ResponseEntity<List<Kos>> getAllKos() {
-        List<Kos> kosList = kosService.getAllKos();
-        return ResponseEntity.status(200).body(kosList);
+    public CompletableFuture<ResponseEntity<List<Kos>>> getAllKos() {
+        return kosService.getAllKos()
+                .thenApply(ResponseEntity::ok);
     }
 
     @GetMapping("/{id}")

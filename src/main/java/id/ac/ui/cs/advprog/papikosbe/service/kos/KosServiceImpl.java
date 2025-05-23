@@ -2,6 +2,7 @@ package id.ac.ui.cs.advprog.papikosbe.service.kos;
 
 import id.ac.ui.cs.advprog.papikosbe.observer.KosStatusChangedEvent;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
 import id.ac.ui.cs.advprog.papikosbe.repository.kos.KosRepository;
@@ -10,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -28,9 +30,11 @@ public class KosServiceImpl implements KosService {
         return null;
     }
 
+    @Async
     @Override
-    public List<Kos> getAllKos() {
-        return kosRepository.findAll();
+    public CompletableFuture<List<Kos>> getAllKos() {
+        List<Kos> allKos = kosRepository.findAll();
+        return CompletableFuture.completedFuture(allKos);
     }
 
     @Override

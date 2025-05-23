@@ -3,6 +3,7 @@ package id.ac.ui.cs.advprog.papikosbe.controller.notification;
 import id.ac.ui.cs.advprog.papikosbe.enums.NotificationType;
 import id.ac.ui.cs.advprog.papikosbe.model.notification.Notification;
 import id.ac.ui.cs.advprog.papikosbe.service.notification.NotificationService;
+import id.ac.ui.cs.advprog.papikosbe.observer.NotificationPublisher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,8 +21,12 @@ public class NotificationController {
     private final NotificationService notificationService;
 
     @Autowired
-    public NotificationController(NotificationService notificationService) {
+    private NotificationPublisher notificationPublisher;
+
+    @Autowired
+    public NotificationController(NotificationService notificationService, NotificationPublisher notificationPublisher) {
         this.notificationService = notificationService;
+        this.notificationPublisher = notificationPublisher;
     }
 
     @GetMapping("/user/{userId}")
@@ -55,6 +60,9 @@ public class NotificationController {
 
         try {
             Notification notification = notificationService.createNotification(userId, title, message, type);
+
+            notificationPublisher.publish(notification);
+
             return new ResponseEntity<>(notification, HttpStatus.CREATED);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();

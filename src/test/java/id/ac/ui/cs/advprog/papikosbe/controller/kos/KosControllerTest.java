@@ -8,7 +8,6 @@ import id.ac.ui.cs.advprog.papikosbe.service.kos.KosService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -108,7 +107,7 @@ public class KosControllerTest {
         UUID randomId = UUID.randomUUID();
         when(kosService.getKosById(randomId)).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/api/management/"+randomId.toString())
+        mockMvc.perform(get("/api/management/"+randomId)
                         .header("Authorization", "Bearer tok"))
                 .andExpect(status().isNotFound());
     }

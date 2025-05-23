@@ -4,6 +4,7 @@ import id.ac.ui.cs.advprog.papikosbe.model.booking.Booking;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 public interface BookingService {
     Booking createBooking(Booking booking);
@@ -16,7 +17,7 @@ public interface BookingService {
     void approveBooking(UUID bookingId);
     void cancelBooking(UUID bookingId);
     // Add method to find bookings by owner ID
-    List<Booking> findBookingsByOwnerId(UUID ownerId);
+    CompletableFuture<List<Booking>> findBookingsByOwnerId(UUID ownerId);
     List<Booking> findBookingsByUserId(UUID userId);
     // For tests
     void clearStore();

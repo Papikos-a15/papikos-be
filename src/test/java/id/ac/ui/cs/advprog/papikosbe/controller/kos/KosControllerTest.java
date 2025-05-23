@@ -5,6 +5,7 @@ import id.ac.ui.cs.advprog.papikosbe.config.SecurityConfig;
 import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
 import id.ac.ui.cs.advprog.papikosbe.security.JwtTokenProvider;
 import id.ac.ui.cs.advprog.papikosbe.service.kos.KosService;
+import id.ac.ui.cs.advprog.papikosbe.util.AuthenticationUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -16,22 +17,27 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(KosController.class)
 @Import(SecurityConfig.class)
 @AutoConfigureMockMvc
+@WithMockUser
 public class KosControllerTest {
     @Autowired
     private MockMvc mockMvc;
@@ -42,6 +48,9 @@ public class KosControllerTest {
     @MockitoBean
     private JwtTokenProvider jwtProvider;
 
+    @MockitoBean
+    private AuthenticationUtils authUtils;
+
     @InjectMocks
     private KosController kosController;
 
@@ -49,6 +58,7 @@ public class KosControllerTest {
     private ObjectMapper objectMapper;
 
     private Kos dummy;
+    private UUID userId;
 
     @BeforeEach
     void setUp() {
@@ -64,11 +74,15 @@ public class KosControllerTest {
         dummy.setAvailableRooms(30);
         dummy.setAvailable(true);
 
+        // JWT validation stubs
         when(jwtProvider.validate("tok")).thenReturn(true);
         Authentication auth = new UsernamePasswordAuthenticationToken(
-                "user", null, List.of(new SimpleGrantedAuthority("ROLE_USER"))
+                "user", null, List.of(new SimpleGrantedAuthority("ROLE_OWNER"))
         );
         when(jwtProvider.getAuthentication("tok")).thenReturn(auth);
+
+        // Authentication utils stubs
+        when(authUtils.getUserIdFromAuth(any())).thenReturn(userId);
     }
 
     @Test
@@ -86,10 +100,14 @@ public class KosControllerTest {
 
     @Test
     void getAllKos_returnsList() throws Exception {
-        when(kosService.getAllKos()).thenReturn(List.of(dummy));
+        when(kosService.getAllKos()).thenReturn(CompletableFuture.completedFuture(List.of(dummy)));
 
-        mockMvc.perform(get("/api/management/list")
+        MvcResult mvcResult = mockMvc.perform(get("/api/management/list")
                         .header("Authorization", "Bearer tok"))
+                        .andExpect(request().asyncStarted())  // Check async started
+                        .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))  // Dispatch async result
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(dummy.getId().toString()));
     }

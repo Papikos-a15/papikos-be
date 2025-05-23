@@ -76,8 +76,8 @@ class NotificationControllerTest {
         notificationData.put("type", type.name());
 
         // Simulating the service returning the created notification
-        when(notificationService.createNotification(eq(userId), eq(title), eq(message), eq(type)))
-                .thenReturn(testNotification);
+//        when(notificationService.createNotification(eq(userId), eq(title), eq(message), eq(type)))
+//                .thenReturn(testNotification);
 
         // Send the request with the body map
         ResponseEntity<Notification> response = notificationController.createNotification(notificationData);

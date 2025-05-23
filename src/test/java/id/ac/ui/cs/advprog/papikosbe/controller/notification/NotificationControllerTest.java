@@ -2,6 +2,7 @@ package id.ac.ui.cs.advprog.papikosbe.controller.notification;
 
 import id.ac.ui.cs.advprog.papikosbe.enums.NotificationType;
 import id.ac.ui.cs.advprog.papikosbe.model.notification.Notification;
+import id.ac.ui.cs.advprog.papikosbe.observer.NotificationPublisher;
 import id.ac.ui.cs.advprog.papikosbe.service.notification.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,9 @@ class NotificationControllerTest {
 
     @Mock
     private NotificationService notificationService;
+
+    @Mock
+    private NotificationPublisher notificationPublisher;
 
     @InjectMocks
     private NotificationController notificationController;
@@ -82,6 +86,7 @@ class NotificationControllerTest {
         assertNotNull(response.getBody());
         assertEquals(testNotification, response.getBody());
         verify(notificationService, times(1)).createNotification(eq(userId), eq(title), eq(message), eq(type));
+        verify(notificationPublisher, times(1)).publish(testNotification);
     }
 
     @Test

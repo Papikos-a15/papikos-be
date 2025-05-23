@@ -60,7 +60,7 @@ public class KosControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @Mock
+    @MockitoBean
     private KosSearchService kosSearchService;
 
     private List<Kos> testKosList;

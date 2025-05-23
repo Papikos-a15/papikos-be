@@ -37,6 +37,7 @@ public class KosServiceImplTest {
         kos1.setAddress("AlamatKos1");
         kos1.setDescription("DeskripsiKos1");
         kos1.setMaxCapacity(30);
+        kos1.setAvailableRooms(30);
         kos1.setPrice(50000.0);
 
         kos2 = new Kos();
@@ -44,6 +45,8 @@ public class KosServiceImplTest {
         kos2.setName("Kos2");
         kos2.setAddress("AlamatKos2");
         kos2.setDescription("DeskripsiKos2");
+        kos2.setMaxCapacity(20);
+        kos2.setAvailableRooms(20);
         kos2.setPrice(60000.0);
     }
 
@@ -116,7 +119,7 @@ public class KosServiceImplTest {
             assertEquals("AlamatKos1", result.get().getAddress());
             assertEquals("DeskripsiKos1", result.get().getDescription());
             assertEquals(29, result.get().getAvailableRooms());
-            assertEquals(75000.0, result.get().getPrice());
+            assertEquals(50000.0, result.get().getPrice());
         }
     }
 
@@ -134,8 +137,8 @@ public class KosServiceImplTest {
             assertEquals("Kos1", result.get().getName());
             assertEquals("AlamatKos1", result.get().getAddress());
             assertEquals("DeskripsiKos1", result.get().getDescription());
-            assertEquals(30, result.get().getAvailableRooms());
-            assertEquals(75000.0, result.get().getPrice());
+            assertEquals(31, result.get().getAvailableRooms());
+            assertEquals(50000.0, result.get().getPrice());
         }
 
     }

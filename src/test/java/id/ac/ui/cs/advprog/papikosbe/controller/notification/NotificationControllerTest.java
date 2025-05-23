@@ -128,6 +128,40 @@ class NotificationControllerTest {
     }
 
     @Test
+    void testCreateNotificationForAllUser() {
+        Map<String, Object> notificationData = new HashMap<>();
+        notificationData.put("title", "Broadcast Title");
+        notificationData.put("message", "Broadcast Message");
+        notificationData.put("type", NotificationType.SYSTEM.name());
+
+        doNothing().when(notificationService).createNotificationForAllUser(
+                eq("Broadcast Title"),
+                eq("Broadcast Message"),
+                eq(NotificationType.SYSTEM)
+        );
+
+        ResponseEntity<Map<String, String>> response = notificationController.createNotificationForAllUser(notificationData);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("Notification broadcasted to all users", response.getBody().get("message"));
+        verify(notificationService, times(1)).createNotificationForAllUser("Broadcast Title", "Broadcast Message", NotificationType.SYSTEM);
+    }
+
+
+    @Test
+    void testCreateNotificationForAllUser_InvalidData() {
+        Map<String, Object> notificationData = new HashMap<>();
+        notificationData.put("title", null); // invalid
+
+        ResponseEntity<Map<String, String>> response = notificationController.createNotificationForAllUser(notificationData);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        verify(notificationService, never()).createNotificationForAllUser(any(), any(), any());
+    }
+
+
+    @Test
     void testMarkAsRead() {
         doNothing().when(notificationService).markAsRead(notificationId);
 

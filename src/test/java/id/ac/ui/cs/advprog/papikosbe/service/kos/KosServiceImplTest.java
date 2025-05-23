@@ -140,7 +140,6 @@ public class KosServiceImplTest {
             assertEquals(31, result.get().getAvailableRooms());
             assertEquals(50000.0, result.get().getPrice());
         }
-
     }
 
     @Test

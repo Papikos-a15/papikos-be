@@ -53,7 +53,10 @@ public class KosController {
 
     @PatchMapping("/addAvailable")
     public ResponseEntity<Kos> addAvailableRooms(@RequestBody Kos kos) {
-        System.out.println(">>> kos.getId(): " + kos.getId());
+        if (kos.getAvailableRooms().equals(kos.getMaxCapacity())) {
+            return ResponseEntity.internalServerError().body(kos);
+        }
+
         Optional<Kos> kosUpdated = kosService.addAvailableRoom(kos.getId());
         if (kosUpdated.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -65,6 +68,10 @@ public class KosController {
 
     @PatchMapping("/subtractAvailable")
     public ResponseEntity<Kos> subtractAvailableRooms(@RequestBody Kos kos) {
+        if (kos.getAvailableRooms().equals(0)) {
+            return ResponseEntity.internalServerError().body(kos);
+        }
+
         Optional<Kos> kosUpdated = kosService.subtractAvailableRoom(kos.getId());
         if (kosUpdated.isEmpty()) {
             return ResponseEntity.notFound().build();

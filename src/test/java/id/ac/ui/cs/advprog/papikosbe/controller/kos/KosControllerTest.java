@@ -126,16 +126,12 @@ public class KosControllerTest {
 
     @Test
     void getAllKos_returnsList() throws Exception {
-        when(kosService.getAllKos()).thenReturn(CompletableFuture.completedFuture(List.of(dummy)));
+        when(kosService.getAllKos()).thenReturn(CompletableFuture.supplyAsync(() -> List.of(dummy)));
 
-        MvcResult mvcResult = mockMvc.perform(get("/api/management/list")
+        mockMvc.perform(get("/api/management/list")
                         .header("Authorization", "Bearer tok"))
-                        .andExpect(request().asyncStarted())  // Check async started
-                        .andReturn();
-
-        mockMvc.perform(asyncDispatch(mvcResult))  // Dispatch async result
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(dummy.getId().toString()));
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$[0].id").value(dummy.getId().toString()));
     }
 
     @Test
@@ -299,5 +295,5 @@ public class KosControllerTest {
                 .andExpect(jsonPath("$[0].id").value(testKos1.getId().toString()))
                 .andExpect(jsonPath("$[1].id").value(testKos2.getId().toString()));
     }
-    
+
 }

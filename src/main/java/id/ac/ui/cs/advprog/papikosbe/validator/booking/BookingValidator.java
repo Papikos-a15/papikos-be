@@ -2,6 +2,8 @@ package id.ac.ui.cs.advprog.papikosbe.validator.booking;
 
 import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
 import id.ac.ui.cs.advprog.papikosbe.model.booking.Booking;
+import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
+
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -80,5 +82,24 @@ public class BookingValidator {
         if (booking.getPhoneNumber() == null || booking.getPhoneNumber().trim().isEmpty()) {
             throw new IllegalArgumentException("Phone number cannot be empty");
         }
+    }
+
+    /**
+     * Validates if a kos is available for booking
+     * @param kos The kos to check for availability
+     * @throws IllegalStateException if kos is not available or has no rooms
+     */
+    public void validateKosAvailability(Kos kos) {
+
+    }
+
+    /**
+     * Validates if a booking can be created
+     * @param booking The booking to validate
+     * @param kos The kos associated with the booking
+     * @throws IllegalStateException if validation fails
+     */
+    public void validateForCreation(Booking booking, Kos kos) {
+
     }
 }

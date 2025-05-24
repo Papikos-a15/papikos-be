@@ -40,7 +40,8 @@ public class WishlistController {
         }
 
         try {
-            wishlistService.addWishlist(wishlist);
+            Wishlist newWishlist = wishlistService.addWishlist(wishlist);
+            response.put("wishlistId", newWishlist.getId().toString());
             response.put("message", "Wishlist added successfully");
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IllegalArgumentException e) {
@@ -48,6 +49,7 @@ public class WishlistController {
             return ResponseEntity.badRequest().body(response);
         } catch (Exception e) {
             response.put("message", "An error occurred while adding the wishlist");
+            response.put("error", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }

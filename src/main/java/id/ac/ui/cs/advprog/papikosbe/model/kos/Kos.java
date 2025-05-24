@@ -50,8 +50,6 @@ public class Kos {
         this.description = description;
         this.price = price;
         this.maxCapacity = maxCapacity;
-        this.availableRooms = maxCapacity;
-        this.isAvailable = true;
     }
 
     @Builder
@@ -63,7 +61,5 @@ public class Kos {
         this.description = description;
         this.price = price;
         this.maxCapacity = maxCapacity;
-        this.availableRooms = maxCapacity;
-        this.isAvailable = true;
     }
 }

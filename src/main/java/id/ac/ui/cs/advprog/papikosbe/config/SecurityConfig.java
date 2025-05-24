@@ -53,6 +53,7 @@ public class SecurityConfig {
                 // 4. Atur endpoint publik vs yang butuh auth
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/ws/**").permitAll()
                         .requestMatchers(HttpMethod.PATCH, "/api/owners/*/approve").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/owners/unapproved").hasRole("ADMIN")
                         .anyRequest().authenticated()

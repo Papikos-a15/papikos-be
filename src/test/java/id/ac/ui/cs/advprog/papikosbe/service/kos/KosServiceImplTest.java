@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -68,10 +69,12 @@ public class KosServiceImplTest {
     public void testGetAllKos() {
         doReturn(Arrays.asList(kos1, kos2)).when(kosRepository).findAll();
 
-        List<Kos> result = kosService.getAllKos();
-        assertNotNull(result, "The returned list should not be null");
-        assertEquals(2, result.size(), "There should be two Kos entries");
-        verify(kosRepository, times(1)).findAll();
+        CompletableFuture<List<Kos>> result = kosService.getAllKos();
+        result.thenAccept(kosList -> {
+            assertNotNull(kosList, "The returned list should not be null");
+            assertEquals(2, kosList.size(), "There should be two Kos entries");
+            verify(kosRepository, times(1)).findAll();
+        });
     }
 
     @Test
@@ -127,6 +130,7 @@ public class KosServiceImplTest {
     public void testAddAvailableRoom() {
         Kos kos = kos1;
         doReturn(Optional.of(kos)).when(kosRepository).findById(kos1.getId());
+        kos.setAvailableRooms(29);
 
         kosService.addAvailableRoom(kos.getId());
 
@@ -137,10 +141,9 @@ public class KosServiceImplTest {
             assertEquals("Kos1", result.get().getName());
             assertEquals("AlamatKos1", result.get().getAddress());
             assertEquals("DeskripsiKos1", result.get().getDescription());
-            assertEquals(31, result.get().getAvailableRooms());
+            assertEquals(30, result.get().getAvailableRooms());
             assertEquals(50000.0, result.get().getPrice());
         }
-
     }
 
     @Test

@@ -120,6 +120,54 @@ class NotificationServiceImplTest {
     }
 
     @Test
+    void testGetNotificationById_Success() {
+        UUID notifId = UUID.randomUUID();
+        Notification expectedNotification = Notification.builder()
+                .id(notifId)
+                .userId(UUID.randomUUID())
+                .title("Test Title")
+                .message("Test Message")
+                .type(NotificationType.SYSTEM)
+                .isRead(false)
+                .build();
+
+        // Mock the repository to return the notification when findById is called
+        when(notificationRepository.findById(notifId)).thenReturn(Optional.of(expectedNotification));
+
+        // Call the service method
+        Notification result = notificationService.getNotificationById(notifId);
+
+        // Assert that the returned notification is the one we mocked
+        assertNotNull(result);
+        assertEquals(notifId, result.getId());
+        assertEquals("Test Title", result.getTitle());
+        assertEquals("Test Message", result.getMessage());
+        assertEquals(NotificationType.SYSTEM, result.getType());
+        assertFalse(result.isRead());
+
+        // Verify that findById was called once
+        verify(notificationRepository, times(1)).findById(notifId);
+    }
+
+    @Test
+    void testGetNotificationById_NotFound() {
+        UUID notifId = UUID.randomUUID();
+
+        // Mock the repository to return an empty Optional when the notification is not found
+        when(notificationRepository.findById(notifId)).thenReturn(Optional.empty());
+
+        // Call the service method
+        Notification result = notificationService.getNotificationById(notifId);
+
+        // Assert that the result is null when not found
+        assertNull(result);
+
+        // Verify that findById was called once
+        verify(notificationRepository, times(1)).findById(notifId);
+    }
+
+
+    @Test
     void testMarkAsRead_NotificationExists() {
         UUID notifId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();

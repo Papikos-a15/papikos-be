@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api/bookings")
@@ -52,6 +53,7 @@ public class BookingController {
             Booking createdBooking = bookingService.createBooking(booking);
             return ResponseEntity.ok(createdBooking);
         } catch (IllegalArgumentException e) {
+            System.out.println("Validation error: " + e.getMessage());
             return ResponseEntity.badRequest().build();
         } catch (IllegalStateException e) {
             return ResponseEntity.status(403).build();
@@ -201,9 +203,9 @@ public class BookingController {
     }
 
     @GetMapping("/owner/{ownerId}")
-    public ResponseEntity<List<Booking>> getBookingsByOwnerId(@PathVariable UUID ownerId) {
-        List<Booking> bookings = bookingService.findBookingsByOwnerId(ownerId);
-        return ResponseEntity.ok(bookings);
+    public CompletableFuture<ResponseEntity<List<Booking>>> getBookingsByOwnerId(@PathVariable UUID ownerId) {
+        return bookingService.findBookingsByOwnerId(ownerId)
+                .thenApply(ResponseEntity::ok);
     }
 
     @DeleteMapping("/{id}")

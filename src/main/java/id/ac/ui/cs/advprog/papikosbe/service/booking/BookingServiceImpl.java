@@ -41,21 +41,20 @@ public class BookingServiceImpl implements BookingService {
     public Booking createBooking(Booking booking) {
         // 1. Validate advance booking requirement
         stateValidator.validateBookingAdvance(booking.getCheckInDate());
-        
-        // 2. Validate basic fields
-        stateValidator.validateBasicFields(booking);
 
         // Set booking ID if not provided
         if (booking.getBookingId() == null) {
             booking.setBookingId(UUID.randomUUID());
         }
+        // Ensure initial status is PENDING_PAYMENT
+        booking.setStatus(BookingStatus.PENDING_PAYMENT);
 
         Kos kos = kosService.getKosById(booking.getKosId())
                 .orElseThrow(() -> new EntityNotFoundException("Kos not found"));
         booking.setMonthlyPrice(kos.getPrice());
 
-        // Ensure initial status is PENDING_PAYMENT
-        booking.setStatus(BookingStatus.PENDING_PAYMENT);
+        // 2. Validate basic fields
+        stateValidator.validateBasicFields(booking);
 
         return bookingRepository.save(booking);
     }

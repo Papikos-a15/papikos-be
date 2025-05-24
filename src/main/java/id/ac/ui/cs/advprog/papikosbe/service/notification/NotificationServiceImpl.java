@@ -77,6 +77,11 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
+    public Notification getNotificationById(UUID id) {
+        return notificationRepository.findById(id).orElse(null);
+    }
+
+    @Override
     public void markAsRead(UUID notificationId) {
         Optional<Notification> notificationOpt = notificationRepository.findById(notificationId);
 

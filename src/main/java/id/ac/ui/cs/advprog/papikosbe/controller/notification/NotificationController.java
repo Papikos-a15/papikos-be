@@ -40,6 +40,16 @@ public class NotificationController {
         return ResponseEntity.ok(notifications);
     }
 
+    @GetMapping("/{notificationId}")
+    public ResponseEntity<Notification> getNotification(@PathVariable(required = false) UUID notificationId) {
+        if (notificationId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Notification notification = notificationService.getNotificationById(notificationId);
+        return ResponseEntity.ok(notification);
+    }
+
     @PostMapping
     public ResponseEntity<Notification> createNotification(@RequestBody Map<String, Object> notificationData) {
         UUID userId;

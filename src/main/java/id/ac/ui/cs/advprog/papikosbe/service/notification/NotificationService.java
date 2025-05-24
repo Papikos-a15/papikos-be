@@ -11,6 +11,7 @@ public interface NotificationService {
     CompletableFuture<Notification> createNotification(UUID userId, String title, String message, NotificationType type);
     void createNotificationForAllUser(String title, String message, NotificationType type);
     List<Notification> getNotificationsForUser(UUID userId);
+    Notification getNotificationById(UUID id);
     void markAsRead(UUID notificationId);
     void deleteNotification(UUID notificationId);
 }

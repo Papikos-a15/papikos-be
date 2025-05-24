@@ -61,7 +61,12 @@ class WishlistControllerTest {
 
     @Test
     void testAddWishlist() {
+        Wishlist testWishlist = new Wishlist();
+        testWishlist.setId(UUID.randomUUID());
+        when(wishlistService.addWishlist(testWishlist)).thenReturn(testWishlist);
+
         ResponseEntity<Map<String, String>> response = wishlistController.addWishlist(testWishlist);
+        System.out.println(response.getBody());
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertNotNull(response.getBody());

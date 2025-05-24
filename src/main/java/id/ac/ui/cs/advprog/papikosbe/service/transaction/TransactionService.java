@@ -23,5 +23,7 @@ public interface TransactionService {
 
     CompletableFuture<TopUp> createTopUp(UUID userId, BigDecimal amount) throws Exception;
     CompletableFuture<List<TopUp>> getTopUpsByUser(UUID userId);
+
+    CompletableFuture<Payment> refundPayment(UUID paymentId, UUID requesterId) throws Exception;
 }
 

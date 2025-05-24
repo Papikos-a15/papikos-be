@@ -179,4 +179,53 @@ public class TransactionServiceImpl implements TransactionService {
     public CompletableFuture<List<TopUp>> getTopUpsByUser(UUID userId) {
         return CompletableFuture.supplyAsync(() -> transactionRepository.findTopUpsByUser(userId));
     }
+
+    @Override
+    public CompletableFuture<Payment> refundPayment(UUID paymentId, UUID requesterId) throws Exception {
+        Payment originalPayment = transactionRepository.findPaymentById(paymentId)
+                .orElseThrow(() -> new Exception("Transaksi pembayaran tidak ditemukan"));
+
+        if (originalPayment.getStatus() != TransactionStatus.COMPLETED) {
+            throw new Exception("Transaksi belum selesai, tidak dapat direfund");
+        }
+
+        if (!originalPayment.getOwner().getId().equals(requesterId)) {
+            throw new Exception("Hanya pemilik kos (owner) yang dapat melakukan refund");
+        }
+
+        UUID tenantId = originalPayment.getUser().getId(); // Tenant = user yg membayar
+        UUID ownerId = originalPayment.getOwner().getId();
+        BigDecimal amount = originalPayment.getAmount();
+
+        Wallet tenantWallet = walletRepository.findByUserId(tenantId)
+                .orElseThrow(() -> new Exception("Wallet tenant tidak ditemukan"));
+
+        Wallet ownerWallet = walletRepository.findByUserId(ownerId)
+                .orElseThrow(() -> new Exception("Wallet owner tidak ditemukan"));
+
+        if (ownerWallet.getBalance().compareTo(amount) < 0) {
+            throw new Exception("Saldo owner tidak mencukupi untuk refund");
+        }
+
+        Payment refundPayment = new Payment();
+        refundPayment.setUser(originalPayment.getOwner());
+        refundPayment.setOwner(originalPayment.getUser());
+        refundPayment.setAmount(amount);
+        refundPayment.setType(TransactionType.PAYMENT);
+        refundPayment.setStatus(TransactionStatus.PENDING);
+        refundPayment.setCreatedAt(LocalDateTime.now());
+        refundPayment.setPaidDate(LocalDateTime.now());
+
+        TransactionStatus status = refundPayment.process(ownerWallet, tenantWallet);
+
+        if (status == TransactionStatus.COMPLETED) {
+            walletRepository.save(ownerWallet);
+            walletRepository.save(tenantWallet);
+            Payment savedRefund = transactionRepository.save(refundPayment);
+            return CompletableFuture.completedFuture(savedRefund);
+        } else {
+            throw new Exception("Refund gagal: " + status);
+        }
+    }
+
 }

@@ -80,5 +80,54 @@ public class BookingStatusUpdateServiceImpl implements BookingStatusUpdateServic
         return CompletableFuture.completedFuture(updatedCount);
     }
 
+    @Override
+    @Async("bookingTaskExecutor")
+    public CompletableFuture<Integer> updateStartedBookingsAsync() {
+        log.info("Checking for bookings that should start or be cancelled");
+        LocalDate today = LocalDate.now();
+        int updatedCount = 0;
 
+        // Find APPROVED bookings that should become ACTIVE
+        List<Booking> approvedBookings = bookingRepository.findByStatus(BookingStatus.APPROVED);
+        List<Booking> startingBookings = approvedBookings.stream()
+                .filter(booking -> !booking.getCheckInDate().isAfter(today)) // Today or past
+                .collect(Collectors.toList());
+
+        log.info("Found {} approved bookings to mark as ACTIVE", startingBookings.size());
+
+        for (Booking booking : startingBookings) {
+            try {
+                booking.setStatus(BookingStatus.ACTIVE);
+                bookingRepository.save(booking);
+                updatedCount++;
+                log.info("Updated booking {} to ACTIVE status", booking.getBookingId());
+            } catch (Exception e) {
+                log.error("Failed to update booking {} to ACTIVE: {}", booking.getBookingId(), e.getMessage());
+            }
+        }
+
+        // Find PENDING_PAYMENT or PAID bookings that should be cancelled
+        List<Booking> pendingOrPaidBookings = new ArrayList<>();
+        pendingOrPaidBookings.addAll(bookingRepository.findByStatus(BookingStatus.PENDING_PAYMENT));
+        pendingOrPaidBookings.addAll(bookingRepository.findByStatus(BookingStatus.PAID));
+
+        List<Booking> missedBookings = pendingOrPaidBookings.stream()
+                .filter(booking -> booking.getCheckInDate().isBefore(today)) // Past only
+                .collect(Collectors.toList());
+
+        log.info("Found {} pending/paid bookings to cancel", missedBookings.size());
+
+        for (Booking booking : missedBookings) {
+            try {
+                booking.setStatus(BookingStatus.CANCELLED);
+                bookingRepository.save(booking);
+                updatedCount++;
+                log.info("Auto-cancelled booking {} (check-in date passed)", booking.getBookingId());
+            } catch (Exception e) {
+                log.error("Failed to cancel booking {}: {}", booking.getBookingId(), e.getMessage());
+            }
+        }
+
+        return CompletableFuture.completedFuture(updatedCount);
+    }
 }

@@ -150,30 +150,15 @@ class BookingControllerTest {
                 BookingStatus.PENDING_PAYMENT
         );
 
-        // Create booking for different user (shouldn't be returned)
-        UUID otherUserId = UUID.randomUUID();
-        Booking otherUserBooking = new Booking(
-                UUID.randomUUID(),
-                otherUserId,
-                kosId,
-                LocalDate.now().plusDays(1),
-                2,
-                monthlyPrice,
-                "Other User",
-                phoneNumber,
-                BookingStatus.PENDING_PAYMENT
-        );
-
-        // Mock authentication to return the user ID
         when(authUtils.getUserIdFromAuth(any())).thenReturn(userId);
 
-        // Mock service to return only user's bookings
+        // Fix: Mock service to return CompletableFuture
         when(bookingService.findBookingsByUserId(userId))
-                .thenReturn(List.of(userBooking));
+                .thenReturn(CompletableFuture.completedFuture(List.of(userBooking)));
 
         mockMvc.perform(get("/api/bookings")
                         .header("Authorization", "Bearer tok"))
-                .andExpect(status().isOk())
+                .andExpect(status().isOk()) // Fix: andExpected → andExpect
                 .andExpect(jsonPath("$[0].bookingId").value(userBooking.getBookingId().toString()))
                 .andExpect(jsonPath("$[0].userId").value(userId.toString()))
                 .andExpect(jsonPath("$").isArray())
@@ -182,8 +167,9 @@ class BookingControllerTest {
 
     @Test
     void getBookingById_found() throws Exception {
+        // Fix: Mock service to return CompletableFuture
         when(bookingService.findBookingById(sample.getBookingId()))
-                .thenReturn(Optional.of(sample));
+                .thenReturn(CompletableFuture.completedFuture(Optional.of(sample)));
         when(kosService.getKosById(sample.getKosId())).thenReturn(Optional.of(sampleKos));
 
         // Allow access for this user
@@ -195,11 +181,13 @@ class BookingControllerTest {
                 .andExpect(jsonPath("$.bookingId").value(sample.getBookingId().toString()));
     }
 
+
     @Test
     void getBookingById_notFound() throws Exception {
         UUID randomId = UUID.randomUUID();
+        // Fix: Mock service to return CompletableFuture with empty Optional
         when(bookingService.findBookingById(randomId))
-                .thenReturn(Optional.empty());
+                .thenReturn(CompletableFuture.completedFuture(Optional.empty()));
 
         mockMvc.perform(get("/api/bookings/{id}", randomId)
                         .header("Authorization", "Bearer tok"))
@@ -221,8 +209,9 @@ class BookingControllerTest {
                 BookingStatus.PENDING_PAYMENT
         );
 
+        // Fix: Mock service to return CompletableFuture
         when(bookingService.findBookingById(otherUserBooking.getBookingId()))
-                .thenReturn(Optional.of(otherUserBooking));
+                .thenReturn(CompletableFuture.completedFuture(Optional.of(otherUserBooking)));
         when(kosService.getKosById(otherUserBooking.getKosId())).thenReturn(Optional.of(sampleKos));
 
         // Throw exception for access validation
@@ -261,16 +250,13 @@ class BookingControllerTest {
                 BookingStatus.PENDING_PAYMENT
         );
 
-        // Mock the find call to get existing booking
+        // Fix: Mock the find call to return CompletableFuture (first call for existing booking)
         when(bookingService.findBookingById(sample.getBookingId()))
-                .thenReturn(Optional.of(sample));
+                .thenReturn(CompletableFuture.completedFuture(Optional.of(sample)))
+                .thenReturn(CompletableFuture.completedFuture(Optional.of(updatedBooking))); // second call after update
 
         // Allow access for this user
         doNothing().when(bookingAccessValidator).validateUserAccess(userId, userId);
-
-        // Mock findById after update
-        when(bookingService.findBookingById(updatedBooking.getBookingId()))
-                .thenReturn(Optional.of(updatedBooking));
 
         // Mock the service to accept the update
         doNothing().when(bookingService).updateBooking(any(Booking.class));
@@ -311,8 +297,9 @@ class BookingControllerTest {
                 BookingStatus.APPROVED
         );
 
+        // Fix: Mock service to return CompletableFuture
         when(bookingService.findBookingById(sample.getBookingId()))
-                .thenReturn(Optional.of(approvedBooking));
+                .thenReturn(CompletableFuture.completedFuture(Optional.of(approvedBooking)));
 
         doNothing().when(bookingAccessValidator).validateUserAccess(userId, userId);
 
@@ -329,8 +316,9 @@ class BookingControllerTest {
 
     @Test
     void updateBooking_notFound_returnsNotFound() throws Exception {
+        // Fix: Mock service to return CompletableFuture with empty Optional
         when(bookingService.findBookingById(sample.getBookingId()))
-                .thenReturn(Optional.empty());
+                .thenReturn(CompletableFuture.completedFuture(Optional.empty()));
 
         mockMvc.perform(put("/api/bookings/{id}", sample.getBookingId())
                         .header("Authorization", "Bearer tok")
@@ -354,9 +342,10 @@ class BookingControllerTest {
                 BookingStatus.PAID // paid status
         );
 
-        // Mock service method calls
+        // Fix: Mock service method calls to return CompletableFuture
         when(bookingService.findBookingById(sample.getBookingId()))
-                .thenReturn(Optional.of(sample), Optional.of(paidBooking));
+                .thenReturn(CompletableFuture.completedFuture(Optional.of(sample)))   // first call
+                .thenReturn(CompletableFuture.completedFuture(Optional.of(paidBooking))); // second call after payment
 
         // Allow access for this user
         doNothing().when(bookingAccessValidator).validateUserAccess(userId, userId);
@@ -372,8 +361,9 @@ class BookingControllerTest {
     void payBooking_notFound_returnsNotFound() throws Exception {
         // Non-existent booking ID
         UUID nonExistentId = UUID.randomUUID();
+        // Fix: Mock service to return CompletableFuture with empty Optional
         when(bookingService.findBookingById(nonExistentId))
-                .thenReturn(Optional.empty());
+                .thenReturn(CompletableFuture.completedFuture(Optional.empty()));
 
         mockMvc.perform(post("/api/bookings/{id}/pay", nonExistentId)
                         .header("Authorization", "Bearer tok"))
@@ -411,9 +401,10 @@ class BookingControllerTest {
         // Mock kos retrieval
         when(kosService.getKosById(kosId)).thenReturn(Optional.of(sampleKos));
 
-        // Mock booking retrieval (before and after approval)
+        // Fix: Mock booking retrieval to return CompletableFuture (before and after approval)
         when(bookingService.findBookingById(sample.getBookingId()))
-                .thenReturn(Optional.of(paidBooking), Optional.of(approvedBooking));
+                .thenReturn(CompletableFuture.completedFuture(Optional.of(paidBooking)))     // first call
+                .thenReturn(CompletableFuture.completedFuture(Optional.of(approvedBooking))); // second call after approval
 
         // Override auth to return owner ID
         when(authUtils.getUserIdFromAuth(any())).thenReturn(ownerId);
@@ -436,8 +427,8 @@ class BookingControllerTest {
 
         MvcResult mvcResult = mockMvc.perform(get("/api/bookings/owner/{ownerId}", ownerId)
                         .header("Authorization", "Bearer tok"))
-                        .andExpect(request().asyncStarted()) // check async started
-                        .andReturn();
+                .andExpect(request().asyncStarted()) // check async started
+                .andReturn();
 
         mockMvc.perform(asyncDispatch(mvcResult)) // wait for async completion
                 .andExpect(status().isOk())

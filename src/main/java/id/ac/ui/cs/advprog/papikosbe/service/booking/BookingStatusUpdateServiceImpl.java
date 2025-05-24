@@ -3,6 +3,8 @@ package id.ac.ui.cs.advprog.papikosbe.service.booking;
 import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
 import id.ac.ui.cs.advprog.papikosbe.model.booking.Booking;
 import id.ac.ui.cs.advprog.papikosbe.repository.booking.BookingRepository;
+import id.ac.ui.cs.advprog.papikosbe.validator.booking.BookingValidator;
+import id.ac.ui.cs.advprog.papikosbe.service.kos.KosService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
@@ -24,10 +26,16 @@ import java.util.stream.Collectors;
 public class BookingStatusUpdateServiceImpl implements BookingStatusUpdateService {
 
     private final BookingRepository bookingRepository;
+    private final BookingValidator stateValidator; // Add validator
+    private final KosService kosService; // Add for room management
 
     @Autowired
-    public BookingStatusUpdateServiceImpl(BookingRepository bookingRepository) {
+    public BookingStatusUpdateServiceImpl(BookingRepository bookingRepository,
+                                          BookingValidator stateValidator,
+                                          KosService kosService) {
         this.bookingRepository = bookingRepository;
+        this.stateValidator = stateValidator;
+        this.kosService = kosService;
     }
 
     /**
@@ -50,13 +58,12 @@ public class BookingStatusUpdateServiceImpl implements BookingStatusUpdateServic
         log.info("Checking for expired bookings");
         LocalDate today = LocalDate.now();
         
-        // Find all approved bookings
-        List<Booking> approvedBookings = bookingRepository.findByStatus(BookingStatus.APPROVED);
+        // Find all ACTIVE bookings (not APPROVED as in previous implementation)
+        List<Booking> activeBookings = bookingRepository.findByStatus(BookingStatus.ACTIVE);
         
         // Filter to find expired ones
-        List<Booking> expiredBookings = approvedBookings.stream()
+        List<Booking> expiredBookings = activeBookings.stream()
             .filter(booking -> {
-                // Calculate end date by adding months to check-in date
                 LocalDate endDate = booking.getCheckInDate().plusMonths(booking.getDuration());
                 return endDate.isBefore(today);
             })
@@ -67,8 +74,15 @@ public class BookingStatusUpdateServiceImpl implements BookingStatusUpdateServic
         int updatedCount = 0;
         for (Booking booking : expiredBookings) {
             try {
+                // Validate transition is allowed
+                stateValidator.validateForDeactivation(booking);
+                
                 booking.setStatus(BookingStatus.INACTIVE);
                 bookingRepository.save(booking);
+                
+                // Add available room back when booking becomes inactive
+                kosService.addAvailableRoom(booking.getKosId());
+                
                 updatedCount++;
                 log.info("Updated booking {} to INACTIVE status", booking.getBookingId());
             } catch (Exception e) {
@@ -76,7 +90,6 @@ public class BookingStatusUpdateServiceImpl implements BookingStatusUpdateServic
             }
         }
         
-        log.info("Successfully updated {} expired bookings to INACTIVE status", updatedCount);
         return CompletableFuture.completedFuture(updatedCount);
     }
 
@@ -90,13 +103,14 @@ public class BookingStatusUpdateServiceImpl implements BookingStatusUpdateServic
         // Find APPROVED bookings that should become ACTIVE
         List<Booking> approvedBookings = bookingRepository.findByStatus(BookingStatus.APPROVED);
         List<Booking> startingBookings = approvedBookings.stream()
-                .filter(booking -> !booking.getCheckInDate().isAfter(today)) // Today or past
+                .filter(booking -> !booking.getCheckInDate().isAfter(today))
                 .collect(Collectors.toList());
-
-        log.info("Found {} approved bookings to mark as ACTIVE", startingBookings.size());
 
         for (Booking booking : startingBookings) {
             try {
+                // Validate transition is allowed
+                stateValidator.validateForActivation(booking);
+                
                 booking.setStatus(BookingStatus.ACTIVE);
                 bookingRepository.save(booking);
                 updatedCount++;
@@ -106,21 +120,26 @@ public class BookingStatusUpdateServiceImpl implements BookingStatusUpdateServic
             }
         }
 
-        // Find PENDING_PAYMENT or PAID bookings that should be cancelled
+        // Handle missed bookings (existing logic with validation)
         List<Booking> pendingOrPaidBookings = new ArrayList<>();
         pendingOrPaidBookings.addAll(bookingRepository.findByStatus(BookingStatus.PENDING_PAYMENT));
         pendingOrPaidBookings.addAll(bookingRepository.findByStatus(BookingStatus.PAID));
 
         List<Booking> missedBookings = pendingOrPaidBookings.stream()
-                .filter(booking -> booking.getCheckInDate().isBefore(today)) // Past only
+                .filter(booking -> booking.getCheckInDate().isBefore(today))
                 .collect(Collectors.toList());
-
-        log.info("Found {} pending/paid bookings to cancel", missedBookings.size());
 
         for (Booking booking : missedBookings) {
             try {
+                // Validate cancellation is allowed
+                stateValidator.validateForCancellation(booking);
+                
                 booking.setStatus(BookingStatus.CANCELLED);
                 bookingRepository.save(booking);
+                
+                // Add room back to available
+                kosService.addAvailableRoom(booking.getKosId());
+                
                 updatedCount++;
                 log.info("Auto-cancelled booking {} (check-in date passed)", booking.getBookingId());
             } catch (Exception e) {

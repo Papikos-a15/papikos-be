@@ -39,7 +39,10 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public Booking createBooking(Booking booking) {
-        // Validate booking data
+        // 1. Validate advance booking requirement
+        stateValidator.validateBookingAdvance(booking.getCheckInDate());
+        
+        // 2. Validate basic fields
         stateValidator.validateBasicFields(booking);
 
         // Set booking ID if not provided
@@ -69,20 +72,20 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public void updateBooking(Booking booking) {
-        // Validate booking data
-        stateValidator.validateBasicFields(booking);
-
         Booking existingBooking = bookingRepository.findById(booking.getBookingId())
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
-
-        // Validate state transition
+                
+        // Validate state allows update
         stateValidator.validateForUpdate(existingBooking);
-
-        // Preserve the current status
-        BookingStatus currentStatus = existingBooking.getStatus();
-        booking.setStatus(currentStatus);
-
-        // Update the booking
+        
+        // If check-in date is changed, validate advance requirement
+        if (!existingBooking.getCheckInDate().equals(booking.getCheckInDate())) {
+            stateValidator.validateBookingAdvance(booking.getCheckInDate());
+        }
+        
+        // Validate basic fields
+        stateValidator.validateBasicFields(booking);
+        
         bookingRepository.save(booking);
     }
 
@@ -133,6 +136,10 @@ public class BookingServiceImpl implements BookingService {
 
         // Update booking status to CANCELLED
         booking.setStatus(BookingStatus.CANCELLED);
+        
+        // Add available room back
+        kosService.addAvailableRoom(booking.getKosId());
+        
         bookingRepository.save(booking);
     }
 

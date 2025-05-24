@@ -1,8 +1,6 @@
 package id.ac.ui.cs.advprog.papikosbe.controller.transaction;
 
-import id.ac.ui.cs.advprog.papikosbe.dto.PaymentRequest;
-import id.ac.ui.cs.advprog.papikosbe.dto.TopUpRequest;
-import id.ac.ui.cs.advprog.papikosbe.dto.TransactionResponse;
+import id.ac.ui.cs.advprog.papikosbe.dto.*;
 import id.ac.ui.cs.advprog.papikosbe.enums.TransactionType;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Payment;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.TopUp;
@@ -16,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -123,6 +122,20 @@ public class TransactionController {
                         .collect(Collectors.toList()))
                 .thenApply(ResponseEntity::ok)
                 .exceptionally(ex -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(null));
+    }
+
+    @PostMapping("/refund")
+    public ResponseEntity<?> refundPayment(@RequestBody RefundRequest request) {
+        try {
+            CompletableFuture<Payment> result = transactionService
+                    .refundPayment(request.getPaymentId(), request.getRequesterId());
+
+            return ResponseEntity.ok().body(
+                    result.thenApply(RefundResponse::new)
+            );
+        } catch (Exception ex) {
+            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        }
     }
 
     // Helper method to map Transaction to TransactionResponse

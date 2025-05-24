@@ -96,16 +96,10 @@ public class Booking {
     public double getTotalPrice() {
         return monthlyPrice * duration;
     }
-
-    @PrePersist
     @PreUpdate
-    private void validate() {
-        // Ensure H+1 validation at persistence level too
-        LocalDate tomorrow = LocalDate.now().plusDays(1);
-        if (checkInDate.isBefore(tomorrow)) {
-            throw new IllegalArgumentException("Booking must be made at least 1 day in advance to allow owner approval time");
-        }
-
+    private void validateUpdate() {
+        // No H+1 validation for updates - allows scheduler to work
+        
         if (duration < 1) {
             throw new IllegalArgumentException("Duration must be at least 1 month");
         }
@@ -121,5 +115,17 @@ public class Booking {
         if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
             throw new IllegalArgumentException("Phone number cannot be empty");
         }
+    }
+
+    @PrePersist
+    private void validateNewBooking() {
+        // H+1 validation only for NEW bookings
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
+        if (checkInDate.isBefore(tomorrow)) {
+            throw new IllegalArgumentException("Booking must be made at least 1 day in advance to allow owner approval time");
+        }
+
+        // Call the same validation as update
+        validateUpdate();
     }
 }

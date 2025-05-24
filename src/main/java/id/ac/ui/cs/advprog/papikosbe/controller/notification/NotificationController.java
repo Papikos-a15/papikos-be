@@ -3,6 +3,7 @@ package id.ac.ui.cs.advprog.papikosbe.controller.notification;
 import id.ac.ui.cs.advprog.papikosbe.enums.NotificationType;
 import id.ac.ui.cs.advprog.papikosbe.model.notification.Notification;
 import id.ac.ui.cs.advprog.papikosbe.service.notification.NotificationService;
+import id.ac.ui.cs.advprog.papikosbe.observer.NotificationPublisher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api/notifications")
@@ -20,8 +22,12 @@ public class NotificationController {
     private final NotificationService notificationService;
 
     @Autowired
-    public NotificationController(NotificationService notificationService) {
+    private NotificationPublisher notificationPublisher;
+
+    @Autowired
+    public NotificationController(NotificationService notificationService, NotificationPublisher notificationPublisher) {
         this.notificationService = notificationService;
+        this.notificationPublisher = notificationPublisher;
     }
 
     @GetMapping("/user/{userId}")
@@ -32,6 +38,16 @@ public class NotificationController {
 
         List<Notification> notifications = notificationService.getNotificationsForUser(userId);
         return ResponseEntity.ok(notifications);
+    }
+
+    @GetMapping("/{notificationId}")
+    public ResponseEntity<Notification> getNotification(@PathVariable(required = false) UUID notificationId) {
+        if (notificationId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Notification notification = notificationService.getNotificationById(notificationId);
+        return ResponseEntity.ok(notification);
     }
 
     @PostMapping
@@ -54,8 +70,39 @@ public class NotificationController {
         }
 
         try {
-            Notification notification = notificationService.createNotification(userId, title, message, type);
-            return new ResponseEntity<>(notification, HttpStatus.CREATED);
+            CompletableFuture<Notification> notification = notificationService.createNotification(userId, title, message, type);
+
+            notificationPublisher.publish(notification.get());
+
+            return new ResponseEntity<>(notification.get(), HttpStatus.CREATED);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PostMapping("/broadcast")
+    public ResponseEntity<Map<String, String>> createNotificationForAllUser(@RequestBody Map<String, Object> notificationData) {
+        String title;
+        String message;
+        NotificationType type;
+
+        try {
+            title = (String) notificationData.get("title");
+            message = (String) notificationData.get("message");
+            type = NotificationType.valueOf((String) notificationData.get("type"));
+
+            if (title == null || message == null || type == null) {
+                return ResponseEntity.badRequest().build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+
+        try {
+            notificationService.createNotificationForAllUser(title, message, type);
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Notification broadcasted to all users");
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }

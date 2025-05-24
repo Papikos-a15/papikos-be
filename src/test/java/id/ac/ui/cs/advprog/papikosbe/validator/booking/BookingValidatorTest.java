@@ -132,4 +132,58 @@ class BookingValidatorTest {
                 () -> validator.validateForCancellation(booking));
         assertTrue(exception.getMessage().contains("Cannot cancel an already approved booking"));
     }
+
+    @Test
+    void validateForUpdate_active_throwsException() {
+        booking.setStatus(BookingStatus.ACTIVE);
+        Exception exception = assertThrows(IllegalStateException.class,
+                () -> validator.validateForUpdate(booking));
+        assertTrue(exception.getMessage().contains("Cannot edit booking after it has been approved, activated, cancelled, or deactivated"));
+    }
+
+    @Test
+    void validateForUpdate_inactive_throwsException() {
+        booking.setStatus(BookingStatus.INACTIVE);
+        Exception exception = assertThrows(IllegalStateException.class,
+                () -> validator.validateForUpdate(booking));
+        assertTrue(exception.getMessage().contains("Cannot edit booking after it has been approved, activated, cancelled, or deactivated"));
+    }
+
+    @Test
+    void validateForCancellation_active_throwsException() {
+        booking.setStatus(BookingStatus.ACTIVE);
+        Exception exception = assertThrows(IllegalStateException.class,
+                () -> validator.validateForCancellation(booking));
+        assertTrue(exception.getMessage().contains("Cannot cancel approved, active, or inactive bookings"));
+    }
+
+    @Test
+    void validateForCancellation_inactive_throwsException() {
+        booking.setStatus(BookingStatus.INACTIVE);
+        Exception exception = assertThrows(IllegalStateException.class,
+                () -> validator.validateForCancellation(booking));
+        assertTrue(exception.getMessage().contains("Cannot cancel approved, active, or inactive bookings"));
+    }
+
+    @Test
+    void validateBookingAdvance_today_throwsException() {
+        LocalDate today = LocalDate.now();
+        Exception exception = assertThrows(IllegalArgumentException.class,
+                () -> validator.validateBookingAdvance(today));
+        assertTrue(exception.getMessage().contains("Booking must be made at least 1 day in advance"));
+    }
+
+    @Test
+    void validateBookingAdvance_yesterday_throwsException() {
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        Exception exception = assertThrows(IllegalArgumentException.class,
+                () -> validator.validateBookingAdvance(yesterday));
+        assertTrue(exception.getMessage().contains("Booking must be made at least 1 day in advance"));
+    }
+
+    @Test
+    void validateBookingAdvance_tomorrow_doesNotThrowException() {
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
+        assertDoesNotThrow(() -> validator.validateBookingAdvance(tomorrow));
+    }
 }

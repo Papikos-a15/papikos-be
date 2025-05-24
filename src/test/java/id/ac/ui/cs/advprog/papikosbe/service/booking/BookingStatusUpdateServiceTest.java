@@ -463,4 +463,109 @@ public class BookingStatusUpdateServiceTest {
         verify(serviceSpy).updateExpiredBookingsAsync();
         verify(serviceSpy).updateStartedBookingsAsync();
     }
+
+    @Test
+    void cancelExpiredPendingPaymentsAsync_pendingPaymentPassedCheckIn_shouldBeCancelled() throws ExecutionException, InterruptedException {
+        // Setup: Create PENDING_PAYMENT booking with check-in date in the past
+        LocalDate today = LocalDate.now();
+
+        Booking pendingBookingPast = mock(Booking.class);
+        when(pendingBookingPast.getCheckInDate()).thenReturn(today.minusDays(1)); // Yesterday
+        when(pendingBookingPast.getBookingId()).thenReturn(UUID.randomUUID());
+        UUID kosId1 = UUID.randomUUID();
+        when(pendingBookingPast.getKosId()).thenReturn(kosId1);
+        when(pendingBookingPast.getStatus()).thenReturn(BookingStatus.PENDING_PAYMENT);
+
+        Booking pendingBookingFuture = mock(Booking.class);
+        when(pendingBookingFuture.getCheckInDate()).thenReturn(today.plusDays(1)); // Tomorrow
+        when(pendingBookingFuture.getStatus()).thenReturn(BookingStatus.PENDING_PAYMENT);
+
+        List<Booking> pendingBookings = List.of(pendingBookingPast, pendingBookingFuture);
+
+        when(bookingRepository.findByStatus(BookingStatus.PENDING_PAYMENT))
+                .thenReturn(pendingBookings);
+
+        // Execute
+        CompletableFuture<Integer> result = bookingStatusUpdateService.cancelExpiredPendingPaymentsAsync();
+        int cancelledCount = result.get();
+
+        // Verify
+        assertEquals(1, cancelledCount); // Only past booking should be cancelled
+        verify(stateValidator).validateForCancellation(pendingBookingPast);
+        verify(pendingBookingPast).setStatus(BookingStatus.CANCELLED);
+        verify(kosService).addAvailableRoom(kosId1);
+        verify(bookingRepository).save(pendingBookingPast);
+
+        // Future booking should not be touched
+        verify(pendingBookingFuture, never()).setStatus(any());
+        verify(bookingRepository, never()).save(pendingBookingFuture);
+    }
+
+    @Test
+    void cancelExpiredPendingPaymentsAsync_paidBookingPassedCheckIn_shouldBeCancelled() throws ExecutionException, InterruptedException {
+        // Setup: Create PAID booking with check-in date in the past
+        LocalDate today = LocalDate.now();
+
+        Booking paidBookingPast = mock(Booking.class);
+        when(paidBookingPast.getCheckInDate()).thenReturn(today.minusDays(2)); // 2 days ago
+        when(paidBookingPast.getBookingId()).thenReturn(UUID.randomUUID());
+        UUID kosId2 = UUID.randomUUID();
+        when(paidBookingPast.getKosId()).thenReturn(kosId2);
+        when(paidBookingPast.getStatus()).thenReturn(BookingStatus.PAID);
+
+        List<Booking> paidBookings = List.of(paidBookingPast);
+
+        when(bookingRepository.findByStatus(BookingStatus.PAID))
+                .thenReturn(paidBookings);
+
+        // Execute
+        CompletableFuture<Integer> result = bookingStatusUpdateService.cancelExpiredPendingPaymentsAsync();
+        int cancelledCount = result.get();
+
+        // Verify
+        assertEquals(1, cancelledCount);
+        verify(stateValidator).validateForCancellation(paidBookingPast);
+        verify(paidBookingPast).setStatus(BookingStatus.CANCELLED);
+        verify(kosService).addAvailableRoom(kosId2);
+        verify(bookingRepository).save(paidBookingPast);
+    }
+
+    @Test
+    void cancelExpiredPendingPaymentsAsync_validationFailure_shouldHandleGracefully() throws ExecutionException, InterruptedException {
+        // Setup: Create booking that fails validation
+        LocalDate today = LocalDate.now();
+
+        Booking problematicBooking = mock(Booking.class);
+        when(problematicBooking.getCheckInDate()).thenReturn(today.minusDays(1));
+        when(problematicBooking.getBookingId()).thenReturn(UUID.randomUUID());
+        when(problematicBooking.getStatus()).thenReturn(BookingStatus.PENDING_PAYMENT);
+
+        // Mock validator to throw exception
+        doThrow(new IllegalStateException("Cannot cancel this booking"))
+                .when(stateValidator).validateForCancellation(problematicBooking);
+
+        when(bookingRepository.findByStatus(BookingStatus.PENDING_PAYMENT))
+                .thenReturn(List.of(problematicBooking));
+
+        // Execute
+        CompletableFuture<Integer> result = bookingStatusUpdateService.cancelExpiredPendingPaymentsAsync();
+        int cancelledCount = result.get();
+
+        // Verify - should handle error gracefully
+        assertEquals(0, cancelledCount);
+        verify(stateValidator).validateForCancellation(problematicBooking);
+        verify(problematicBooking, never()).setStatus(any());
+        verify(bookingRepository, never()).save(problematicBooking);
+    }
+
+    @Test
+    void scheduledBookingStatusUpdate_shouldCallAllUpdateMethods() {
+        // Execute
+        bookingStatusUpdateService.scheduledBookingStatusUpdate();
+
+        // Verify that all update methods are called
+        verify(bookingStatusUpdateService).updateExpiredBookingsAsync();
+        verify(bookingStatusUpdateService).updateStartedBookingsAsync();
+        verify(bookingStatusUpdateService).cancelExpiredPendingPaymentsAsync();
+    }
 }

@@ -11,14 +11,17 @@ import id.ac.ui.cs.advprog.papikosbe.model.transaction.Payment;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.TopUp;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Transaction;
 import id.ac.ui.cs.advprog.papikosbe.service.transaction.TransactionService;
+import id.ac.ui.cs.advprog.papikosbe.util.AuthenticationUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -30,10 +33,12 @@ import java.util.concurrent.ExecutionException;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class TransactionControllerTest {
+    @Mock
+    AuthenticationUtils authenticationUtils;
 
     @Mock
     private TransactionService transactionService;
@@ -141,9 +146,9 @@ class TransactionControllerTest {
         when(transactionService.createPayment(eq(tenantId), eq(ownerId), eq(new BigDecimal("100.00"))))
                 .thenReturn(CompletableFuture.completedFuture(payment));
 
-        CompletableFuture<ResponseEntity<TransactionResponse>> futureResponse =
+        // Direct call to synchronous method (no CompletableFuture wrapper)
+        ResponseEntity<TransactionResponse> response =
                 transactionController.createPayment(request);
-        ResponseEntity<TransactionResponse> response = futureResponse.get();
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertNotNull(response.getBody());
@@ -166,9 +171,9 @@ class TransactionControllerTest {
         when(transactionService.createPayment(eq(tenantId), eq(ownerId), eq(new BigDecimal("100.00"))))
                 .thenReturn(failedFuture);
 
-        CompletableFuture<ResponseEntity<TransactionResponse>> futureResponse =
+        // Direct call to synchronous method (no CompletableFuture wrapper)
+        ResponseEntity<TransactionResponse> response =
                 transactionController.createPayment(request);
-        ResponseEntity<TransactionResponse> response = futureResponse.get();
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertNotNull(response.getBody());
@@ -242,47 +247,67 @@ class TransactionControllerTest {
 
     @Test
     void createTopUp_Success() throws Exception {
+        // Arrange - TopUpRequest no longer has userId
         TopUpRequest request = new TopUpRequest();
-        request.setUserId(tenantId);
         request.setAmount(new BigDecimal("50.00"));
 
+        // Mock Authentication object
+        Authentication authentication = mock(Authentication.class);
+
+        // Mock AuthenticationUtils to return the tenant ID
+        when(authenticationUtils.getUserIdFromAuth(authentication)).thenReturn(tenantId);
+
+        // Mock the service call
         when(transactionService.createTopUp(eq(tenantId), eq(new BigDecimal("50.00"))))
                 .thenReturn(CompletableFuture.completedFuture(topUp));
 
-        CompletableFuture<ResponseEntity<TransactionResponse>> futureResponse =
-                transactionController.createTopUp(request);
-        ResponseEntity<TransactionResponse> response = futureResponse.get();
+        // Act - Direct call to synchronous method (no CompletableFuture wrapper)
+        ResponseEntity<TransactionResponse> response =
+                transactionController.createTopUp(request, authentication);
 
+        // Assert
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(transactionId, response.getBody().getId());
         assertEquals(new BigDecimal("50.00"), response.getBody().getAmount());
         assertEquals(TransactionType.TOP_UP, response.getBody().getType());
         assertEquals(TransactionStatus.COMPLETED, response.getBody().getStatus());
+
+        // Verify that AuthenticationUtils was called
+        verify(authenticationUtils).getUserIdFromAuth(authentication);
+        verify(transactionService).createTopUp(tenantId, new BigDecimal("50.00"));
     }
 
     @Test
     void createTopUp_Error() throws Exception {
+        // Arrange
         TopUpRequest request = new TopUpRequest();
-        request.setUserId(tenantId);
         request.setAmount(new BigDecimal("50.00"));
 
+        Authentication authentication = mock(Authentication.class);
+        when(authenticationUtils.getUserIdFromAuth(authentication)).thenReturn(tenantId);
+
+        // Prepare failed future for the service layer
         CompletableFuture<TopUp> failedFuture = new CompletableFuture<>();
-        failedFuture.completeExceptionally(new RuntimeException("Payment processing failed"));
+        failedFuture.completeExceptionally(new RuntimeException("Top-up processing failed"));
 
         when(transactionService.createTopUp(eq(tenantId), eq(new BigDecimal("50.00"))))
                 .thenReturn(failedFuture);
 
-        CompletableFuture<ResponseEntity<TransactionResponse>> futureResponse =
-                transactionController.createTopUp(request);
-        ResponseEntity<TransactionResponse> response = futureResponse.get();
+        // Act - Direct call to synchronous method (no .get() needed)
+        ResponseEntity<TransactionResponse> response =
+                transactionController.createTopUp(request, authentication);
 
+        // Assert
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals("Error processing top-up", response.getBody().getStatus_message());
-        assertTrue(response.getBody().getMessage().contains("Payment processing failed"));
-    }
+        assertTrue(response.getBody().getMessage().contains("Top-up processing failed"));
 
+        // Verify interactions
+        verify(authenticationUtils).getUserIdFromAuth(authentication);
+        verify(transactionService).createTopUp(tenantId, new BigDecimal("50.00"));
+    }
 
     @Test
     void getTopUpsByUser_Success() throws ExecutionException, InterruptedException {

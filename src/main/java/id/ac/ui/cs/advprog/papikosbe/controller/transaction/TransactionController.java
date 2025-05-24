@@ -8,6 +8,8 @@ import id.ac.ui.cs.advprog.papikosbe.model.transaction.Payment;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.TopUp;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Transaction;
 import id.ac.ui.cs.advprog.papikosbe.service.transaction.TransactionService;
+import id.ac.ui.cs.advprog.papikosbe.util.AuthenticationUtils;
+import org.springframework.security.core.Authentication;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +23,8 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/transactions")
 public class TransactionController {
+    @Autowired
+    AuthenticationUtils authenticationUtils;
 
     @Autowired
     TransactionService transactionService;
@@ -50,16 +54,24 @@ public class TransactionController {
     }
 
     @PostMapping("/payment")
-    public CompletableFuture<ResponseEntity<TransactionResponse>> createPayment(@RequestBody PaymentRequest paymentRequest) throws Exception {
-        return transactionService.createPayment(paymentRequest.getTenantId(), paymentRequest.getOwnerId(), paymentRequest.getAmount())
-                .thenApply(payment -> {
-                    TransactionResponse response = mapToTransactionResponse(payment);
-                    return ResponseEntity.status(HttpStatus.CREATED).body(response);
-                })
-                .exceptionally(ex -> {
-                    TransactionResponse errorResponse = new TransactionResponse("Error processing payment", ex.getMessage());
-                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
-                });
+    public ResponseEntity<TransactionResponse> createPayment(@RequestBody PaymentRequest paymentRequest) {
+        try {
+            // Wait for the async service operation to complete
+            Payment payment = transactionService.createPayment(
+                    paymentRequest.getTenantId(),
+                    paymentRequest.getOwnerId(),
+                    paymentRequest.getAmount()
+            ).get();
+
+            TransactionResponse response = mapToTransactionResponse(payment);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+        } catch (Exception ex) {
+            // Handle both execution exceptions and other exceptions
+            String errorMessage = ex.getCause() != null ? ex.getCause().getMessage() : ex.getMessage();
+            TransactionResponse errorResponse = new TransactionResponse("Error processing payment", errorMessage);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        }
     }
 
     @GetMapping("/payment/tenant/{tenantId}")
@@ -83,19 +95,24 @@ public class TransactionController {
     }
 
     @PostMapping("/topup")
-    public CompletableFuture<ResponseEntity<TransactionResponse>> createTopUp(@RequestBody TopUpRequest topUpRequest) throws Exception {
-        // Asynchronous service call
-        return transactionService.createTopUp(topUpRequest.getUserId(), topUpRequest.getAmount())
-                .thenApply(topUp -> {
-                    // Map to response and set status code to CREATED (201)
-                    TransactionResponse response = mapToTransactionResponse(topUp);
-                    return ResponseEntity.status(HttpStatus.CREATED).body(response);
-                })
-                .exceptionally(ex -> {
-                    // Handle exception and return error response
-                    TransactionResponse errorResponse = new TransactionResponse("Error processing top-up", ex.getMessage());
-                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
-                });
+    public ResponseEntity<TransactionResponse> createTopUp(
+            @RequestBody TopUpRequest topUpRequest,
+            Authentication authentication) {
+
+        UUID userId = authenticationUtils.getUserIdFromAuth(authentication);
+
+        try {
+            // Wait for the async operation to complete
+            TopUp topUp = transactionService.createTopUp(userId, topUpRequest.getAmount()).get();
+            TransactionResponse response = mapToTransactionResponse(topUp);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (Exception ex) {
+            TransactionResponse errorResponse = new TransactionResponse(
+                    "Error processing top-up",
+                    ex.getCause() != null ? ex.getCause().getMessage() : ex.getMessage()
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        }
     }
 
     @GetMapping("/topup/user/{userId}")
@@ -104,7 +121,7 @@ public class TransactionController {
                 .thenApply(topUps -> topUps.stream()
                         .map(this::mapToTransactionResponse)
                         .collect(Collectors.toList()))
-                .thenApply(responses -> ResponseEntity.ok(responses))
+                .thenApply(ResponseEntity::ok)
                 .exceptionally(ex -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(null));
     }
 

@@ -47,6 +47,7 @@ public class BookingStatusUpdateServiceImpl implements BookingStatusUpdateServic
         log.info("Running scheduled expired bookings check");
         updateExpiredBookingsAsync();
         updateStartedBookingsAsync();
+        cancelExpiredPendingPaymentsAsync();
     }
 
     /**
@@ -148,5 +149,56 @@ public class BookingStatusUpdateServiceImpl implements BookingStatusUpdateServic
         }
 
         return CompletableFuture.completedFuture(updatedCount);
+    }
+
+    @Override
+    @Async("bookingTaskExecutor")
+    public CompletableFuture<Integer> cancelExpiredPendingPaymentsAsync() {
+        log.info("Checking for expired PENDING_PAYMENT and PAID bookings to cancel");
+        LocalDate today = LocalDate.now();
+        int cancelledCount = 0;
+
+        // Process PENDING_PAYMENT bookings
+        List<Booking> pendingBookings = bookingRepository.findByStatus(BookingStatus.PENDING_PAYMENT);
+        List<Booking> expiredPendingBookings = pendingBookings.stream()
+                .filter(booking -> booking.getCheckInDate().isBefore(today))
+                .collect(Collectors.toList());
+
+        // Process PAID bookings
+        List<Booking> paidBookings = bookingRepository.findByStatus(BookingStatus.PAID);
+        List<Booking> expiredPaidBookings = paidBookings.stream()
+                .filter(booking -> booking.getCheckInDate().isBefore(today))
+                .collect(Collectors.toList());
+
+        // Combine all expired bookings
+        List<Booking> allExpiredBookings = new ArrayList<>();
+        allExpiredBookings.addAll(expiredPendingBookings);
+        allExpiredBookings.addAll(expiredPaidBookings);
+
+        log.info("Found {} PENDING_PAYMENT and {} PAID bookings to cancel",
+                expiredPendingBookings.size(), expiredPaidBookings.size());
+
+        for (Booking booking : allExpiredBookings) {
+            try {
+                // Validate cancellation is allowed
+                stateValidator.validateForCancellation(booking);
+
+                booking.setStatus(BookingStatus.CANCELLED);
+                bookingRepository.save(booking);
+
+                // Add available room back when booking is cancelled
+                kosService.addAvailableRoom(booking.getKosId());
+
+                cancelledCount++;
+                log.info("Auto-cancelled expired {} booking {}",
+                        booking.getStatus(), booking.getBookingId());
+            } catch (Exception e) {
+                log.error("Failed to cancel expired booking {}: {}",
+                        booking.getBookingId(), e.getMessage());
+            }
+        }
+
+        log.info("Successfully cancelled {} expired bookings", cancelledCount);
+        return CompletableFuture.completedFuture(cancelledCount);
     }
 }

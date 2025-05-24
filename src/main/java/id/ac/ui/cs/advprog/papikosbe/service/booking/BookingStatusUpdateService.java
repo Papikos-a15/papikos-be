@@ -25,4 +25,5 @@ public interface BookingStatusUpdateService {
      * @return CompletableFuture with the count of updated bookings
      */
     CompletableFuture<Integer> updateStartedBookingsAsync();
+    CompletableFuture<Integer> cancelExpiredPendingPaymentsAsync();
 }

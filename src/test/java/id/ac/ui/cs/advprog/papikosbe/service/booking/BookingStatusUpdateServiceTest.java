@@ -474,16 +474,18 @@ public class BookingStatusUpdateServiceTest {
         when(pendingBookingPast.getBookingId()).thenReturn(UUID.randomUUID());
         UUID kosId1 = UUID.randomUUID();
         when(pendingBookingPast.getKosId()).thenReturn(kosId1);
-        when(pendingBookingPast.getStatus()).thenReturn(BookingStatus.PENDING_PAYMENT);
+
 
         Booking pendingBookingFuture = mock(Booking.class);
         when(pendingBookingFuture.getCheckInDate()).thenReturn(today.plusDays(1)); // Tomorrow
-        when(pendingBookingFuture.getStatus()).thenReturn(BookingStatus.PENDING_PAYMENT);
 
         List<Booking> pendingBookings = List.of(pendingBookingPast, pendingBookingFuture);
 
         when(bookingRepository.findByStatus(BookingStatus.PENDING_PAYMENT))
                 .thenReturn(pendingBookings);
+        // Add this to prevent strict stubbing error
+        when(bookingRepository.findByStatus(BookingStatus.PAID))
+                .thenReturn(List.of());
 
         // Execute
         CompletableFuture<Integer> result = bookingStatusUpdateService.cancelExpiredPendingPaymentsAsync();
@@ -511,10 +513,14 @@ public class BookingStatusUpdateServiceTest {
         when(paidBookingPast.getBookingId()).thenReturn(UUID.randomUUID());
         UUID kosId2 = UUID.randomUUID();
         when(paidBookingPast.getKosId()).thenReturn(kosId2);
-        when(paidBookingPast.getStatus()).thenReturn(BookingStatus.PAID);
+        // Remove this line
+        // when(paidBookingPast.getStatus()).thenReturn(BookingStatus.PAID);
 
         List<Booking> paidBookings = List.of(paidBookingPast);
 
+        // Add both stubbing to avoid strict stubbing error
+        when(bookingRepository.findByStatus(BookingStatus.PENDING_PAYMENT))
+                .thenReturn(List.of());
         when(bookingRepository.findByStatus(BookingStatus.PAID))
                 .thenReturn(paidBookings);
 
@@ -538,7 +544,8 @@ public class BookingStatusUpdateServiceTest {
         Booking problematicBooking = mock(Booking.class);
         when(problematicBooking.getCheckInDate()).thenReturn(today.minusDays(1));
         when(problematicBooking.getBookingId()).thenReturn(UUID.randomUUID());
-        when(problematicBooking.getStatus()).thenReturn(BookingStatus.PENDING_PAYMENT);
+        // Remove this line
+        // when(problematicBooking.getStatus()).thenReturn(BookingStatus.PENDING_PAYMENT);
 
         // Mock validator to throw exception
         doThrow(new IllegalStateException("Cannot cancel this booking"))
@@ -546,6 +553,9 @@ public class BookingStatusUpdateServiceTest {
 
         when(bookingRepository.findByStatus(BookingStatus.PENDING_PAYMENT))
                 .thenReturn(List.of(problematicBooking));
+        // Add this to prevent strict stubbing error
+        when(bookingRepository.findByStatus(BookingStatus.PAID))
+                .thenReturn(List.of());
 
         // Execute
         CompletableFuture<Integer> result = bookingStatusUpdateService.cancelExpiredPendingPaymentsAsync();
@@ -560,12 +570,23 @@ public class BookingStatusUpdateServiceTest {
 
     @Test
     void scheduledBookingStatusUpdate_shouldCallAllUpdateMethods() {
+        // Create a spy from the service
+        BookingStatusUpdateServiceImpl serviceSpy = spy(bookingStatusUpdateService);
+
+        // Mock the async methods to return completed futures
+        doReturn(CompletableFuture.completedFuture(0))
+                .when(serviceSpy).updateExpiredBookingsAsync();
+        doReturn(CompletableFuture.completedFuture(0))
+                .when(serviceSpy).updateStartedBookingsAsync();
+        doReturn(CompletableFuture.completedFuture(0))
+                .when(serviceSpy).cancelExpiredPendingPaymentsAsync();
+
         // Execute
-        bookingStatusUpdateService.scheduledBookingStatusUpdate();
+        serviceSpy.scheduledBookingStatusUpdate();
 
         // Verify that all update methods are called
-        verify(bookingStatusUpdateService).updateExpiredBookingsAsync();
-        verify(bookingStatusUpdateService).updateStartedBookingsAsync();
-        verify(bookingStatusUpdateService).cancelExpiredPendingPaymentsAsync();
+        verify(serviceSpy).updateExpiredBookingsAsync();
+        verify(serviceSpy).updateStartedBookingsAsync();
+        verify(serviceSpy).cancelExpiredPendingPaymentsAsync();
     }
 }

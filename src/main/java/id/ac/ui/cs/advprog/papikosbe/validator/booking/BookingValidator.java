@@ -15,8 +15,11 @@ public class BookingValidator {
      * Validates if a booking can be updated based on its current state
      */
     public void validateForUpdate(Booking booking) {
-        if (booking.getStatus() == BookingStatus.APPROVED || booking.getStatus() == BookingStatus.CANCELLED) {
-            throw new IllegalStateException("Cannot edit booking after it has been approved or cancelled");
+        if (booking.getStatus() == BookingStatus.APPROVED ||
+                booking.getStatus() == BookingStatus.CANCELLED ||
+                booking.getStatus() == BookingStatus.ACTIVE ||
+                booking.getStatus() == BookingStatus.INACTIVE) {
+            throw new IllegalStateException("Cannot edit booking after it has been approved, activated, cancelled, or deactivated");
         }
     }
 
@@ -42,8 +45,42 @@ public class BookingValidator {
      * Validates if a booking can be cancelled based on its current state
      */
     public void validateForCancellation(Booking booking) {
-        if (booking.getStatus() == BookingStatus.APPROVED) {
-            throw new IllegalStateException("Cannot cancel an already approved booking");
+        if (booking.getStatus() == BookingStatus.APPROVED ||
+                booking.getStatus() == BookingStatus.ACTIVE ||
+                booking.getStatus() == BookingStatus.INACTIVE) {
+            throw new IllegalStateException("Cannot cancel approved, active, or inactive bookings");
+        }
+    }
+
+    /**
+     * Validates minimum advance booking requirement
+     */
+    public void validateBookingAdvance(LocalDate checkInDate) {
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
+        if (checkInDate.isBefore(tomorrow)) {
+            throw new IllegalArgumentException("Booking must be made at least 1 day in advance to allow owner approval time");
+        }
+    }
+
+    /**
+     * Validates status transition to ACTIVE
+     */
+    public void validateForActivation(Booking booking) {
+        if (booking.getStatus() != BookingStatus.APPROVED) {
+            throw new IllegalStateException("Only APPROVED bookings can be activated");
+        }
+
+        if (booking.getCheckInDate().isAfter(LocalDate.now())) {
+            throw new IllegalStateException("Booking cannot be activated before check-in date");
+        }
+    }
+
+    /**
+     * Validates status transition to INACTIVE
+     */
+    public void validateForDeactivation(Booking booking) {
+        if (booking.getStatus() != BookingStatus.ACTIVE) {
+            throw new IllegalStateException("Only ACTIVE bookings can be deactivated");
         }
     }
 
@@ -112,4 +149,6 @@ public class BookingValidator {
         // Validate kos availability
         validateKosAvailability(kos);
     }
+
+
 }

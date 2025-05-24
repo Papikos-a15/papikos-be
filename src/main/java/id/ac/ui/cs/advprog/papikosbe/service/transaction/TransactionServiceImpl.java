@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -41,13 +42,15 @@ public class TransactionServiceImpl implements TransactionService {
     private WalletService walletService;
 
     @Override
-    public Transaction getTransactionById(UUID id) throws Exception {
-        return transactionRepository.findById(id)
-                .orElseThrow(() -> new Exception("Transaksi tidak ditemukan"));
+    public Transaction getTransactionById(UUID userId) {
+        // Synchronous method for fetching transaction by ID
+        return transactionRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Transaction not found"));
     }
 
     @Override
-    public List<Transaction> getUserTransactions(UUID userId) throws Exception {
+    public List<Transaction> getUserTransactions(UUID userId) {
+        // Synchronous method for fetching user transactions (both payments and top-ups)
         List<Payment> payments = transactionRepository.findPaymentsByUser(userId);
         List<TopUp> topUps = transactionRepository.findTopUpsByUser(userId);
 
@@ -60,12 +63,13 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public List<Transaction> getTransactionByDate(LocalDateTime date) {
+        // Synchronous method to fetch transactions by date
         return transactionRepository.findByDate(LocalDate.from(date));
     }
 
     /*** Payment Methods ***/
     @Override
-    public Payment createPayment(UUID tenantId, UUID ownerId, BigDecimal amount) throws Exception {
+    public CompletableFuture<Payment> createPayment(UUID tenantId, UUID ownerId, BigDecimal amount) throws Exception {
         validatePayment(tenantId, ownerId, amount);
 
         Payment payment = (Payment) transactionFactory.createTransaction(
@@ -77,15 +81,11 @@ public class TransactionServiceImpl implements TransactionService {
 
         TransactionStatus status = payment.process(tenantWallet, ownerWallet);
 
-
-
         if (status == TransactionStatus.COMPLETED) {
             walletRepository.save(tenantWallet);
             walletRepository.save(ownerWallet);
             Payment savedPayment = transactionRepository.save(payment);
-            System.out.println("Process status: " + status);
-            System.out.println("Saved payment: " + savedPayment);
-            return savedPayment;
+            return CompletableFuture.completedFuture(savedPayment);
         } else {
             throw new Exception("Pembayaran gagal: " + status);
         }
@@ -93,8 +93,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     /*** TopUp Methods ***/
     @Override
-    public TopUp createTopUp(UUID userId, BigDecimal amount) throws Exception {
-        // Validate top up details
+    public CompletableFuture<TopUp> createTopUp(UUID userId, BigDecimal amount) throws Exception {
         validateTopUp(userId, amount);
 
         TopUp topUp = (TopUp) transactionFactory.createTransaction(
@@ -108,7 +107,7 @@ public class TransactionServiceImpl implements TransactionService {
         if (status == TransactionStatus.COMPLETED) {
             walletRepository.save(userWallet);
             TopUp savedTopUp = transactionRepository.save(topUp);
-            return savedTopUp;
+            return CompletableFuture.completedFuture(savedTopUp);
         } else {
             throw new Exception("Top up gagal: " + status);
         }
@@ -131,7 +130,6 @@ public class TransactionServiceImpl implements TransactionService {
                 .orElseThrow(() -> new Exception("Owner tidak ditemukan"));
 
         Wallet tenantWallet = walletService.getOrCreateWallet(tenant);
-
         Wallet ownerWallet = walletService.getOrCreateWallet(owner);
 
         if (tenantWallet.getStatus() != WalletStatus.ACTIVE) {
@@ -168,17 +166,17 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public List<Payment> getPaymentsByTenant(UUID tenantId) {
-        return transactionRepository.findPaymentsByTenant(tenantId);
+    public CompletableFuture<List<Payment>> getPaymentsByTenant(UUID tenantId) {
+        return CompletableFuture.supplyAsync(() -> transactionRepository.findPaymentsByTenant(tenantId));
     }
 
     @Override
-    public List<Payment> getPaymentsByOwner(UUID ownerId) {
-        return transactionRepository.findPaymentsByOwner(ownerId);
+    public CompletableFuture<List<Payment>> getPaymentsByOwner(UUID ownerId) {
+        return CompletableFuture.supplyAsync(() -> transactionRepository.findPaymentsByOwner(ownerId));
     }
 
     @Override
-    public List<TopUp> getTopUpsByUser(UUID userId) {
-        return transactionRepository.findTopUpsByUser(userId);
+    public CompletableFuture<List<TopUp>> getTopUpsByUser(UUID userId) {
+        return CompletableFuture.supplyAsync(() -> transactionRepository.findTopUpsByUser(userId));
     }
 }

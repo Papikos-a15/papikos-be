@@ -53,6 +53,7 @@ public class BookingController {
             Booking createdBooking = bookingService.createBooking(booking);
             return ResponseEntity.ok(createdBooking);
         } catch (IllegalArgumentException e) {
+            System.out.println("Validation error: " + e.getMessage());
             return ResponseEntity.badRequest().build();
         } catch (IllegalStateException e) {
             return ResponseEntity.status(403).build();

@@ -620,4 +620,173 @@ public class BookingServiceImplTest {
         assertFalse(userBookings.contains(otherUserBooking));
     }
 
+    @Test
+    void createBooking_shouldValidateAdvanceBooking() {
+        // Setup: Create booking with check-in date today (should fail)
+        Booking todayBooking = new Booking(
+                UUID.randomUUID(),
+                userId,
+                kosId,
+                LocalDate.now(), // Today - should fail advance validation
+                3,
+                monthlyPrice,
+                fullName,
+                phoneNumber,
+                BookingStatus.PENDING_PAYMENT
+        );
+
+        // Mock validator to throw exception for advance booking validation
+        doThrow(new IllegalArgumentException("Booking must be made at least 1 day in advance"))
+                .when(stateValidator).validateBookingAdvance(LocalDate.now());
+
+        // Execute & Verify
+        assertThrows(IllegalArgumentException.class,
+                () -> bookingService.createBooking(todayBooking));
+
+        // Verify validator was called
+        verify(stateValidator).validateBookingAdvance(LocalDate.now());
+    }
+
+    @Test
+    void createBooking_shouldValidateAdvanceBooking_success() {
+        // Setup: Create booking with valid advance date
+        Booking validBooking = new Booking(
+                UUID.randomUUID(),
+                userId,
+                kosId,
+                LocalDate.now().plusDays(2), // 2 days advance - should pass
+                3,
+                monthlyPrice,
+                fullName,
+                phoneNumber,
+                BookingStatus.PENDING_PAYMENT
+        );
+
+        when(kosService.getKosById(kosId)).thenReturn(Optional.of(testKos));
+        when(bookingRepository.save(any(Booking.class))).thenReturn(validBooking);
+
+        // Execute
+        Booking result = bookingService.createBooking(validBooking);
+
+        // Verify
+        assertNotNull(result);
+        verify(stateValidator).validateBookingAdvance(LocalDate.now().plusDays(2));
+        verify(stateValidator).validateBasicFields(validBooking);
+    }
+
+    @Test
+    void updateBooking_shouldValidateAdvanceBooking_whenDateChanged() {
+        // Setup: Create existing booking
+        Booking existingBooking = new Booking(
+                UUID.randomUUID(),
+                userId,
+                kosId,
+                LocalDate.now().plusDays(5),
+                3,
+                monthlyPrice,
+                fullName,
+                phoneNumber,
+                BookingStatus.PENDING_PAYMENT
+        );
+
+        // Create updated booking with new check-in date
+        Booking updatedBooking = new Booking(
+                existingBooking.getBookingId(),
+                userId,
+                kosId,
+                LocalDate.now().plusDays(10), // Changed date
+                3,
+                monthlyPrice,
+                "Updated Name",
+                phoneNumber,
+                BookingStatus.PENDING_PAYMENT
+        );
+
+        when(bookingRepository.findById(existingBooking.getBookingId()))
+                .thenReturn(Optional.of(existingBooking));
+        when(bookingRepository.save(any(Booking.class))).thenReturn(updatedBooking);
+
+        // Execute
+        bookingService.updateBooking(updatedBooking);
+
+        // Verify
+        verify(stateValidator).validateForUpdate(existingBooking);
+        verify(stateValidator).validateBookingAdvance(LocalDate.now().plusDays(10));
+        verify(stateValidator).validateBasicFields(updatedBooking);
+    }
+
+    @Test
+    void updateBooking_shouldNotValidateAdvanceBooking_whenDateUnchanged() {
+        // Setup: Create existing booking
+        LocalDate checkInDate = LocalDate.now().plusDays(5);
+
+        Booking existingBooking = new Booking(
+                UUID.randomUUID(),
+                userId,
+                kosId,
+                checkInDate,
+                3,
+                monthlyPrice,
+                fullName,
+                phoneNumber,
+                BookingStatus.PENDING_PAYMENT
+        );
+
+        // Create updated booking with same check-in date
+        Booking updatedBooking = new Booking(
+                existingBooking.getBookingId(),
+                userId,
+                kosId,
+                checkInDate, // Same date
+                3,
+                monthlyPrice,
+                "Updated Name", // Only name changed
+                phoneNumber,
+                BookingStatus.PENDING_PAYMENT
+        );
+
+        when(bookingRepository.findById(existingBooking.getBookingId()))
+                .thenReturn(Optional.of(existingBooking));
+        when(bookingRepository.save(any(Booking.class))).thenReturn(updatedBooking);
+
+        // Execute
+        bookingService.updateBooking(updatedBooking);
+
+        // Verify
+        verify(stateValidator).validateForUpdate(existingBooking);
+        verify(stateValidator, never()).validateBookingAdvance(any(LocalDate.class));
+        verify(stateValidator).validateBasicFields(updatedBooking);
+    }
+
+    @Test
+    void cancelBooking_shouldReturnRoomToAvailable() {
+        // Setup
+        Booking booking = new Booking(
+                UUID.randomUUID(),
+                userId,
+                kosId,
+                LocalDate.now().plusDays(7),
+                3,
+                monthlyPrice,
+                fullName,
+                phoneNumber,
+                BookingStatus.PENDING_PAYMENT
+        );
+
+        when(bookingRepository.findById(booking.getBookingId()))
+                .thenReturn(Optional.of(booking));
+        when(bookingRepository.save(any(Booking.class))).thenReturn(booking);
+
+        // Execute
+        bookingService.cancelBooking(booking.getBookingId());
+
+        // Verify
+        verify(stateValidator).validateForCancellation(booking);
+        verify(kosService).addAvailableRoom(booking.getKosId());
+
+        ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
+        verify(bookingRepository).save(bookingCaptor.capture());
+        assertEquals(BookingStatus.CANCELLED, bookingCaptor.getValue().getStatus());
+    }
+
 }

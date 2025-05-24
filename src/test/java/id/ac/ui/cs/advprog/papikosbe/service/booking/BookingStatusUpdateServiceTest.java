@@ -256,4 +256,87 @@ public class BookingStatusUpdateServiceTest {
         verify(normalBooking).setStatus(BookingStatus.ACTIVE);
         verify(bookingRepository).save(normalBooking);
     }
+
+    @Test
+    void updateExpiredBookingsAsync_shouldFindActiveBookings_notApprovedBookings() throws ExecutionException, InterruptedException {
+        // Setup: Create ACTIVE bookings (not APPROVED) that are expired
+        LocalDate today = LocalDate.now();
+        
+        Booking expiredActiveBooking = mock(Booking.class);
+        when(expiredActiveBooking.getCheckInDate()).thenReturn(today.minusMonths(3));
+        when(expiredActiveBooking.getDuration()).thenReturn(2); // Should have ended 1 month ago
+        when(expiredActiveBooking.getBookingId()).thenReturn(UUID.randomUUID());
+        
+        Booking validActiveBooking = mock(Booking.class);
+        when(validActiveBooking.getCheckInDate()).thenReturn(today.minusMonths(1));
+        when(validActiveBooking.getDuration()).thenReturn(3); // Still has 2 months left
+        
+        List<Booking> activeBookings = List.of(expiredActiveBooking, validActiveBooking);
+        
+        // Configure repository mock to return ACTIVE bookings (not APPROVED)
+        when(bookingRepository.findByStatus(BookingStatus.ACTIVE))
+                .thenReturn(activeBookings);
+        
+        // Execute
+        CompletableFuture<Integer> result = bookingStatusUpdateService.updateExpiredBookingsAsync();
+        int updatedCount = result.get();
+        
+        // Verify
+        assertEquals(1, updatedCount);
+        verify(expiredActiveBooking).setStatus(BookingStatus.INACTIVE);
+        verify(validActiveBooking, never()).setStatus(any());
+        verify(bookingRepository).save(expiredActiveBooking);
+        verify(bookingRepository, never()).save(validActiveBooking);
+    }
+
+    @Test
+    void updateExpiredBookingsAsync_withValidator_shouldUseValidation() throws ExecutionException, InterruptedException {
+        // Setup: Create expired ACTIVE booking
+        LocalDate today = LocalDate.now();
+        
+        Booking expiredActiveBooking = mock(Booking.class);
+        when(expiredActiveBooking.getCheckInDate()).thenReturn(today.minusMonths(2));
+        when(expiredActiveBooking.getDuration()).thenReturn(1); // Should have ended 1 month ago
+        when(expiredActiveBooking.getBookingId()).thenReturn(UUID.randomUUID());
+        
+        when(bookingRepository.findByStatus(BookingStatus.ACTIVE))
+                .thenReturn(List.of(expiredActiveBooking));
+        
+        // Execute
+        CompletableFuture<Integer> result = bookingStatusUpdateService.updateExpiredBookingsAsync();
+        int updatedCount = result.get();
+        
+        // Verify
+        assertEquals(1, updatedCount);
+        // Verify validator was called (this will fail until we inject validator)
+        verify(stateValidator).validateForDeactivation(expiredActiveBooking);
+        verify(kosService).addAvailableRoom(any(UUID.class));
+    }
+
+    @Test
+    void updateStartedBookingsAsync_withValidator_shouldUseValidation() throws ExecutionException, InterruptedException {
+        // Setup: Create APPROVED booking that should become ACTIVE
+        LocalDate today = LocalDate.now();
+        
+        Booking approvedBooking = mock(Booking.class);
+        when(approvedBooking.getCheckInDate()).thenReturn(today.minusDays(1));
+        when(approvedBooking.getBookingId()).thenReturn(UUID.randomUUID());
+        when(approvedBooking.getKosId()).thenReturn(UUID.randomUUID());
+        
+        when(bookingRepository.findByStatus(BookingStatus.APPROVED))
+                .thenReturn(List.of(approvedBooking));
+        when(bookingRepository.findByStatus(BookingStatus.PENDING_PAYMENT))
+                .thenReturn(List.of());
+        when(bookingRepository.findByStatus(BookingStatus.PAID))
+                .thenReturn(List.of());
+        
+        // Execute
+        CompletableFuture<Integer> result = bookingStatusUpdateService.updateStartedBookingsAsync();
+        int updatedCount = result.get();
+        
+        // Verify
+        assertEquals(1, updatedCount);
+        // Verify validator was called (this will fail until we inject validator)
+        verify(stateValidator).validateForActivation(approvedBooking);
+    }
 }

@@ -10,6 +10,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -34,9 +35,10 @@ public class BookingStatusUpdateServiceImpl implements BookingStatusUpdateServic
      */
     @Override
     @Scheduled(cron = "0 0 0 * * ?")  // Run at midnight every day
-    public void scheduledExpiredBookingsUpdate() {
+    public void scheduledBookingStatusUpdate() {
         log.info("Running scheduled expired bookings check");
-        updateExpiredBookingsAsync(); 
+        updateExpiredBookingsAsync();
+        updateStartedBookingsAsync();
     }
 
     /**
@@ -77,4 +79,6 @@ public class BookingStatusUpdateServiceImpl implements BookingStatusUpdateServic
         log.info("Successfully updated {} expired bookings to INACTIVE status", updatedCount);
         return CompletableFuture.completedFuture(updatedCount);
     }
+
+
 }

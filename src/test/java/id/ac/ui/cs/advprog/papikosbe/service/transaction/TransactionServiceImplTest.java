@@ -21,12 +21,11 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -91,8 +90,11 @@ class TransactionServiceImplTest {
         when(payment.process(tenantWallet, ownerWallet)).thenReturn(TransactionStatus.COMPLETED);
         when(transactionRepository.save(payment)).thenReturn(payment);
 
-        // ACTION
-        Payment result = transactionService.createPayment(tenantId, ownerId, amount);
+        // ACTION - Call the asynchronous method
+        CompletableFuture<Payment> resultFuture = transactionService.createPayment(tenantId, ownerId, amount);
+
+        // Wait for the result to complete
+        Payment result = resultFuture.join();  // This will block until the future completes
 
         // ASSERTION
         assertNotNull(result);
@@ -101,6 +103,7 @@ class TransactionServiceImplTest {
         verify(walletRepository).save(ownerWallet);
         verify(transactionRepository).save(payment);
     }
+
 
     @Test
     void testCreatePayment_Failure_InsufficientBalance() throws Exception {
@@ -153,19 +156,26 @@ class TransactionServiceImplTest {
         topUp.setAmount(amount);
         topUp.setStatus(TransactionStatus.COMPLETED);
 
+        // Mocking the repositories and methods
         when(userRepository.findById(tenantId)).thenReturn(Optional.of(tenant));
         when(walletRepository.findByUserId(tenantId)).thenReturn(Optional.of(tenantWallet));
         when(transactionFactory.createTransaction(TransactionType.TOP_UP, tenantId, amount, null)).thenReturn(topUp);
-        when(topUp.process(tenantWallet, null)).thenReturn(TransactionStatus.COMPLETED); // tambahkan ini jika perlu
+        when(topUp.process(tenantWallet, null)).thenReturn(TransactionStatus.COMPLETED);
         when(transactionRepository.save(topUp)).thenReturn(topUp);
 
-        TopUp result = transactionService.createTopUp(tenantId, amount);
+        // Call the asynchronous method
+        CompletableFuture<TopUp> resultFuture = transactionService.createTopUp(tenantId, amount);
 
+        // Wait for the result
+        TopUp result = resultFuture.join(); // join() waits for the result
+
+        // Assertions
         assertNotNull(result);
         assertEquals(TransactionStatus.COMPLETED, result.getStatus());
         verify(walletRepository).save(tenantWallet);
         verify(transactionRepository).save(topUp);
     }
+
 
 
     @Test
@@ -232,17 +242,71 @@ class TransactionServiceImplTest {
     }
 
     @Test
-    void testGetTransactionByDate() {
-        // Arrange
-        LocalDateTime date = LocalDateTime.now();
-        List<Transaction> transactions = Collections.singletonList(new Payment());
-        when(transactionRepository.findByDate(LocalDate.from(date))).thenReturn(transactions);
+    void testRefundPayment_Success() throws Exception {
+        UUID paymentId = UUID.randomUUID();
+        UUID tenantId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        BigDecimal amount = new BigDecimal("20000");
 
-        // Act
-        List<Transaction> result = transactionService.getTransactionByDate(date);
+        Tenant tenant = Tenant.builder().email("tenant@example.com").password("tenantpass").build();
+        tenant.setId(tenantId);
 
-        // Assert
+        Owner owner = Owner.builder().email("owner@example.com").password("ownerpass").build();
+        owner.setId(ownerId);
+
+        Payment originalPayment = Mockito.spy(new Payment());
+        originalPayment.setId(paymentId);
+        originalPayment.setUser(tenant);
+        originalPayment.setOwner(owner);
+        originalPayment.setAmount(amount);
+        originalPayment.setStatus(TransactionStatus.COMPLETED);
+
+        Wallet tenantWallet = new Wallet();
+        tenantWallet.setUser(tenant);
+        tenantWallet.setStatus(WalletStatus.ACTIVE);
+        tenantWallet.setBalance(new BigDecimal("10000"));
+
+        Wallet ownerWallet = new Wallet();
+        ownerWallet.setUser(owner);
+        ownerWallet.setStatus(WalletStatus.ACTIVE);
+        ownerWallet.setBalance(new BigDecimal("50000"));
+
+        Payment refundPayment = Mockito.spy(new Payment());
+        refundPayment.setUser(owner);
+        refundPayment.setOwner(tenant);
+        refundPayment.setAmount(amount);
+
+        when(transactionRepository.findPaymentById(paymentId)).thenReturn(Optional.of(originalPayment));
+        when(walletRepository.findByUserId(tenantId)).thenReturn(Optional.of(tenantWallet));
+        when(walletRepository.findByUserId(ownerId)).thenReturn(Optional.of(ownerWallet));
+
+        when(transactionRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        CompletableFuture<Payment> resultFuture = transactionService.refundPayment(paymentId, ownerId);
+        Payment result = resultFuture.join();
+
         assertNotNull(result);
-        assertEquals(1, result.size());
+        assertEquals(TransactionStatus.COMPLETED, result.getStatus());
+        verify(walletRepository).save(ownerWallet);
+        verify(walletRepository).save(tenantWallet);
+        verify(transactionRepository).save(any(Payment.class));  // verifikasi save dipanggil
     }
-}
+
+    @Test
+    void testRefundPayment_ThrowsIfNotCompleted() {
+        UUID paymentId = UUID.randomUUID();
+        UUID requesterId = UUID.randomUUID();
+
+        Payment payment = new Payment();
+        payment.setStatus(TransactionStatus.PENDING);
+
+        when(transactionRepository.findPaymentById(paymentId)).thenReturn(Optional.of(payment));
+
+        Exception ex = assertThrows(Exception.class, () -> {
+            transactionService.refundPayment(paymentId, requesterId).join();
+        });
+
+        assertTrue(ex.getMessage().contains("Transaksi belum selesai"));
+    }
+
+ }

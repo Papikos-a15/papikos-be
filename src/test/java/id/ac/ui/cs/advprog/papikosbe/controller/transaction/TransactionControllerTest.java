@@ -1,8 +1,6 @@
 package id.ac.ui.cs.advprog.papikosbe.controller.transaction;
 
-import id.ac.ui.cs.advprog.papikosbe.dto.PaymentRequest;
-import id.ac.ui.cs.advprog.papikosbe.dto.TopUpRequest;
-import id.ac.ui.cs.advprog.papikosbe.dto.TransactionResponse;
+import id.ac.ui.cs.advprog.papikosbe.dto.*;
 import id.ac.ui.cs.advprog.papikosbe.enums.TransactionStatus;
 import id.ac.ui.cs.advprog.papikosbe.enums.TransactionType;
 import id.ac.ui.cs.advprog.papikosbe.model.user.Owner;
@@ -27,6 +25,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -342,4 +341,65 @@ class TransactionControllerTest {
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
         assertNull(response.getBody());
     }
+
+    @Test
+    void refundPayment_Success() throws Exception {
+        // Arrange - RefundRequest setup
+        UUID paymentId = UUID.randomUUID();
+        UUID requesterId = UUID.randomUUID();
+        RefundRequest request = new RefundRequest();
+        request.setPaymentId(paymentId);
+        request.setRequesterId(requesterId);
+
+        // Prepare the mock Payment and RefundResponse
+        Payment refundedPayment = new Payment();
+        refundedPayment.setId(paymentId);
+        refundedPayment.setAmount(new BigDecimal("100.00"));
+        refundedPayment.setStatus(TransactionStatus.REFUNDED);
+
+        RefundResponse refundResponse = new RefundResponse(refundedPayment);
+
+        // Mock the service layer to return a completed future with the refunded payment
+        CompletableFuture<Payment> completedFuture = CompletableFuture.completedFuture(refundedPayment);
+        when(transactionService.refundPayment(paymentId, requesterId)).thenReturn(completedFuture);
+
+        // Act - Direct call to controller
+        ResponseEntity<?> response = transactionController.refundPayment(request);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertTrue(response.getBody() instanceof CompletableFuture);
+
+        CompletableFuture<RefundResponse> futureResponse = (CompletableFuture<RefundResponse>) response.getBody();
+        // Instead of calling getPayment(), directly access fields from RefundResponse
+        assertEquals(TransactionStatus.REFUNDED, futureResponse.get().getStatus());
+        assertEquals(new BigDecimal("100.00"), futureResponse.get().getAmount());
+    }
+
+
+    @Test
+    void refundPayment_Error() throws Exception {
+        // Arrange - RefundRequest setup
+        UUID paymentId = UUID.randomUUID();
+        UUID requesterId = UUID.randomUUID();
+        RefundRequest request = new RefundRequest();
+        request.setPaymentId(paymentId);
+        request.setRequesterId(requesterId);
+
+        // Mock service layer to throw an exception
+        when(transactionService.refundPayment(paymentId, requesterId))
+                .thenThrow(new RuntimeException("Refund processing failed"));
+
+        // Act - Direct call to controller
+        ResponseEntity<?> response = transactionController.refundPayment(request);
+
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertTrue(response.getBody() instanceof Map);
+        Map<String, Object> errorResponse = (Map<String, Object>) response.getBody();
+        assertEquals("Refund processing failed", errorResponse.get("error"));
+    }
+
 }

@@ -41,4 +41,6 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
     @Query("SELECT t FROM TopUp t WHERE t.user.id = :userId ORDER BY t.createdAt DESC")
     List<TopUp> findTopUpsByUser(@Param("userId") UUID userId);
 
+    @Query("SELECT p FROM Payment p WHERE p.id = :id")
+    Optional<Payment> findPaymentById(@Param("id") UUID id);
 }

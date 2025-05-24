@@ -21,8 +21,6 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -241,6 +239,74 @@ class TransactionServiceImplTest {
         // Assert
         assertNotNull(result);
         assertEquals(2, result.size());  // One payment and one top-up
+    }
+
+    @Test
+    void testRefundPayment_Success() throws Exception {
+        UUID paymentId = UUID.randomUUID();
+        UUID tenantId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        BigDecimal amount = new BigDecimal("20000");
+
+        Tenant tenant = Tenant.builder().email("tenant@example.com").password("tenantpass").build();
+        tenant.setId(tenantId);
+
+        Owner owner = Owner.builder().email("owner@example.com").password("ownerpass").build();
+        owner.setId(ownerId);
+
+        Payment originalPayment = Mockito.spy(new Payment());
+        originalPayment.setId(paymentId);
+        originalPayment.setUser(tenant);
+        originalPayment.setOwner(owner);
+        originalPayment.setAmount(amount);
+        originalPayment.setStatus(TransactionStatus.COMPLETED);
+
+        Wallet tenantWallet = new Wallet();
+        tenantWallet.setUser(tenant);
+        tenantWallet.setStatus(WalletStatus.ACTIVE);
+        tenantWallet.setBalance(new BigDecimal("10000"));
+
+        Wallet ownerWallet = new Wallet();
+        ownerWallet.setUser(owner);
+        ownerWallet.setStatus(WalletStatus.ACTIVE);
+        ownerWallet.setBalance(new BigDecimal("50000"));
+
+        Payment refundPayment = Mockito.spy(new Payment());
+        refundPayment.setUser(owner);
+        refundPayment.setOwner(tenant);
+        refundPayment.setAmount(amount);
+
+        when(transactionRepository.findPaymentById(paymentId)).thenReturn(Optional.of(originalPayment));
+        when(walletRepository.findByUserId(tenantId)).thenReturn(Optional.of(tenantWallet));
+        when(walletRepository.findByUserId(ownerId)).thenReturn(Optional.of(ownerWallet));
+
+        when(transactionRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        CompletableFuture<Payment> resultFuture = transactionService.refundPayment(paymentId, ownerId);
+        Payment result = resultFuture.join();
+
+        assertNotNull(result);
+        assertEquals(TransactionStatus.COMPLETED, result.getStatus());
+        verify(walletRepository).save(ownerWallet);
+        verify(walletRepository).save(tenantWallet);
+        verify(transactionRepository).save(any(Payment.class));  // verifikasi save dipanggil
+    }
+
+    @Test
+    void testRefundPayment_ThrowsIfNotCompleted() {
+        UUID paymentId = UUID.randomUUID();
+        UUID requesterId = UUID.randomUUID();
+
+        Payment payment = new Payment();
+        payment.setStatus(TransactionStatus.PENDING);
+
+        when(transactionRepository.findPaymentById(paymentId)).thenReturn(Optional.of(payment));
+
+        Exception ex = assertThrows(Exception.class, () -> {
+            transactionService.refundPayment(paymentId, requesterId).join();
+        });
+
+        assertTrue(ex.getMessage().contains("Transaksi belum selesai"));
     }
 
  }

@@ -16,6 +16,7 @@ import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,8 +31,7 @@ public class BookingServiceImpl implements BookingService {
     public BookingServiceImpl(BookingRepository bookingRepository,
                               KosService kosService,
                               TransactionService transactionService,
-                              BookingValidator stateValidator,
-                              BookingAccessValidator bookingAccessValidator) {
+                              BookingValidator stateValidator) {
         this.bookingRepository = bookingRepository;
         this.kosService = kosService;
         this.transactionService = transactionService;
@@ -137,21 +137,23 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public List<Booking> findBookingsByOwnerId(UUID ownerId) {
-        // Get all kos owned by this owner
-        List<Kos> ownerKos = kosService.getAllKos().stream()
-                .filter(kos -> kos.getOwnerId().equals(ownerId))
-                .collect(Collectors.toList());
+    public CompletableFuture<List<Booking>> findBookingsByOwnerId(UUID ownerId) {
+        return kosService.getAllKos()
+            .thenApply(kosList ->
+                kosList.stream()
+                    .filter(kos -> kos.getOwnerId().equals(ownerId))
+                    .collect(Collectors.toList())
+            )
+            .thenApply(ownerKos -> {
+                List<UUID> ownerKosIds = ownerKos.stream()
+                    .map(Kos::getId)
+                    .toList();
 
-        // Extract kos IDs
-        List<UUID> ownerKosIds = ownerKos.stream()
-                .map(Kos::getId)
-                .collect(Collectors.toList());
-
-        // Find all bookings for these kos
-        return bookingRepository.findAll().stream()
-                .filter(booking -> ownerKosIds.contains(booking.getKosId()))
-                .collect(Collectors.toList());
+                // Booking repo is synchronous; if needed, make it async too.
+                return bookingRepository.findAll().stream()
+                    .filter(booking -> ownerKosIds.contains(booking.getKosId()))
+                    .collect(Collectors.toList());
+            });
     }
 
     @Override

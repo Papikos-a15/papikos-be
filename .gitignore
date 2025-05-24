@@ -7,7 +7,6 @@ build/
 
 .env
 ### STS ###
-.env
 .apt_generated
 .classpath
 .factorypath

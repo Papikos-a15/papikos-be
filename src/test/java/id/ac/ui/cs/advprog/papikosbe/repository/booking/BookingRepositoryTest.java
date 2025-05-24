@@ -48,7 +48,7 @@ class BookingRepositoryTest {
                 .bookingId(UUID.randomUUID())
                 .userId(dummyUserId)
                 .kosId(dummyKosId)
-                .checkInDate(LocalDate.now().plusDays(1))
+                .checkInDate(LocalDate.now().plusDays(1)) // H+1 consistent
                 .duration(3)
                 .monthlyPrice(monthlyPrice)
                 .fullName(fullName)

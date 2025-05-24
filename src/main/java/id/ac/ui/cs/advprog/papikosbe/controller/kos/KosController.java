@@ -16,6 +16,7 @@ public class KosController {
     private final KosService kosService;
     private final KosSearchService kosSearchService;
 
+
     public KosController(KosService kosService, KosSearchService kosSearchService) {
         this.kosService = kosService;
         this.kosSearchService = kosSearchService;
@@ -97,56 +98,56 @@ public class KosController {
     }
 
     @GetMapping("/search")
-    public CompletableFuture<ResponseEntity<List<Kos>>> searchKos(
+    public ResponseEntity<List<Kos>> searchKos(
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String location,
             @RequestParam(required = false) Boolean availability,
             @RequestParam(required = false) Double minPrice,
             @RequestParam(required = false) Double maxPrice) {
 
-        return kosService.getAllKos()
-                .thenApply(allKos -> {
-                    // If no search parameters provided, return all kos
-                    if (name == null && location == null && availability == null
-                            && minPrice == null && maxPrice == null) {
-                        return ResponseEntity.ok(allKos);
-                    }
+        // Get all kos synchronously with join()
+        List<Kos> allKos = kosService.getAllKos().join();
 
-                    // Build search criteria map
-                    Map<String, Object> searchCriteria = new HashMap<>();
+        // If no search parameters provided, return all kos
+        if (name == null && location == null && availability == null
+                && minPrice == null && maxPrice == null) {
+            return ResponseEntity.ok(allKos);
+        }
 
-                    // Add individual search criteria
-                    if (name != null) {
-                        searchCriteria.put("name", name);
-                    }
+        // Build search criteria map
+        Map<String, Object> searchCriteria = new HashMap<>();
 
-                    if (location != null) {
-                        searchCriteria.put("location", location);
-                    }
+        // Add individual search criteria
+        if (name != null) {
+            searchCriteria.put("name", name);
+        }
 
-                    if (availability != null) {
-                        searchCriteria.put("availability", availability);
-                    }
+        if (location != null) {
+            searchCriteria.put("location", location);
+        }
 
-                    // Handle price range criteria
-                    if (minPrice != null && maxPrice != null) {
-                        Map<String, Double> priceRange = new HashMap<>();
-                        priceRange.put("min", minPrice);
-                        priceRange.put("max", maxPrice);
-                        searchCriteria.put("pricerange", priceRange);
-                    }
+        if (availability != null) {
+            searchCriteria.put("availability", availability);
+        }
 
-                    // Single name search uses simple search
-                    if (searchCriteria.size() == 1 && searchCriteria.containsKey("name")) {
-                        return ResponseEntity.ok(
-                                kosSearchService.search(allKos, "name", name)
-                        );
-                    }
+        // Handle price range criteria
+        if (minPrice != null && maxPrice != null) {
+            Map<String, Double> priceRange = new HashMap<>();
+            priceRange.put("min", minPrice);
+            priceRange.put("max", maxPrice);
+            searchCriteria.put("pricerange", priceRange);
+        }
 
-                    // For all other cases, use multi-criteria search
-                    return ResponseEntity.ok(
-                            kosSearchService.multiSearch(allKos, searchCriteria)
-                    );
-                });
+        // Single name search uses simple search
+        if (searchCriteria.size() == 1 && searchCriteria.containsKey("name")) {
+            return ResponseEntity.ok(
+                    kosSearchService.search(allKos, "name", name)
+            );
+        }
+
+        // For all other cases, use multi-criteria search
+        return ResponseEntity.ok(
+                kosSearchService.multiSearch(allKos, searchCriteria)
+        );
     }
 }

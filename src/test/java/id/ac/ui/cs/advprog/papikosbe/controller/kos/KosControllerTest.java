@@ -215,21 +215,16 @@ public class KosControllerTest {
     @Test
     @WithMockUser
     void searchKosBySingleCriteria_ShouldReturnFilteredResults() throws Exception {
-        // Mock service response with CompletableFuture
+        // Mock service response
         when(kosService.getAllKos()).thenReturn(CompletableFuture.completedFuture(testKosList));
         when(kosSearchService.search(eq(testKosList), eq("name"), eq("Kos A")))
                 .thenReturn(Collections.singletonList(testKos1));
 
-        // Perform request - expect async started
-        MvcResult mvcResult = mockMvc.perform(get("/api/management/search")
+        // Perform request - no longer async
+        mockMvc.perform(get("/api/management/search")
                         .param("name", "Kos A")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer tok"))
-                .andExpect(request().asyncStarted())
-                .andReturn();
-
-        // Handle async result
-        mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(testKos1.getId().toString()))
                 .andExpect(jsonPath("$[0].name").value("Kos A"));
@@ -238,22 +233,18 @@ public class KosControllerTest {
     @Test
     @WithMockUser
     void searchKosByPriceRange_ShouldReturnFilteredResults() throws Exception {
-        // Mock service response for price range search with CompletableFuture
+        // Mock service response for price range search
         when(kosService.getAllKos()).thenReturn(CompletableFuture.completedFuture(testKosList));
 
         // Mock search with price range criteria
         when(kosSearchService.multiSearch(eq(testKosList), any(Map.class)))
                 .thenReturn(Collections.singletonList(testKos1));
 
-        MvcResult mvcResult = mockMvc.perform(get("/api/management/search")
+        mockMvc.perform(get("/api/management/search")
                         .param("minPrice", "800000")
                         .param("maxPrice", "1200000")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer tok"))
-                .andExpect(request().asyncStarted())
-                .andReturn();
-
-        mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("Kos A"));
     }
@@ -265,16 +256,12 @@ public class KosControllerTest {
         when(kosSearchService.multiSearch(eq(testKosList), any(Map.class)))
                 .thenReturn(Collections.singletonList(testKos1));
 
-        MvcResult mvcResult = mockMvc.perform(get("/api/management/search")
+        mockMvc.perform(get("/api/management/search")
                         .param("name", "Kos")
                         .param("location", "Margonda")
                         .param("availability", "true")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer tok"))
-                .andExpect(request().asyncStarted())
-                .andReturn();
-
-        mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(testKos1.getId().toString()));
     }
@@ -284,13 +271,9 @@ public class KosControllerTest {
     void searchKosWithNoParameters_ShouldReturnAllKos() throws Exception {
         when(kosService.getAllKos()).thenReturn(CompletableFuture.completedFuture(testKosList));
 
-        MvcResult mvcResult = mockMvc.perform(get("/api/management/search")
+        mockMvc.perform(get("/api/management/search")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer tok"))
-                .andExpect(request().asyncStarted())
-                .andReturn();
-
-        mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(testKos1.getId().toString()))
                 .andExpect(jsonPath("$[1].id").value(testKos2.getId().toString()));

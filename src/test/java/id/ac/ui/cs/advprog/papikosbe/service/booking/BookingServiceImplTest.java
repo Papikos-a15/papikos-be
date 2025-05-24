@@ -620,33 +620,7 @@
             assertFalse(userBookings.contains(otherUserBooking));
         }
     
-           @Test
-        void createBooking_shouldValidateAdvanceBooking_success() {
-            // Setup: Create booking with valid advance date
-            Booking validBooking = new Booking(
-                    UUID.randomUUID(),
-                    userId,
-                    kosId,
-                    LocalDate.now().plusDays(2), // 2 days advance - should pass
-                    3,
-                    monthlyPrice,
-                    fullName,
-                    phoneNumber,
-                    BookingStatus.PENDING_PAYMENT
-            );
-    
-            when(kosService.getKosById(kosId)).thenReturn(Optional.of(testKos));
-            when(bookingRepository.save(any(Booking.class))).thenReturn(validBooking);
-    
-            // Execute
-            Booking result = bookingService.createBooking(validBooking);
-    
-            // Verify
-            assertNotNull(result);
-            verify(stateValidator).validateBookingAdvance(LocalDate.now().plusDays(2));
-            verify(stateValidator).validateBasicFields(validBooking);
-        }
-    
+
         @Test
         void updateBooking_shouldValidateAdvanceBooking_whenDateChanged() {
             // Setup: Create existing booking

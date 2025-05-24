@@ -81,7 +81,12 @@ public class MessageControllerTest {
 
         when(messageService.getMessageById(messageId)).thenReturn(message);
 
-        String requestBody = "\"Updated content\"";
+        // DTO: {"newContent": "Updated content"}
+        String requestBody = """
+        {
+            "newContent": "Updated content"
+        }
+        """;
 
         mockMvc.perform(put("/api/messages/" + messageId)
                         .contentType(MediaType.APPLICATION_JSON)

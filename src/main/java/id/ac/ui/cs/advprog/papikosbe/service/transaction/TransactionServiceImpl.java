@@ -13,12 +13,16 @@ import id.ac.ui.cs.advprog.papikosbe.model.transaction.TopUp;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Transaction;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Wallet;
 import id.ac.ui.cs.advprog.papikosbe.model.user.User;
+import id.ac.ui.cs.advprog.papikosbe.observer.event.BookingApprovedEvent;
+import id.ac.ui.cs.advprog.papikosbe.observer.event.PaymentRefundedEvent;
+import id.ac.ui.cs.advprog.papikosbe.observer.handler.EventHandlerContext;
 import id.ac.ui.cs.advprog.papikosbe.repository.booking.BookingRepository;
 import id.ac.ui.cs.advprog.papikosbe.repository.booking.PaymentBookingRepository;
 import id.ac.ui.cs.advprog.papikosbe.repository.transaction.TransactionRepository;
 import id.ac.ui.cs.advprog.papikosbe.repository.transaction.WalletRepository;
 import id.ac.ui.cs.advprog.papikosbe.repository.user.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -31,20 +35,35 @@ import java.util.stream.Stream;
 
 @Service
 public class TransactionServiceImpl implements TransactionService {
+    private final TransactionRepository transactionRepository;
+    private final PaymentBookingRepository paymentBookingRepository;
+    private final BookingRepository bookingRepository;
+    private final UserRepository userRepository;
+    private final WalletRepository walletRepository;
+    private final TransactionFactory transactionFactory;
+    private final WalletService walletService;
+    private final EventHandlerContext eventHandlerContext;
 
-    private TransactionRepository transactionRepository;
-
-    private PaymentBookingRepository paymentBookingRepository;
-
-    private BookingRepository bookingRepository;
-
-    private UserRepository userRepository;
-
-    private WalletRepository walletRepository;
-
-    private TransactionFactory transactionFactory;
-
-    private WalletService walletService;
+    @Autowired
+    public TransactionServiceImpl(
+            TransactionRepository transactionRepository,
+            PaymentBookingRepository paymentBookingRepository,
+            BookingRepository bookingRepository,
+            UserRepository userRepository,
+            WalletRepository walletRepository,
+            TransactionFactory transactionFactory,
+            WalletService walletService,
+            EventHandlerContext eventHandlerContext
+    ) {
+        this.transactionRepository = transactionRepository;
+        this.paymentBookingRepository = paymentBookingRepository;
+        this.bookingRepository = bookingRepository;
+        this.userRepository = userRepository;
+        this.walletRepository = walletRepository;
+        this.transactionFactory = transactionFactory;
+        this.walletService = walletService;
+        this.eventHandlerContext = eventHandlerContext;
+    }
 
     @Override
     public Transaction getTransactionById(UUID userId) {
@@ -59,9 +78,11 @@ public class TransactionServiceImpl implements TransactionService {
         List<Payment> payments = transactionRepository.findPaymentsByUser(userId);
         List<TopUp> topUps = transactionRepository.findTopUpsByUser(userId);
 
-        return Stream.concat(payments.stream(), topUps.stream())
+        List<Transaction> all = Stream.concat(payments.stream(), topUps.stream())
                 .sorted(Comparator.comparing(Transaction::getCreatedAt).reversed())
                 .collect(Collectors.toList());
+
+        return all;
     }
 
     @Override
@@ -248,6 +269,9 @@ public class TransactionServiceImpl implements TransactionService {
 
             // Save refund payment
             Payment savedRefund = transactionRepository.save(refundPayment);
+
+            PaymentRefundedEvent event = new PaymentRefundedEvent(this, savedRefund.getId());
+            eventHandlerContext.handleEvent(event);
 
             return CompletableFuture.completedFuture(savedRefund);
         } else {

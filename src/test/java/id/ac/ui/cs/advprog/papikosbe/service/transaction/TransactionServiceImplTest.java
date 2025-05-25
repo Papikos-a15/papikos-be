@@ -13,6 +13,7 @@ import id.ac.ui.cs.advprog.papikosbe.enums.TransactionType;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Wallet;
 import id.ac.ui.cs.advprog.papikosbe.model.user.Owner;
 import id.ac.ui.cs.advprog.papikosbe.model.user.Tenant;
+import id.ac.ui.cs.advprog.papikosbe.observer.handler.EventHandlerContext;
 import id.ac.ui.cs.advprog.papikosbe.repository.booking.BookingRepository;
 import id.ac.ui.cs.advprog.papikosbe.repository.booking.PaymentBookingRepository;
 import id.ac.ui.cs.advprog.papikosbe.repository.transaction.TransactionRepository;
@@ -69,6 +70,9 @@ class TransactionServiceImplTest {
 
     @Mock
     private TransactionFactory transactionFactory;
+
+    @Mock
+    private EventHandlerContext eventHandlerContext;
 
     @InjectMocks
     private TransactionServiceImpl transactionService;

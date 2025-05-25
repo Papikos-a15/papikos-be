@@ -31,10 +31,6 @@ public class ApprovalValidationRule extends BaseValidationRule {
         return "APPROVAL";
     }
 
-    @Override
-    public int getPriority() {
-        return 2;
-    }
 
     @Override
     public ValidationRequirement getRequirements() {

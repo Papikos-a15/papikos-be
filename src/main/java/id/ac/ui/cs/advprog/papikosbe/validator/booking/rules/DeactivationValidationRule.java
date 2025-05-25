@@ -31,10 +31,7 @@ public class DeactivationValidationRule extends BaseValidationRule {
         return "DEACTIVATION";
     }
 
-    @Override
-    public int getPriority() {
-        return 2;
-    }
+
 
     @Override
     public ValidationRequirement getRequirements() {

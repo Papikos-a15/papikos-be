@@ -240,4 +240,10 @@ class BookingValidatorTest {
         assertTrue(exception.getMessage().contains("Only ACTIVE bookings can be deactivated"));
         assertEquals("DEACTIVATION", exception.getValidationRule());
     }
+    @Test
+    void validate_nullContext_throwsIllegalArgumentException() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> validator.validate(null));
+        assertEquals("ValidationContext cannot be null", ex.getMessage());
+    }
 }

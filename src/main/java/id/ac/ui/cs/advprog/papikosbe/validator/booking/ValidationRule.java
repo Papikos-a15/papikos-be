@@ -38,11 +38,6 @@ public interface ValidationRule {
     String getOperationType();
 
     /**
-     * Get execution priority (lower = higher priority)
-     */
-    int getPriority();
-
-    /**
      * Define what context data this rule requires
      */
     ValidationRequirement getRequirements();

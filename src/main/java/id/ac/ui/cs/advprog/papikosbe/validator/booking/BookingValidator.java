@@ -27,7 +27,6 @@ public class BookingValidator {
         List<ValidationRule> applicableRules = validationRules.stream()
                 .filter(rule -> rule.supports(context.getOperation(), context.getBooking().getStatus()))
                 .filter(rule -> rule.contextMeetsRequirements(context)) // ✅ LSP: Check requirements
-                .sorted(Comparator.comparingInt(ValidationRule::getPriority))
                 .toList();
 
         // ✅ LSP: Consistent exception handling

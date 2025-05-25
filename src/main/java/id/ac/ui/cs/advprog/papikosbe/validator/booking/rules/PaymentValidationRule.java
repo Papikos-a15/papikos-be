@@ -31,10 +31,6 @@ public class PaymentValidationRule extends BaseValidationRule {
         return "PAYMENT";
     }
 
-    @Override
-    public int getPriority() {
-        return 2;
-    }
 
     @Override
     public ValidationRequirement getRequirements() {

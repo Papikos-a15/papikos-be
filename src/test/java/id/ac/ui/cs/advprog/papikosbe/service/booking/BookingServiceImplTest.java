@@ -19,6 +19,7 @@
     import id.ac.ui.cs.advprog.papikosbe.validator.booking.BookingAccessValidator;
     import id.ac.ui.cs.advprog.papikosbe.observer.event.BookingApprovedEvent;
     import id.ac.ui.cs.advprog.papikosbe.observer.handler.EventHandlerContext;
+    import jakarta.persistence.EntityNotFoundException;
     import org.junit.jupiter.api.BeforeEach;
     import org.junit.jupiter.api.Test;
     import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +37,7 @@
     import id.ac.ui.cs.advprog.papikosbe.model.booking.Booking;
     import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
     import org.springframework.test.util.ReflectionTestUtils;
+    import static org.mockito.Mockito.doReturn;
 
     @ExtendWith(MockitoExtension.class)
     class BookingServiceImplTest {
@@ -793,6 +795,229 @@
             assertEquals(booking.getBookingId(), capturedEvent.getBookingId(), "Booking ID should match");
             assertEquals(booking.getUserId(), capturedEvent.getUserId(), "User ID should match");
         }
+
+        /* ===============================================================
+         *  EXTRA TESTS – menutup branch yang belum ter-cover
+         * =============================================================== */
+
+        @Test
+        void findBookingsByUserIdAsync_shouldReturnFailedFutureWhenRepositoryThrows() throws Exception {
+            RuntimeException dbEx = new RuntimeException("DB down");
+            when(bookingRepository.findAll()).thenThrow(dbEx);
+
+            CompletableFuture<List<Booking>> fut = bookingService.findBookingsByUserId(userId);
+
+            assertTrue(fut.isCompletedExceptionally());
+            ExecutionException execEx = assertThrows(ExecutionException.class, fut::get);
+            assertSame(dbEx, execEx.getCause());
+        }
+
+        /* ----------------------------------------------------------------
+         *  cancelBooking – booking BUKAN PAID  → langsung cancel, no refund
+         * ---------------------------------------------------------------- */
+        @Test
+        void cancelBooking_notPaid_shouldCancelWithoutRefund() throws Exception {
+            UUID bookingId = UUID.randomUUID();
+
+            Booking booking = new Booking(
+                    bookingId, userId, kosId, LocalDate.now().plusDays(5),
+                    2, monthlyPrice, fullName, phoneNumber, BookingStatus.PENDING_PAYMENT
+            );
+
+            when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
+            when(bookingRepository.save(any(Booking.class))).thenReturn(booking);
+
+            bookingService.cancelBooking(bookingId);
+
+            verify(stateValidator).validateForCancellation(booking);
+            verify(kosService).addAvailableRoom(kosId);
+            verify(transactionService, never()).refundPayment(any(), any());
+        }
+
+        /* ----------------------------------------------------------------
+         *  cancelBooking – PAID tetapi TIDAK ada PaymentBooking
+         * ---------------------------------------------------------------- */
+        @Test
+        void cancelBooking_paid_noPaymentRecord_shouldCancelWithoutRefund() throws Exception {
+            UUID bookingId = UUID.randomUUID();
+
+            Booking booking = new Booking(
+                    bookingId, userId, kosId, LocalDate.now().plusDays(5),
+                    2, monthlyPrice, fullName, phoneNumber, BookingStatus.PAID
+            );
+
+            when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
+            when(paymentBookingRepository.findByBookingId(bookingId)).thenReturn(Optional.empty());
+            when(bookingRepository.save(any(Booking.class))).thenReturn(booking);
+
+            bookingService.cancelBooking(bookingId);
+
+            verify(kosService).addAvailableRoom(kosId);
+            verify(transactionService, never()).refundPayment(any(), any());
+            verify(bookingRepository).save(argThat(b -> b.getStatus() == BookingStatus.CANCELLED));
+        }
+
+        /* ----------------------------------------------------------------
+         *  cancelBooking – refund GAGAL → RuntimeException
+         * ---------------------------------------------------------------- */
+        @Test
+        void cancelBooking_paid_refundFailed_shouldThrow() throws Exception{
+            UUID bookingId  = UUID.randomUUID();
+            UUID paymentId  = UUID.randomUUID();
+
+            Booking booking = new Booking(
+                    bookingId, userId, kosId, LocalDate.now().plusDays(5),
+                    2, monthlyPrice, fullName, phoneNumber, BookingStatus.PAID
+            );
+
+            PaymentBooking paymentBooking = new PaymentBooking();
+            paymentBooking.setBookingId(bookingId);
+            paymentBooking.setPaymentId(paymentId);
+
+            Owner owner = new Owner();
+            UUID ownerId = UUID.randomUUID();
+            owner.setId(ownerId);
+
+            Payment originalPayment = new Payment();
+            originalPayment.setId(paymentId);
+            originalPayment.setOwner(owner);
+
+            Payment refundFailed = new Payment();
+            refundFailed.setStatus(TransactionStatus.FAILED);   // refund gagal
+
+            when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
+            when(paymentBookingRepository.findByBookingId(bookingId)).thenReturn(Optional.of(paymentBooking));
+            when(transactionRepository.findPaymentById(paymentId)).thenReturn(Optional.of(originalPayment));
+
+            /* gunakan doReturn supaya tak perlu try/catch checked Exception */
+            doReturn(CompletableFuture.completedFuture(refundFailed))
+                    .when(transactionService).refundPayment(paymentId, ownerId);
+
+            RuntimeException ex =
+                    assertThrows(RuntimeException.class, () -> bookingService.cancelBooking(bookingId));
+            assertTrue(ex.getMessage().contains("Refund failed"));
+        }
+
+
+        /* ===============================================================
+         *  EXTRA TESTS – branch & error handling BookingServiceImpl
+         * =============================================================== */
+
+        @Test
+        void createBooking_kosNotFound_shouldThrow() {
+            Booking booking = new Booking(
+                    null, userId, kosId,
+                    LocalDate.now().plusDays(3), 1,
+                    monthlyPrice, fullName, phoneNumber,
+                    BookingStatus.PENDING_PAYMENT);
+
+            when(kosService.getKosById(kosId)).thenReturn(Optional.empty());
+
+            assertThrows(EntityNotFoundException.class,
+                    () -> bookingService.createBooking(booking));
+        }
+
+        @Test
+        void createBooking_generateIdWhenNull() {
+            Booking booking = new Booking(
+                    null, userId, kosId, LocalDate.now().plusDays(2),
+                    2, monthlyPrice, fullName, phoneNumber,
+                    BookingStatus.PENDING_PAYMENT);
+
+            when(kosService.getKosById(kosId)).thenReturn(Optional.of(testKos));
+
+            ArgumentCaptor<Booking> captor = ArgumentCaptor.forClass(Booking.class);
+            when(bookingRepository.save(captor.capture()))
+                    .thenAnswer(inv -> inv.getArgument(0));             // return same object
+
+            bookingService.createBooking(booking);
+
+            assertNotNull(captor.getValue().getBookingId(), "ID harus ter-generate otomatis");
+        }
+
+        @Test
+        void findBookingById_async_repositoryThrows_completedExceptionally() {
+            RuntimeException boom = new RuntimeException("DB down");
+            when(bookingRepository.findById(any())).thenThrow(boom);
+
+            CompletableFuture<Optional<Booking>> fut =
+                    bookingService.findBookingById(UUID.randomUUID());
+
+            assertTrue(fut.isCompletedExceptionally());
+        }
+
+        @Test
+        void findAllBookings_async_repositoryThrows_completedExceptionally() {
+            when(bookingRepository.findAll()).thenThrow(new RuntimeException("fail"));
+
+            CompletableFuture<List<Booking>> fut = bookingService.findAllBookings();
+            assertTrue(fut.isCompletedExceptionally());
+        }
+
+        @Test
+        void updateBooking_bookingNotFound_shouldThrow() {
+            UUID id = UUID.randomUUID();
+            Booking dummy = new Booking(id, userId, kosId,
+                    LocalDate.now().plusDays(4), 2, monthlyPrice,
+                    fullName, phoneNumber, BookingStatus.PENDING_PAYMENT);
+
+            when(bookingRepository.findById(id)).thenReturn(Optional.empty());
+
+            assertThrows(EntityNotFoundException.class,
+                    () -> bookingService.updateBooking(dummy));
+        }
+
+        @Test
+        void payBooking_bookingNotFound_shouldThrow() {
+            UUID id = UUID.randomUUID();
+            when(bookingRepository.findById(id)).thenReturn(Optional.empty());
+
+            assertThrows(EntityNotFoundException.class,
+                    () -> bookingService.payBooking(id));
+        }
+
+        @Test
+        void payBooking_kosNotFound_shouldThrow() throws Exception {
+            Booking booking = new Booking(
+                    UUID.randomUUID(), userId, kosId,
+                    LocalDate.now().plusDays(5), 2, monthlyPrice,
+                    fullName, phoneNumber, BookingStatus.PENDING_PAYMENT);
+
+            when(bookingRepository.findById(booking.getBookingId()))
+                    .thenReturn(Optional.of(booking));
+            when(kosService.getKosById(kosId)).thenReturn(Optional.empty());
+
+            assertThrows(EntityNotFoundException.class,
+                    () -> bookingService.payBooking(booking.getBookingId()));
+        }
+
+        @Test
+        void payBooking_createPaymentFails_shouldThrow() throws Exception {
+            Booking booking = new Booking(
+                    UUID.randomUUID(), userId, kosId,
+                    LocalDate.now().plusDays(5), 2, monthlyPrice,
+                    fullName, phoneNumber, BookingStatus.PENDING_PAYMENT);
+
+            when(bookingRepository.findById(booking.getBookingId()))
+                    .thenReturn(Optional.of(booking));
+            when(kosService.getKosById(kosId)).thenReturn(Optional.of(testKos));
+
+            CompletableFuture<Payment> failedFuture =
+                    CompletableFuture.failedFuture(new RuntimeException("gateway down"));
+
+            /* gunakan doReturn agar method tidak benar-benar dipanggil saat stubbing */
+            doReturn(failedFuture)
+                    .when(transactionService).createPayment(any(UUID.class), any(UUID.class), any(BigDecimal.class));
+
+            // payBooking akan melempar (ExecutionException) – cukup asserThrows umum Exception
+            assertThrows(Exception.class,
+                    () -> bookingService.payBooking(booking.getBookingId()));
+        }
+
+
+
+
+
 
     }
 

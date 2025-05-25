@@ -7,7 +7,6 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "kos")
-@Builder
 @Setter @Getter
 public class Kos {
 
@@ -51,10 +50,9 @@ public class Kos {
         this.description = description;
         this.price = price;
         this.maxCapacity = maxCapacity;
-        this.availableRooms = maxCapacity;
-        this.isAvailable = true;
     }
 
+    @Builder
     public Kos(UUID id, UUID ownerId, String name, String address, String description, Double price, Integer maxCapacity) {
         this.id = id;
         this.ownerId = ownerId;
@@ -63,7 +61,5 @@ public class Kos {
         this.description = description;
         this.price = price;
         this.maxCapacity = maxCapacity;
-        this.availableRooms = maxCapacity;
-        this.isAvailable = true;
     }
 }

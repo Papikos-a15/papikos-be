@@ -11,5 +11,4 @@ class PapikosBeApplicationTests {
     @Test
     void contextLoads() {
     }
-
 }

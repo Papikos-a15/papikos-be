@@ -1,16 +1,19 @@
 package id.ac.ui.cs.advprog.papikosbe.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
+@Setter
+@Getter
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class TopUpRequest {
-    private UUID userId;
     private BigDecimal amount;
+
+    public TopUpRequest() {}
+
+    public TopUpRequest(BigDecimal amount) {
+        this.amount = amount;
+    }
+
 }

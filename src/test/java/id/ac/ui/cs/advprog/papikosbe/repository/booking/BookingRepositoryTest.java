@@ -2,15 +2,19 @@ package id.ac.ui.cs.advprog.papikosbe.repository.booking;
 
 import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
 import id.ac.ui.cs.advprog.papikosbe.model.booking.Booking;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 
+import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -19,6 +23,9 @@ class BookingRepositoryTest {
 
     @Autowired
     private BookingRepository repository;
+
+    @Autowired
+    private TestEntityManager entityManager;
 
     private UUID dummyUserId;
     private UUID dummyKosId;
@@ -41,7 +48,7 @@ class BookingRepositoryTest {
                 .bookingId(UUID.randomUUID())
                 .userId(dummyUserId)
                 .kosId(dummyKosId)
-                .checkInDate(LocalDate.now().plusDays(1))
+                .checkInDate(LocalDate.now().plusDays(1)) // H+1 consistent
                 .duration(3)
                 .monthlyPrice(monthlyPrice)
                 .fullName(fullName)
@@ -163,5 +170,126 @@ class BookingRepositoryTest {
 
         double expectedTotal = monthlyPrice * sampleBooking.getDuration();
         assertEquals(expectedTotal, retrieved.get().getTotalPrice());
+    }
+
+    @Test
+    void testFindByStatus() {
+        // Create a booking with a future check-in date
+        Booking approvedBooking = new Booking(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                LocalDate.now().plusDays(5), // Future date to pass validation
+                2,
+                1500000.0,
+                "Test User",
+                "081234567890",
+                BookingStatus.APPROVED
+        );
+        
+        Booking pendingBooking = new Booking(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                LocalDate.now().plusDays(5),
+                2,
+                1500000.0,
+                "Pending User",
+                "082345678901",
+                BookingStatus.PENDING_PAYMENT
+        );
+        
+        repository.save(approvedBooking);
+        repository.save(pendingBooking);
+        
+        // Test the findByStatus method
+        List<Booking> approvedBookings = repository.findByStatus(BookingStatus.APPROVED);
+        
+        assertEquals(1, approvedBookings.size());
+        assertEquals(approvedBooking.getBookingId(), approvedBookings.get(0).getBookingId());
+    }
+
+    @Test
+    void testFindBookingsToDeactivate() throws Exception {
+        // First create bookings with valid future dates (to pass constructor validation)
+        LocalDate futureDate = LocalDate.now().plusDays(1);
+
+        // Create our test bookings with future dates first
+        Booking expiredBooking = new Booking(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                futureDate,
+                2,
+                1500000.0,
+                "Test User",
+                "081234567890",
+                BookingStatus.APPROVED
+        );
+
+        Booking validBooking = new Booking(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                futureDate,
+                3,
+                1500000.0,
+                "Active User",
+                "082345678901",
+                BookingStatus.APPROVED
+        );
+
+        Booking inactiveBooking = new Booking(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                futureDate,
+                2,
+                1500000.0,
+                "Inactive User",
+                "083456789012",
+                BookingStatus.INACTIVE
+        );
+
+        // Save all bookings first
+        repository.save(expiredBooking);
+        repository.save(validBooking);
+        repository.save(inactiveBooking);
+
+        // Use EntityManager to execute native SQL updates bypassing entity validation
+        // Get access to EntityManager
+        EntityManager em = entityManager.getEntityManager();
+
+        // Set dates using direct SQL update
+        em.createNativeQuery("UPDATE bookings SET check_in_date = :pastDate WHERE booking_id = :id")
+                .setParameter("pastDate", LocalDate.now().minusMonths(3))
+                .setParameter("id", expiredBooking.getBookingId())
+                .executeUpdate();
+
+        em.createNativeQuery("UPDATE bookings SET check_in_date = :recentDate WHERE booking_id = :id")
+                .setParameter("recentDate", LocalDate.now().minusMonths(1))
+                .setParameter("id", validBooking.getBookingId())
+                .executeUpdate();
+
+        em.createNativeQuery("UPDATE bookings SET check_in_date = :pastDate WHERE booking_id = :id")
+                .setParameter("pastDate", LocalDate.now().minusMonths(3))
+                .setParameter("id", inactiveBooking.getBookingId())
+                .executeUpdate();
+
+        // Clear persistence context to force reload from database
+        em.clear();
+
+        // Now use the service logic to find expired bookings
+        List<Booking> expiredBookings = repository.findByStatus(BookingStatus.APPROVED)
+                .stream()
+                .filter(booking -> {
+                    LocalDate endDate = booking.getCheckInDate().plusMonths(booking.getDuration());
+                    return endDate.isBefore(LocalDate.now());
+                })
+                .collect(Collectors.toList());
+
+        // Should only find the expired booking
+        assertEquals(1, expiredBookings.size());
+        assertEquals(expiredBooking.getBookingId(), expiredBookings.get(0).getBookingId());
     }
 }

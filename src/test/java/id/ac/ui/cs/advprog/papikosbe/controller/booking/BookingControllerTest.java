@@ -28,16 +28,15 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.hasSize;
 import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import static org.mockito.Mockito.doThrow;
 
 @WebMvcTest(BookingController.class)
 @Import(SecurityConfig.class)
@@ -151,30 +150,15 @@ class BookingControllerTest {
                 BookingStatus.PENDING_PAYMENT
         );
 
-        // Create booking for different user (shouldn't be returned)
-        UUID otherUserId = UUID.randomUUID();
-        Booking otherUserBooking = new Booking(
-                UUID.randomUUID(),
-                otherUserId,
-                kosId,
-                LocalDate.now().plusDays(1),
-                2,
-                monthlyPrice,
-                "Other User",
-                phoneNumber,
-                BookingStatus.PENDING_PAYMENT
-        );
-
-        // Mock authentication to return the user ID
         when(authUtils.getUserIdFromAuth(any())).thenReturn(userId);
 
-        // Mock service to return only user's bookings
+        // Fix: Mock service to return CompletableFuture
         when(bookingService.findBookingsByUserId(userId))
-                .thenReturn(List.of(userBooking));
+                .thenReturn(CompletableFuture.completedFuture(List.of(userBooking)));
 
         mockMvc.perform(get("/api/bookings")
                         .header("Authorization", "Bearer tok"))
-                .andExpect(status().isOk())
+                .andExpect(status().isOk()) // Fix: andExpected → andExpect
                 .andExpect(jsonPath("$[0].bookingId").value(userBooking.getBookingId().toString()))
                 .andExpect(jsonPath("$[0].userId").value(userId.toString()))
                 .andExpect(jsonPath("$").isArray())
@@ -183,8 +167,9 @@ class BookingControllerTest {
 
     @Test
     void getBookingById_found() throws Exception {
+        // Fix: Mock service to return CompletableFuture
         when(bookingService.findBookingById(sample.getBookingId()))
-                .thenReturn(Optional.of(sample));
+                .thenReturn(CompletableFuture.completedFuture(Optional.of(sample)));
         when(kosService.getKosById(sample.getKosId())).thenReturn(Optional.of(sampleKos));
 
         // Allow access for this user
@@ -196,11 +181,13 @@ class BookingControllerTest {
                 .andExpect(jsonPath("$.bookingId").value(sample.getBookingId().toString()));
     }
 
+
     @Test
     void getBookingById_notFound() throws Exception {
         UUID randomId = UUID.randomUUID();
+        // Fix: Mock service to return CompletableFuture with empty Optional
         when(bookingService.findBookingById(randomId))
-                .thenReturn(Optional.empty());
+                .thenReturn(CompletableFuture.completedFuture(Optional.empty()));
 
         mockMvc.perform(get("/api/bookings/{id}", randomId)
                         .header("Authorization", "Bearer tok"))
@@ -222,8 +209,9 @@ class BookingControllerTest {
                 BookingStatus.PENDING_PAYMENT
         );
 
+        // Fix: Mock service to return CompletableFuture
         when(bookingService.findBookingById(otherUserBooking.getBookingId()))
-                .thenReturn(Optional.of(otherUserBooking));
+                .thenReturn(CompletableFuture.completedFuture(Optional.of(otherUserBooking)));
         when(kosService.getKosById(otherUserBooking.getKosId())).thenReturn(Optional.of(sampleKos));
 
         // Throw exception for access validation
@@ -262,16 +250,13 @@ class BookingControllerTest {
                 BookingStatus.PENDING_PAYMENT
         );
 
-        // Mock the find call to get existing booking
+        // Fix: Mock the find call to return CompletableFuture (first call for existing booking)
         when(bookingService.findBookingById(sample.getBookingId()))
-                .thenReturn(Optional.of(sample));
+                .thenReturn(CompletableFuture.completedFuture(Optional.of(sample)))
+                .thenReturn(CompletableFuture.completedFuture(Optional.of(updatedBooking))); // second call after update
 
         // Allow access for this user
         doNothing().when(bookingAccessValidator).validateUserAccess(userId, userId);
-
-        // Mock findById after update
-        when(bookingService.findBookingById(updatedBooking.getBookingId()))
-                .thenReturn(Optional.of(updatedBooking));
 
         // Mock the service to accept the update
         doNothing().when(bookingService).updateBooking(any(Booking.class));
@@ -312,8 +297,9 @@ class BookingControllerTest {
                 BookingStatus.APPROVED
         );
 
+        // Fix: Mock service to return CompletableFuture
         when(bookingService.findBookingById(sample.getBookingId()))
-                .thenReturn(Optional.of(approvedBooking));
+                .thenReturn(CompletableFuture.completedFuture(Optional.of(approvedBooking)));
 
         doNothing().when(bookingAccessValidator).validateUserAccess(userId, userId);
 
@@ -330,8 +316,9 @@ class BookingControllerTest {
 
     @Test
     void updateBooking_notFound_returnsNotFound() throws Exception {
+        // Fix: Mock service to return CompletableFuture with empty Optional
         when(bookingService.findBookingById(sample.getBookingId()))
-                .thenReturn(Optional.empty());
+                .thenReturn(CompletableFuture.completedFuture(Optional.empty()));
 
         mockMvc.perform(put("/api/bookings/{id}", sample.getBookingId())
                         .header("Authorization", "Bearer tok")
@@ -355,9 +342,10 @@ class BookingControllerTest {
                 BookingStatus.PAID // paid status
         );
 
-        // Mock service method calls
+        // Fix: Mock service method calls to return CompletableFuture
         when(bookingService.findBookingById(sample.getBookingId()))
-                .thenReturn(Optional.of(sample), Optional.of(paidBooking));
+                .thenReturn(CompletableFuture.completedFuture(Optional.of(sample)))   // first call
+                .thenReturn(CompletableFuture.completedFuture(Optional.of(paidBooking))); // second call after payment
 
         // Allow access for this user
         doNothing().when(bookingAccessValidator).validateUserAccess(userId, userId);
@@ -373,8 +361,9 @@ class BookingControllerTest {
     void payBooking_notFound_returnsNotFound() throws Exception {
         // Non-existent booking ID
         UUID nonExistentId = UUID.randomUUID();
+        // Fix: Mock service to return CompletableFuture with empty Optional
         when(bookingService.findBookingById(nonExistentId))
-                .thenReturn(Optional.empty());
+                .thenReturn(CompletableFuture.completedFuture(Optional.empty()));
 
         mockMvc.perform(post("/api/bookings/{id}/pay", nonExistentId)
                         .header("Authorization", "Bearer tok"))
@@ -412,9 +401,10 @@ class BookingControllerTest {
         // Mock kos retrieval
         when(kosService.getKosById(kosId)).thenReturn(Optional.of(sampleKos));
 
-        // Mock booking retrieval (before and after approval)
+        // Fix: Mock booking retrieval to return CompletableFuture (before and after approval)
         when(bookingService.findBookingById(sample.getBookingId()))
-                .thenReturn(Optional.of(paidBooking), Optional.of(approvedBooking));
+                .thenReturn(CompletableFuture.completedFuture(Optional.of(paidBooking)))     // first call
+                .thenReturn(CompletableFuture.completedFuture(Optional.of(approvedBooking))); // second call after approval
 
         // Override auth to return owner ID
         when(authUtils.getUserIdFromAuth(any())).thenReturn(ownerId);
@@ -431,14 +421,266 @@ class BookingControllerTest {
 
     @Test
     void getBookingsByOwnerId_returnsList() throws Exception {
-        List<Booking> ownerBookings = Arrays.asList(sample);
+        List<Booking> ownerBookings = Collections.singletonList(sample);
+        // Mock the service to return a completed CompletableFuture, as the service method is still async
+        // but the controller now calls .join() on it.
         when(bookingService.findBookingsByOwnerId(ownerId))
-                .thenReturn(ownerBookings);
+                .thenReturn(CompletableFuture.completedFuture(ownerBookings));
 
         mockMvc.perform(get("/api/bookings/owner/{ownerId}", ownerId)
                         .header("Authorization", "Bearer tok"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].bookingId").value(sample.getBookingId().toString()));
     }
+
+    /* ===========================================================
+     *   EXTRA BRANCH-TESTS  –  BookingController
+     * =========================================================== */
+
+    @Test
+    void createBooking_userMismatch_returnsForbidden() throws Exception {
+        // authenticated user ≠ userId di body
+        UUID otherUser = UUID.randomUUID();
+        Booking wrongUserBooking = new Booking(
+                UUID.randomUUID(), otherUser, kosId,
+                LocalDate.now().plusDays(2), 2, monthlyPrice,
+                fullName, phoneNumber, BookingStatus.PENDING_PAYMENT);
+
+        mockMvc.perform(post("/api/bookings")
+                        .header("Authorization", "Bearer tok")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(wrongUserBooking)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void createBooking_serviceThrowsEntityNotFound_returnsNotFound() throws Exception {
+        when(bookingService.createBooking(any()))
+                .thenThrow(new EntityNotFoundException("Kos not found"));
+
+        mockMvc.perform(post("/api/bookings")
+                        .header("Authorization", "Bearer tok")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(sample)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getAllBookings_serviceException_returns500() throws Exception {
+        when(bookingService.findBookingsByUserId(userId))
+                .thenReturn(CompletableFuture.failedFuture(new RuntimeException("boom")));
+
+        mockMvc.perform(get("/api/bookings")
+                        .header("Authorization", "Bearer tok"))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void updateBooking_serviceThrowsIllegalArgument_returnsBadRequest() throws Exception {
+        when(bookingService.findBookingById(sample.getBookingId()))
+                .thenReturn(CompletableFuture.completedFuture(Optional.of(sample)));
+
+        doNothing().when(bookingAccessValidator).validateUserAccess(userId, userId);
+        doThrow(new IllegalArgumentException("bad data"))
+                .when(bookingService).updateBooking(any());
+
+        mockMvc.perform(put("/api/bookings/{id}", sample.getBookingId())
+                        .header("Authorization", "Bearer tok")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(sample)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void payBooking_forbidden_returns403() throws Exception {
+        when(bookingService.findBookingById(sample.getBookingId()))
+                .thenReturn(CompletableFuture.completedFuture(Optional.of(sample)));
+
+        doThrow(new IllegalStateException("no access"))
+                .when(bookingAccessValidator).validateUserAccess(userId, sample.getUserId());
+
+        mockMvc.perform(post("/api/bookings/{id}/pay", sample.getBookingId())
+                        .header("Authorization", "Bearer tok"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void approveBooking_forbidden_returns403() throws Exception {
+        Booking paid = new Booking(sample.getBookingId(), userId, kosId,
+                sample.getCheckInDate(), sample.getDuration(), monthlyPrice,
+                fullName, phoneNumber, BookingStatus.PAID);
+
+        when(bookingService.findBookingById(paid.getBookingId()))
+                .thenReturn(CompletableFuture.completedFuture(Optional.of(paid)));
+
+        when(kosService.getKosById(kosId)).thenReturn(Optional.of(sampleKos));
+
+        doThrow(new IllegalStateException("not owner"))
+                .when(bookingAccessValidator).validateOwnerAccess(ownerId, userId);
+
+        // auth user = tenant (bukan owner)
+        when(authUtils.getUserIdFromAuth(any())).thenReturn(userId);
+
+        mockMvc.perform(post("/api/bookings/{id}/approve", paid.getBookingId())
+                        .header("Authorization", "Bearer tok"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void approveBooking_notFound_returns404() throws Exception {
+        UUID random = UUID.randomUUID();
+        when(bookingService.findBookingById(random))
+                .thenReturn(CompletableFuture.completedFuture(Optional.empty()));
+
+        mockMvc.perform(post("/api/bookings/{id}/approve", random)
+                        .header("Authorization", "Bearer tok"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void cancelBooking_serviceThrowsIllegalState_returns403() throws Exception {
+        UUID id = sample.getBookingId();
+        doThrow(new IllegalStateException("cant cancel"))
+                .when(bookingService).cancelBooking(id);
+
+        mockMvc.perform(delete("/api/bookings/{id}", id)
+                        .header("Authorization", "Bearer tok"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void cancelBooking_notFound_returns404() throws Exception {
+        UUID id = sample.getBookingId();
+        doThrow(new EntityNotFoundException("not found"))
+                .when(bookingService).cancelBooking(id);
+
+        mockMvc.perform(delete("/api/bookings/{id}", id)
+                        .header("Authorization", "Bearer tok"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getBookingsByOwnerId_serviceException_returns500() throws Exception {
+        when(bookingService.findBookingsByOwnerId(ownerId))
+                .thenReturn(CompletableFuture.failedFuture(new RuntimeException("boom")));
+
+        mockMvc.perform(get("/api/bookings/owner/{id}", ownerId)
+                        .header("Authorization", "Bearer tok"))
+                .andExpect(status().isInternalServerError());
+    }
+
+    /* =========================================================
+     *  EXTRA COVERAGE – 500 / 400 / 403 paths yang tersisa
+     * ========================================================= */
+
+    /* ---------- createBooking: IllegalArgumentException → 400 ---------- */
+    @Test
+    void createBooking_validationError_returnsBadRequest() throws Exception {
+        doThrow(new IllegalArgumentException("bad data"))
+                .when(bookingService).createBooking(any());
+
+        mockMvc.perform(post("/api/bookings")
+                        .header("Authorization", "Bearer tok")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(sample)))
+                .andExpect(status().isBadRequest());
+    }
+
+    /* ---------- createBooking: IllegalStateException → 403 ---------- */
+    @Test
+    void createBooking_illegalState_returnsForbidden() throws Exception {
+        doThrow(new IllegalStateException("state"))
+                .when(bookingService).createBooking(any());
+
+        mockMvc.perform(post("/api/bookings")
+                        .header("Authorization", "Bearer tok")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(sample)))
+                .andExpect(status().isForbidden());
+    }
+
+    /* ---------- getBookingById: generic Exception → 500 ---------- */
+    @Test
+    void getBookingById_genericError_returns500() throws Exception {
+        when(bookingService.findBookingById(sample.getBookingId()))
+                .thenReturn(CompletableFuture.failedFuture(new RuntimeException("boom")));
+
+        mockMvc.perform(get("/api/bookings/{id}", sample.getBookingId())
+                        .header("Authorization", "Bearer tok"))
+                .andExpect(status().isInternalServerError());
+    }
+
+    /* ---------- updateBooking: generic Exception → 500 ---------- */
+    @Test
+    void updateBooking_genericError_returns500() throws Exception {
+        when(bookingService.findBookingById(sample.getBookingId()))
+                .thenReturn(CompletableFuture.completedFuture(Optional.of(sample)));
+
+        doNothing().when(bookingAccessValidator).validateUserAccess(userId, userId);
+        doThrow(new RuntimeException("unexpected"))
+                .when(bookingService).updateBooking(any());
+
+        mockMvc.perform(put("/api/bookings/{id}", sample.getBookingId())
+                        .header("Authorization", "Bearer tok")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(sample)))
+                .andExpect(status().isInternalServerError());
+    }
+
+    /* ---------- payBooking: generic Exception → 500 ---------- */
+    @Test
+    void payBooking_genericError_returns500() throws Exception {
+        when(bookingService.findBookingById(sample.getBookingId()))
+                .thenReturn(CompletableFuture.completedFuture(Optional.of(sample)));
+
+        doNothing().when(bookingAccessValidator).validateUserAccess(userId, userId);
+        doThrow(new RuntimeException("unexpected"))
+                .when(bookingService).payBooking(sample.getBookingId());
+
+        mockMvc.perform(post("/api/bookings/{id}/pay", sample.getBookingId())
+                        .header("Authorization", "Bearer tok"))
+                .andExpect(status().isInternalServerError());
+    }
+
+    /* ---------- approveBooking: generic Exception → 500 ---------- */
+    @Test
+    void approveBooking_genericError_returns500() throws Exception {
+        Booking paid = new Booking(
+                sample.getBookingId(), userId, kosId,
+                sample.getCheckInDate(), sample.getDuration(),
+                monthlyPrice, fullName, phoneNumber,
+                BookingStatus.PAID);
+
+        when(bookingService.findBookingById(paid.getBookingId()))
+                .thenReturn(CompletableFuture.completedFuture(Optional.of(paid)));
+        when(kosService.getKosById(kosId)).thenReturn(Optional.of(sampleKos));
+
+        when(authUtils.getUserIdFromAuth(any())).thenReturn(ownerId);
+        doNothing().when(bookingAccessValidator).validateOwnerAccess(ownerId, ownerId);
+
+        doThrow(new RuntimeException("unexpected"))
+                .when(bookingService).approveBooking(paid.getBookingId());
+
+        mockMvc.perform(post("/api/bookings/{id}/approve", paid.getBookingId())
+                        .header("Authorization", "Bearer tok"))
+                .andExpect(status().isInternalServerError());
+    }
+
+    /* ---------- findAllBookings: service exception sudah diuji;
+               tambahan untuk updateBooking .join() melempar CompletionException ---------- */
+    @Test
+    void updateBooking_joinThrowsCompletionException_returns500() throws Exception {
+        // first call for existing booking fails
+        when(bookingService.findBookingById(sample.getBookingId()))
+                .thenReturn(CompletableFuture.failedFuture(new RuntimeException("fail")));
+
+        mockMvc.perform(put("/api/bookings/{id}", sample.getBookingId())
+                        .header("Authorization", "Bearer tok")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(sample)))
+                .andExpect(status().isInternalServerError());
+    }
+
+
 
 }

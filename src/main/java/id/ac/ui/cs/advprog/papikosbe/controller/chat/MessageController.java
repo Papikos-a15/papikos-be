@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.papikosbe.controller.chat;
 
+import id.ac.ui.cs.advprog.papikosbe.controller.chat.dto.EditMessageRequest;
 import id.ac.ui.cs.advprog.papikosbe.controller.chat.dto.MessageResponse;
 import id.ac.ui.cs.advprog.papikosbe.controller.chat.dto.SendMessageRequest;
 import id.ac.ui.cs.advprog.papikosbe.enums.Role;
@@ -56,11 +57,10 @@ public class MessageController {
         messageService.saveMessage(message);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
-
     @PutMapping("/{id}")
-    public ResponseEntity<Boolean> editMessage(@PathVariable UUID id, @RequestBody String newContent) {
+    public ResponseEntity<Boolean> editMessage(@PathVariable UUID id, @RequestBody EditMessageRequest request) {
         Message found = messageService.getMessageById(id);
-        found.setContent(newContent);
+        found.setContent(request.getNewContent());
         found.setEdited(true);
         messageService.editMessage(found);
         return ResponseEntity.ok(true);

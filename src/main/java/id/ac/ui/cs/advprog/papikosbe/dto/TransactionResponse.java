@@ -21,4 +21,11 @@ public class TransactionResponse {
     private LocalDateTime createdAt;
     private UUID userId;
     private UUID ownerId; // Only for payments
+    private String status_message;
+    private String message;
+
+    public TransactionResponse(String status_message, String message) {
+        this.status_message = status_message;
+        this.message = message;
+    }
 }

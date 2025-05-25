@@ -28,10 +28,12 @@ public class KosRepositoryTest {
         kosList = new ArrayList<>();
 
         Kos kos1 = new Kos();
+        kos1.setOwnerId(UUID.randomUUID());
         kos1.setName("Kos1");
         kos1.setAddress("AlamatKos1");
         kos1.setDescription("DeskripsiKos1");
         kos1.setMaxCapacity(30);
+        kos1.setAvailableRooms(30);
         kos1.setPrice(50000.00);
         kosList.add(kos1);
 
@@ -41,6 +43,7 @@ public class KosRepositoryTest {
         kos2.setAddress("AlamatKos2");
         kos2.setDescription("DeskripsiKos2");
         kos2.setMaxCapacity(20);
+        kos2.setAvailableRooms(20);
         kos2.setPrice(50000.00);
         kosList.add(kos2);
     }
@@ -74,7 +77,7 @@ public class KosRepositoryTest {
             assertEquals("Kos2", foundKos.get().getName());
             assertEquals("AlamatKos2", foundKos.get().getAddress());
             assertEquals("DeskripsiKos2", foundKos.get().getDescription());
-            assertEquals(30, foundKos.get().getMaxCapacity());
+            assertEquals(20, foundKos.get().getMaxCapacity());
             assertEquals(savedKos.getMaxCapacity(), foundKos.get().getAvailableRooms());
             assertEquals(50000.00, foundKos.get().getPrice());
         }

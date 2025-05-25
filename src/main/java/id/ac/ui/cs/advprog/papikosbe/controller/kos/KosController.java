@@ -46,7 +46,7 @@ public class KosController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    @PatchMapping("/update/{id}")
+    @PutMapping("/update/{id}")
     public ResponseEntity<Kos> updateKos(@PathVariable UUID id, @RequestBody Kos updatedKos) {
         Optional<Kos> kosUpdated = kosService.updateKos(id, updatedKos);
         if (kosUpdated.isEmpty()) {

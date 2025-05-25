@@ -422,15 +422,13 @@ class BookingControllerTest {
     @Test
     void getBookingsByOwnerId_returnsList() throws Exception {
         List<Booking> ownerBookings = Collections.singletonList(sample);
+        // Mock the service to return a completed CompletableFuture, as the service method is still async
+        // but the controller now calls .join() on it.
         when(bookingService.findBookingsByOwnerId(ownerId))
                 .thenReturn(CompletableFuture.completedFuture(ownerBookings));
 
-        MvcResult mvcResult = mockMvc.perform(get("/api/bookings/owner/{ownerId}", ownerId)
+        mockMvc.perform(get("/api/bookings/owner/{ownerId}", ownerId)
                         .header("Authorization", "Bearer tok"))
-                .andExpect(request().asyncStarted()) // check async started
-                .andReturn();
-
-        mockMvc.perform(asyncDispatch(mvcResult)) // wait for async completion
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].bookingId").value(sample.getBookingId().toString()));
     }

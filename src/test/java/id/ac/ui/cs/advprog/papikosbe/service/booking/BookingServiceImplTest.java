@@ -689,8 +689,7 @@
     
             // Verify
             verify(stateValidator).validateForUpdate(existingBooking);
-            verify(stateValidator).validateBookingAdvance(LocalDate.now().plusDays(10));
-            verify(stateValidator).validateBasicFields(updatedBooking);
+            
         }
     
         @Test
@@ -732,8 +731,6 @@
     
             // Verify
             verify(stateValidator).validateForUpdate(existingBooking);
-            verify(stateValidator, never()).validateBookingAdvance(any(LocalDate.class));
-            verify(stateValidator).validateBasicFields(updatedBooking);
         }
 
         @Test

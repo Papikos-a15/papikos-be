@@ -203,9 +203,16 @@ public class BookingController {
     }
 
     @GetMapping("/owner/{ownerId}")
-    public CompletableFuture<ResponseEntity<List<Booking>>> getBookingsByOwnerId(@PathVariable UUID ownerId) {
-        return bookingService.findBookingsByOwnerId(ownerId)
-                .thenApply(ResponseEntity::ok);
+    public ResponseEntity<List<Booking>> getBookingsByOwnerId(@PathVariable UUID ownerId) {
+        try {
+            List<Booking> bookings = bookingService.findBookingsByOwnerId(ownerId).join();
+            return ResponseEntity.ok(bookings);
+        } catch (Exception e) {
+            // Log the exception and return an appropriate error response
+            log.error("Error getting bookings for owner {}: {}", ownerId, e.getMessage());
+            // Consider more specific exception handling if needed
+            return ResponseEntity.status(500).build();
+        }
     }
 
     @DeleteMapping("/{id}")

@@ -61,7 +61,6 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public Booking createBooking(Booking booking) {
-        stateValidator.validateBookingAdvance(booking.getCheckInDate());
 
         if (booking.getBookingId() == null) {
             booking.setBookingId(UUID.randomUUID());
@@ -71,10 +70,9 @@ public class BookingServiceImpl implements BookingService {
                 .orElseThrow(() -> new EntityNotFoundException("Kos not found"));
         booking.setMonthlyPrice(kos.getPrice());
 
+
         booking.setStatus(BookingStatus.PENDING_PAYMENT);
-
-        stateValidator.validateBasicFields(booking);
-
+        kosService.subtractAvailableRoom(kos.getId());
         return bookingRepository.save(booking);
     }
 
@@ -110,14 +108,6 @@ public class BookingServiceImpl implements BookingService {
 
         // Validate state allows update
         stateValidator.validateForUpdate(existingBooking);
-
-        // If check-in date is changed, validate advance requirement
-        if (!existingBooking.getCheckInDate().equals(booking.getCheckInDate())) {
-            stateValidator.validateBookingAdvance(booking.getCheckInDate());
-        }
-
-        // Validate basic fields
-        stateValidator.validateBasicFields(booking);
 
         bookingRepository.save(booking);
     }

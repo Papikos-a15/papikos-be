@@ -20,6 +20,8 @@
     import id.ac.ui.cs.advprog.papikosbe.service.transaction.TransactionService;
     import id.ac.ui.cs.advprog.papikosbe.validator.booking.BookingValidator;
     import id.ac.ui.cs.advprog.papikosbe.validator.booking.BookingAccessValidator;
+    import id.ac.ui.cs.advprog.papikosbe.observer.event.BookingApprovedEvent;
+    import id.ac.ui.cs.advprog.papikosbe.observer.handler.EventHandlerContext;
     import org.junit.jupiter.api.BeforeEach;
     import org.junit.jupiter.api.Test;
     import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,6 +58,7 @@
         // Other mocks you might need
         @Mock private WalletRepository walletRepository;
         @Mock private BookingAccessValidator bookingAccessValidator;
+        @Mock private EventHandlerContext eventHandlerContext;
 
         // Don't use @InjectMocks - create manually
         private BookingServiceImpl bookingService;
@@ -75,7 +78,8 @@
                     bookingRepository,
                     kosService,
                     transactionService,
-                    stateValidator
+                    stateValidator,
+                    eventHandlerContext
             );
 
             // Manually inject field dependencies using reflection
@@ -790,5 +794,34 @@
             verify(bookingRepository).save(bookingCaptor.capture());
             assertEquals(BookingStatus.CANCELLED, bookingCaptor.getValue().getStatus());
         }
+      
+        @Test
+        public void testApproveBookingTriggersEvent() {
+            Booking booking = new Booking(
+                    UUID.randomUUID(),
+                    userId,
+                    kosId,
+                    LocalDate.now().plusDays(7),
+                    3,
+                    monthlyPrice,
+                    fullName,
+                    phoneNumber,
+                    BookingStatus.PAID
+            );
+
+            when(bookingRepository.findById(booking.getBookingId())).thenReturn(Optional.of(booking));
+
+            ArgumentCaptor<BookingApprovedEvent> eventCaptor = ArgumentCaptor.forClass(BookingApprovedEvent.class);
+
+            bookingService.approveBooking(booking.getBookingId());
+
+            verify(eventHandlerContext, times(1)).handleEvent(eventCaptor.capture());
+
+            BookingApprovedEvent capturedEvent = eventCaptor.getValue();
+
+            assertEquals(booking.getBookingId(), capturedEvent.getBookingId(), "Booking ID should match");
+            assertEquals(booking.getUserId(), capturedEvent.getUserId(), "User ID should match");
+        }
 
     }
+

@@ -14,16 +14,7 @@ public enum NotificationType {
 
     private final String value;
 
-    private NotificationType(String value) {
+    NotificationType(String value) {
         this.value = value;
-    }
-
-    public static boolean contains(String param) {
-        for (NotificationType type : NotificationType.values()) {
-            if (type.getValue().equals(param)) {
-                return true;
-            }
-        }
-        return false;
     }
 }

@@ -35,10 +35,6 @@ public class UpdateValidationRule extends BaseValidationRule {
         return "UPDATE";
     }
 
-    @Override
-    public int getPriority() {
-        return 3;
-    }
 
     @Override
     public ValidationRequirement getRequirements() {

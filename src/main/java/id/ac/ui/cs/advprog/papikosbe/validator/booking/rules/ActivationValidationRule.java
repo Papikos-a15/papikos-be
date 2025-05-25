@@ -42,11 +42,6 @@ public class ActivationValidationRule extends BaseValidationRule {
     }
 
     @Override
-    public int getPriority() {
-        return 2;
-    }
-
-    @Override
     public ValidationRequirement getRequirements() {
         return ValidationRequirement.BOOKING_ONLY;
     }

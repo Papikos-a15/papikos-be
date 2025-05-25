@@ -43,10 +43,6 @@ public class KosAvailabilityValidationRule extends BaseValidationRule {
         return "KOS_AVAILABILITY";
     }
 
-    @Override
-    public int getPriority() {
-        return 1;
-    }
 
     @Override
     public ValidationRequirement getRequirements() {

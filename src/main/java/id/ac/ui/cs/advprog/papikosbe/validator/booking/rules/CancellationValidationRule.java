@@ -34,10 +34,7 @@ public class CancellationValidationRule extends BaseValidationRule {
         return "CANCELLATION";
     }
 
-    @Override
-    public int getPriority() {
-        return 3;
-    }
+
 
     @Override
     public ValidationRequirement getRequirements() {

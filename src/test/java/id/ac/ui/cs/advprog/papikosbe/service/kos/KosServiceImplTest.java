@@ -1,10 +1,13 @@
 package id.ac.ui.cs.advprog.papikosbe.service.kos;
 
 import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
+import id.ac.ui.cs.advprog.papikosbe.observer.handler.EventHandlerContext;
+import id.ac.ui.cs.advprog.papikosbe.observer.event.KosStatusChangedEvent;
 import id.ac.ui.cs.advprog.papikosbe.repository.kos.KosRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -23,6 +26,9 @@ public class KosServiceImplTest {
 
     @Mock
     private KosRepository kosRepository;
+
+    @Mock
+    private EventHandlerContext eventHandlerContext;
 
     @InjectMocks
     private KosServiceImpl kosService;
@@ -160,6 +166,51 @@ public class KosServiceImplTest {
         assertNull(result, "The deleted Kos should be null");
         verify(kosRepository, times(1)).deleteById(kos.getId()); ;
     }
+
+    @Test
+    public void testUpdateKosTriggersEventWhenKosBecomesAvailable() {
+        Kos updatedKos = new Kos();
+        updatedKos.setId(kos1.getId());
+        updatedKos.setName(kos1.getName());
+        updatedKos.setDescription(kos1.getDescription());
+        updatedKos.setAddress(kos1.getAddress());
+        updatedKos.setPrice(kos1.getPrice());
+        updatedKos.setMaxCapacity(kos1.getMaxCapacity());
+        updatedKos.setAvailableRooms(kos1.getAvailableRooms());
+        updatedKos.setAvailable(true);
+
+        doReturn(Optional.of(kos1)).when(kosRepository).findById(kos1.getId());
+
+        kosService.updateKos(kos1.getId(), updatedKos);
+
+        ArgumentCaptor<KosStatusChangedEvent> eventCaptor = ArgumentCaptor.forClass(KosStatusChangedEvent.class);
+
+        verify(eventHandlerContext, times(1)).handleEvent(eventCaptor.capture());
+
+        KosStatusChangedEvent capturedEvent = eventCaptor.getValue();
+        assertEquals(kos1.getId(), capturedEvent.getKosId());
+        assertEquals(kos1.getName(), capturedEvent.getKosName());
+        assertTrue(capturedEvent.isNewStatus());
+    }
+
+    @Test
+    public void testUpdateKosDoesNotTriggerEventWhenKosAvailabilityRemainsFalse() {
+        Kos updatedKos = new Kos();
+        updatedKos.setId(kos1.getId());
+        updatedKos.setName(kos1.getName());
+        updatedKos.setDescription(kos1.getDescription());
+        updatedKos.setAddress(kos1.getAddress());
+        updatedKos.setPrice(kos1.getPrice());
+        updatedKos.setMaxCapacity(kos1.getMaxCapacity());
+        updatedKos.setAvailableRooms(kos1.getAvailableRooms());
+
+        doReturn(Optional.of(kos1)).when(kosRepository).findById(kos1.getId());
+
+        kosService.updateKos(kos1.getId(), updatedKos);
+
+        verify(eventHandlerContext, times(0)).handleEvent(any(KosStatusChangedEvent.class));
+    }
+
 
 }
 

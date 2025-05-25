@@ -16,8 +16,6 @@ import java.util.UUID;
 @Getter
 @Setter
 public class Payment extends Transaction {
-
-    // Pemilik kos sebagai penerima
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
@@ -25,7 +23,6 @@ public class Payment extends Transaction {
     private LocalDateTime paidDate;
 
     public Payment() {
-        // JPA will use this constructor to instantiate the entity
     }
 
     public Payment(UUID id, BigDecimal amount, User user) {

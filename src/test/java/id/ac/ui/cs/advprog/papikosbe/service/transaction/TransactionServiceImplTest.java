@@ -187,12 +187,14 @@ class TransactionServiceImplTest {
         when(transactionFactory.createTransaction(TransactionType.TOP_UP, tenantId, amount, null)).thenReturn(topUp);
         when(topUp.process(tenantWallet, null)).thenReturn(TransactionStatus.COMPLETED);
         when(transactionRepository.save(topUp)).thenReturn(topUp);
+        when(userRepository.findById(tenantId)).thenReturn(Optional.of(tenant));
+        when(walletService.getOrCreateWallet(tenant)).thenReturn(tenantWallet);
 
         // Call the asynchronous method
         CompletableFuture<TopUp> resultFuture = transactionService.createTopUp(tenantId, amount);
 
         // Wait for the result
-        TopUp result = resultFuture.join(); // join() waits for the result
+        TopUp result = resultFuture.join();
 
         // Assertions
         assertNotNull(result);
@@ -303,18 +305,6 @@ class TransactionServiceImplTest {
         );
 
         assertTrue(ex.getMessage().contains("lebih dari 0"));
-    }
-
-    @Test
-    void testValidateTopUpFailsIfWalletNotFound() {
-        UUID userId = UUID.randomUUID();
-        BigDecimal amount = new BigDecimal("50000");
-
-        Exception ex = assertThrows(Exception.class, () ->
-                transactionService.validateTopUp(userId, amount)
-        );
-
-        assertTrue(ex.getMessage().contains("Wallet user tidak ditemukan"));
     }
 
     @Test

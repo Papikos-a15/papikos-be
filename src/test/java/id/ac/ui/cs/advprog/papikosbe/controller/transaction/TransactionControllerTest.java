@@ -16,7 +16,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -181,14 +180,12 @@ class TransactionControllerTest {
     }
 
     @Test
-    void getPaymentsByTenant_Success() throws ExecutionException, InterruptedException {
+    void getPaymentsByTenant_Success() {
         List<Payment> payments = Arrays.asList(payment);
         when(transactionService.getPaymentsByTenant(tenantId))
                 .thenReturn(CompletableFuture.completedFuture(payments));
 
-        CompletableFuture<ResponseEntity<List<TransactionResponse>>> futureResponse =
-                transactionController.getPaymentsByTenant(tenantId);
-        ResponseEntity<List<TransactionResponse>> response = futureResponse.get();
+        ResponseEntity<List<TransactionResponse>> response = transactionController.getPaymentsByTenant(tenantId);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
@@ -197,30 +194,27 @@ class TransactionControllerTest {
         assertEquals(tenantId, response.getBody().get(0).getUserId());
     }
 
+
     @Test
-    void getPaymentsByTenant_Error() throws ExecutionException, InterruptedException {
+    void getPaymentsByTenant_Error() {
         CompletableFuture<List<Payment>> failedFuture = new CompletableFuture<>();
         failedFuture.completeExceptionally(new RuntimeException("Tenant not found"));
 
         when(transactionService.getPaymentsByTenant(tenantId)).thenReturn(failedFuture);
 
-        CompletableFuture<ResponseEntity<List<TransactionResponse>>> futureResponse =
-                transactionController.getPaymentsByTenant(tenantId);
-        ResponseEntity<List<TransactionResponse>> response = futureResponse.get();
+        ResponseEntity<List<TransactionResponse>> response = transactionController.getPaymentsByTenant(tenantId);
 
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
         assertNull(response.getBody());
     }
 
     @Test
-    void getPaymentsByOwner_Success() throws ExecutionException, InterruptedException {
+    void getPaymentsByOwner_Success() {
         List<Payment> payments = Arrays.asList(payment);
         when(transactionService.getPaymentsByOwner(ownerId))
                 .thenReturn(CompletableFuture.completedFuture(payments));
 
-        CompletableFuture<ResponseEntity<List<TransactionResponse>>> futureResponse =
-                transactionController.getPaymentsByOwner(ownerId);
-        ResponseEntity<List<TransactionResponse>> response = futureResponse.get();
+        ResponseEntity<List<TransactionResponse>> response = transactionController.getPaymentsByOwner(ownerId);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
@@ -229,6 +223,7 @@ class TransactionControllerTest {
         assertEquals(ownerId, response.getBody().get(0).getOwnerId());
     }
 
+
     @Test
     void getPaymentsByOwner_Error() throws ExecutionException, InterruptedException {
         CompletableFuture<List<Payment>> failedFuture = new CompletableFuture<>();
@@ -236,9 +231,8 @@ class TransactionControllerTest {
 
         when(transactionService.getPaymentsByOwner(ownerId)).thenReturn(failedFuture);
 
-        CompletableFuture<ResponseEntity<List<TransactionResponse>>> futureResponse =
+        ResponseEntity<List<TransactionResponse>> response =
                 transactionController.getPaymentsByOwner(ownerId);
-        ResponseEntity<List<TransactionResponse>> response = futureResponse.get();
 
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
         assertNull(response.getBody());
@@ -314,9 +308,8 @@ class TransactionControllerTest {
         when(transactionService.getTopUpsByUser(tenantId))
                 .thenReturn(CompletableFuture.completedFuture(topUps));
 
-        CompletableFuture<ResponseEntity<List<TransactionResponse>>> futureResponse =
+        ResponseEntity<List<TransactionResponse>> response =
                 transactionController.getTopUpsByUser(tenantId);
-        ResponseEntity<List<TransactionResponse>> response = futureResponse.get();
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
@@ -334,9 +327,8 @@ class TransactionControllerTest {
 
         when(transactionService.getTopUpsByUser(tenantId)).thenReturn(failedFuture);
 
-        CompletableFuture<ResponseEntity<List<TransactionResponse>>> futureResponse =
+        ResponseEntity<List<TransactionResponse>> response =
                 transactionController.getTopUpsByUser(tenantId);
-        ResponseEntity<List<TransactionResponse>> response = futureResponse.get();
 
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
         assertNull(response.getBody());

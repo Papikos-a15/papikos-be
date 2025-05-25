@@ -1,6 +1,5 @@
 package id.ac.ui.cs.advprog.papikosbe.service.transaction;
 
-import id.ac.ui.cs.advprog.papikosbe.dto.PaymentRequest;
 import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
 import id.ac.ui.cs.advprog.papikosbe.enums.TransactionStatus;
 import id.ac.ui.cs.advprog.papikosbe.enums.TransactionType;
@@ -267,10 +266,9 @@ public class TransactionServiceImpl implements TransactionService {
             throw new Exception("Refund gagal: " + status);
         }
     }
-
+    
     @Override
-    public CompletableFuture<Payment> processBookingPayment(UUID bookingId, PaymentRequest paymentRequest) throws Exception {
-        // Validate booking exists and is in correct state
+    public void processBookingPayment(UUID bookingId, UUID paymentId) throws Exception {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 
@@ -278,52 +276,15 @@ public class TransactionServiceImpl implements TransactionService {
             throw new IllegalStateException("Booking is not in PENDING_PAYMENT status");
         }
 
-        // Calculate payment amount based on booking
-        BigDecimal totalAmount = BigDecimal.valueOf(booking.getTotalPrice());
+        PaymentBooking paymentBooking = PaymentBooking.builder()
+                .bookingId(bookingId)
+                .paymentId(paymentId)
+                .build();
 
-        // Get user and owner wallets
-        Wallet userWallet = walletRepository.findByUserId(paymentRequest.getTenantId())
-                .orElseThrow(() -> new Exception("User wallet not found"));
+        paymentBookingRepository.save(paymentBooking);
 
-        Wallet ownerWallet = walletRepository.findByUserId(booking.getUserId()) // Assuming owner info is available
-                .orElseThrow(() -> new Exception("Owner wallet not found"));
-
-        // Create payment
-        Payment payment = new Payment();
-        payment.setUser(userWallet.getUser());
-        payment.setOwner(ownerWallet.getUser());
-        payment.setAmount(totalAmount);
-        payment.setType(TransactionType.PAYMENT);
-        payment.setStatus(TransactionStatus.PENDING);
-        payment.setCreatedAt(LocalDateTime.now());
-
-        // Process payment
-        TransactionStatus status = payment.process(userWallet, ownerWallet);
-
-        if (status == TransactionStatus.COMPLETED) {
-            // Save payment
-            Payment savedPayment = transactionRepository.save(payment);
-
-            // Save wallet changes
-            walletRepository.save(userWallet);
-            walletRepository.save(ownerWallet);
-
-            // Create or update PaymentBooking relationship
-            PaymentBooking paymentBooking = paymentBookingRepository.findByBookingId(bookingId)
-                    .orElse(PaymentBooking.builder()
-                            .bookingId(bookingId)
-                            .build());
-
-            paymentBooking.setPaymentId(savedPayment.getId());
-            paymentBookingRepository.save(paymentBooking);
-
-            // Update booking status to PAID
-            booking.setStatus(BookingStatus.PAID);
-            bookingRepository.save(booking);
-
-            return CompletableFuture.completedFuture(savedPayment);
-        } else {
-            throw new Exception("Payment processing failed: " + status);
-        }
+        booking.setStatus(BookingStatus.PAID);
+        bookingRepository.save(booking);
     }
+
 }

@@ -14,6 +14,7 @@ import id.ac.ui.cs.advprog.papikosbe.security.JwtTokenProvider;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -110,5 +111,18 @@ class AuthServiceTest {
         String token = "some.jwt.token";
         authService.logout(token);
         verify(jwtProvider).invalidate(token);
+    }
+
+    @Test
+    void testGetUserIdByEmailReturnsCorrectId() {
+        UUID userId = UUID.randomUUID();
+        tenant.setId(userId);
+
+        when(userRepo.findByEmail("t@mail.com")).thenReturn(Optional.of(tenant));
+
+        UUID result = authService.getUserIdByEmail("t@mail.com");
+
+        assertThat(result).isEqualTo(userId);
+        verify(userRepo).findByEmail("t@mail.com");
     }
 }

@@ -2,13 +2,19 @@ package id.ac.ui.cs.advprog.papikosbe.service.notification;
 
 import id.ac.ui.cs.advprog.papikosbe.enums.NotificationType;
 import id.ac.ui.cs.advprog.papikosbe.model.notification.Notification;
+import id.ac.ui.cs.advprog.papikosbe.model.user.Owner;
+import id.ac.ui.cs.advprog.papikosbe.model.user.Tenant;
+import id.ac.ui.cs.advprog.papikosbe.model.user.User;
 import id.ac.ui.cs.advprog.papikosbe.observer.NotificationPublisher;
 import id.ac.ui.cs.advprog.papikosbe.repository.notification.NotificationRepository;
+import id.ac.ui.cs.advprog.papikosbe.repository.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -30,7 +36,7 @@ class NotificationServiceImplTest {
     }
 
     @Test
-    void testCreateNotification_Success() {
+    void testCreateNotification_Success() throws ExecutionException, InterruptedException {
         UUID userId = UUID.randomUUID();
         String title = "Test Title";
         String message = "Test Message";
@@ -39,7 +45,8 @@ class NotificationServiceImplTest {
         // We simulate repository.save() returning the same notification
         when(notificationRepository.save(any(Notification.class))).thenAnswer(i -> i.getArgument(0));
 
-        Notification result = notificationService.createNotification(userId, title, message, type);
+        CompletableFuture<Notification> future = notificationService.createNotification(userId, title, message, type);
+        Notification result = future.get();
 
         // Basic assertions to check that the returned Notification is correct
         assertNotNull(result.getId());
@@ -52,6 +59,32 @@ class NotificationServiceImplTest {
 
         // Verify that repository.save was called
         verify(notificationRepository, times(1)).save(any(Notification.class));
+    }
+
+    @Test
+    void testCreateNotificationForAllUser_Success() throws InterruptedException {
+        NotificationRepository notificationRepository = mock(NotificationRepository.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        NotificationPublisher notificationPublisher = mock(NotificationPublisher.class);
+
+        User user1 = new Tenant();
+        user1.setId(UUID.randomUUID());
+        User user2 = new Owner();
+        user2.setId(UUID.randomUUID());
+
+        when(userRepository.findAll()).thenReturn(List.of(user1, user2));
+        when(notificationRepository.save(any(Notification.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        NotificationServiceImpl notificationService = new NotificationServiceImpl(
+                notificationRepository, notificationPublisher, userRepository
+        );
+
+        notificationService.createNotificationForAllUser("Title", "Message", NotificationType.SYSTEM);
+
+        Thread.sleep(500);
+
+        verify(notificationRepository, times(2)).save(any(Notification.class));
+        verify(notificationPublisher, times(2)).publish(any(Notification.class));
     }
 
 
@@ -85,6 +118,54 @@ class NotificationServiceImplTest {
         assertEquals(1, result.size());
         assertEquals(userId, result.getFirst().getUserId());
     }
+
+    @Test
+    void testGetNotificationById_Success() {
+        UUID notifId = UUID.randomUUID();
+        Notification expectedNotification = Notification.builder()
+                .id(notifId)
+                .userId(UUID.randomUUID())
+                .title("Test Title")
+                .message("Test Message")
+                .type(NotificationType.SYSTEM)
+                .isRead(false)
+                .build();
+
+        // Mock the repository to return the notification when findById is called
+        when(notificationRepository.findById(notifId)).thenReturn(Optional.of(expectedNotification));
+
+        // Call the service method
+        Notification result = notificationService.getNotificationById(notifId);
+
+        // Assert that the returned notification is the one we mocked
+        assertNotNull(result);
+        assertEquals(notifId, result.getId());
+        assertEquals("Test Title", result.getTitle());
+        assertEquals("Test Message", result.getMessage());
+        assertEquals(NotificationType.SYSTEM, result.getType());
+        assertFalse(result.isRead());
+
+        // Verify that findById was called once
+        verify(notificationRepository, times(1)).findById(notifId);
+    }
+
+    @Test
+    void testGetNotificationById_NotFound() {
+        UUID notifId = UUID.randomUUID();
+
+        // Mock the repository to return an empty Optional when the notification is not found
+        when(notificationRepository.findById(notifId)).thenReturn(Optional.empty());
+
+        // Call the service method
+        Notification result = notificationService.getNotificationById(notifId);
+
+        // Assert that the result is null when not found
+        assertNull(result);
+
+        // Verify that findById was called once
+        verify(notificationRepository, times(1)).findById(notifId);
+    }
+
 
     @Test
     void testMarkAsRead_NotificationExists() {

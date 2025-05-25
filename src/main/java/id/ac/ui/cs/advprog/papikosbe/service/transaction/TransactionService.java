@@ -27,6 +27,6 @@ public interface TransactionService {
 
     CompletableFuture<Payment> refundPayment(UUID paymentId, UUID requesterId) throws Exception;
 
-    CompletableFuture<Payment> processBookingPayment(UUID bookingId, PaymentRequest paymentRequest) throws Exception;
+    void processBookingPayment(UUID bookingId, UUID paymentId) throws Exception;
 }
 

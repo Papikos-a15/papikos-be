@@ -5,6 +5,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
+import id.ac.ui.cs.advprog.papikosbe.observer.event.BookingApprovedEvent;
+import id.ac.ui.cs.advprog.papikosbe.observer.handler.EventHandlerContext;
 import id.ac.ui.cs.advprog.papikosbe.repository.booking.BookingRepository;
 import id.ac.ui.cs.advprog.papikosbe.service.kos.KosService;
 import id.ac.ui.cs.advprog.papikosbe.service.transaction.TransactionService;
@@ -45,6 +47,9 @@ public class BookingServiceImplTest {
     private BookingValidator stateValidator;
 
     @Mock
+    private EventHandlerContext eventHandlerContext;
+
+    @Mock
     private BookingAccessValidator bookingAccessValidator;
 
     private BookingService bookingService;
@@ -58,7 +63,7 @@ public class BookingServiceImplTest {
 
     @BeforeEach
     public void setUp() {
-        bookingService = new BookingServiceImpl(bookingRepository, kosService,transactionService, stateValidator);
+        bookingService = new BookingServiceImpl(bookingRepository, kosService,transactionService, stateValidator, eventHandlerContext);
 
         monthlyPrice = 1500000.0;
         fullName = "John Doe";
@@ -619,5 +624,34 @@ public class BookingServiceImplTest {
         assertTrue(userBookings.contains(userBooking1));
         assertFalse(userBookings.contains(otherUserBooking));
     }
+
+    @Test
+    public void testApproveBookingTriggersEvent() {
+        Booking booking = new Booking(
+                UUID.randomUUID(),
+                userId,
+                kosId,
+                LocalDate.now().plusDays(7),
+                3,
+                monthlyPrice,
+                fullName,
+                phoneNumber,
+                BookingStatus.PAID
+        );
+
+        when(bookingRepository.findById(booking.getBookingId())).thenReturn(Optional.of(booking));
+
+        ArgumentCaptor<BookingApprovedEvent> eventCaptor = ArgumentCaptor.forClass(BookingApprovedEvent.class);
+
+        bookingService.approveBooking(booking.getBookingId());
+
+        verify(eventHandlerContext, times(1)).handleEvent(eventCaptor.capture());
+
+        BookingApprovedEvent capturedEvent = eventCaptor.getValue();
+
+        assertEquals(booking.getBookingId(), capturedEvent.getBookingId(), "Booking ID should match");
+        assertEquals(booking.getUserId(), capturedEvent.getUserId(), "User ID should match");
+    }
+
 
 }

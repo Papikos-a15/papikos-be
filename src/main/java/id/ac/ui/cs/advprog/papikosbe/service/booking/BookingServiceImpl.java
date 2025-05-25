@@ -10,7 +10,9 @@ import id.ac.ui.cs.advprog.papikosbe.validator.booking.BookingValidator;
 import id.ac.ui.cs.advprog.papikosbe.validator.booking.BookingAccessValidator;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -20,6 +22,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class BookingServiceImpl implements BookingService {
 
     private final BookingRepository bookingRepository;
@@ -37,58 +40,80 @@ public class BookingServiceImpl implements BookingService {
         this.transactionService = transactionService;
         this.stateValidator = stateValidator;}
 
+
+    private Optional<Booking> findBookingByIdSync(UUID id) {
+        return bookingRepository.findById(id);
+    }
+
     @Override
     public Booking createBooking(Booking booking) {
-        // Validate booking data
-        stateValidator.validateBasicFields(booking);
+        // 1. Validate advance booking requirement
+        stateValidator.validateBookingAdvance(booking.getCheckInDate());
 
         // Set booking ID if not provided
         if (booking.getBookingId() == null) {
             booking.setBookingId(UUID.randomUUID());
         }
+        // Ensure initial status is PENDING_PAYMENT
+        booking.setStatus(BookingStatus.PENDING_PAYMENT);
 
         Kos kos = kosService.getKosById(booking.getKosId())
                 .orElseThrow(() -> new EntityNotFoundException("Kos not found"));
         booking.setMonthlyPrice(kos.getPrice());
 
-        // Ensure initial status is PENDING_PAYMENT
-        booking.setStatus(BookingStatus.PENDING_PAYMENT);
+        // 2. Validate basic fields
+        stateValidator.validateBasicFields(booking);
 
         return bookingRepository.save(booking);
     }
 
+    // Public async method
     @Override
-    public Optional<Booking> findBookingById(UUID id) {
-        return bookingRepository.findById(id);
+    @Async("bookingTaskExecutor")
+    public CompletableFuture<Optional<Booking>> findBookingById(UUID id) {
+        try {
+            Optional<Booking> booking = findBookingByIdSync(id);
+            return CompletableFuture.completedFuture(booking);
+        } catch (Exception e) {
+            log.error("Error fetching booking {}: {}", id, e.getMessage());
+            return CompletableFuture.failedFuture(e);
+        }
     }
 
     @Override
-    public List<Booking> findAllBookings() {
-        return bookingRepository.findAll();
+    @Async("bookingTaskExecutor")
+    public CompletableFuture<List<Booking>> findAllBookings() {
+        try {
+            List<Booking> bookings = bookingRepository.findAll();
+            return CompletableFuture.completedFuture(bookings);
+        } catch (Exception e) {
+            log.error("Error fetching all bookings: {}", e.getMessage());
+            return CompletableFuture.failedFuture(e);
+        }
     }
 
     @Override
     public void updateBooking(Booking booking) {
-        // Validate booking data
-        stateValidator.validateBasicFields(booking);
-
-        Booking existingBooking = bookingRepository.findById(booking.getBookingId())
+        Booking existingBooking = findBookingByIdSync(booking.getBookingId())
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
-
-        // Validate state transition
+                
+        // Validate state allows update
         stateValidator.validateForUpdate(existingBooking);
-
-        // Preserve the current status
-        BookingStatus currentStatus = existingBooking.getStatus();
-        booking.setStatus(currentStatus);
-
-        // Update the booking
+        
+        // If check-in date is changed, validate advance requirement
+        if (!existingBooking.getCheckInDate().equals(booking.getCheckInDate())) {
+            stateValidator.validateBookingAdvance(booking.getCheckInDate());
+        }
+        
+        // Validate basic fields
+        stateValidator.validateBasicFields(booking);
+        
         bookingRepository.save(booking);
     }
 
     @Override
     public void payBooking(UUID bookingId) throws Exception {
-        Booking booking = bookingRepository.findById(bookingId)
+        Booking booking = findBookingByIdSync(bookingId)
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 
         // Validate state transition
@@ -112,7 +137,7 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public void approveBooking(UUID bookingId) {
-        Booking booking = bookingRepository.findById(bookingId)
+        Booking booking = findBookingByIdSync(bookingId)
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 
         // Validate state transition
@@ -125,7 +150,7 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public void cancelBooking(UUID bookingId) {
-        Booking booking = bookingRepository.findById(bookingId)
+        Booking booking = findBookingByIdSync(bookingId)
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 
         // Validate state transition
@@ -133,6 +158,10 @@ public class BookingServiceImpl implements BookingService {
 
         // Update booking status to CANCELLED
         booking.setStatus(BookingStatus.CANCELLED);
+        
+        // Add available room back
+        kosService.addAvailableRoom(booking.getKosId());
+        
         bookingRepository.save(booking);
     }
 
@@ -157,10 +186,17 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public List<Booking> findBookingsByUserId(UUID userId) {
-        return bookingRepository.findAll().stream()
-                .filter(booking -> booking.getUserId().equals(userId))
-                .collect(Collectors.toList());
+    @Async("bookingTaskExecutor")
+    public CompletableFuture<List<Booking>> findBookingsByUserId(UUID userId) {
+        try {
+            List<Booking> userBookings = bookingRepository.findAll().stream()
+                    .filter(booking -> booking.getUserId().equals(userId))
+                    .collect(Collectors.toList());
+            return CompletableFuture.completedFuture(userBookings);
+        } catch (Exception e) {
+            log.error("Error fetching bookings for user {}: {}", userId, e.getMessage());
+            return CompletableFuture.failedFuture(e);
+        }
     }
 
 

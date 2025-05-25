@@ -1,21 +1,27 @@
 package id.ac.ui.cs.advprog.papikosbe.validator.booking.rules;
 
 import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
+import id.ac.ui.cs.advprog.papikosbe.enums.ValidationRequirement;
+import id.ac.ui.cs.advprog.papikosbe.exception.ValidationException;
+import id.ac.ui.cs.advprog.papikosbe.validator.booking.BaseValidationRule;
 import id.ac.ui.cs.advprog.papikosbe.validator.booking.ValidationContext;
-import id.ac.ui.cs.advprog.papikosbe.validator.booking.ValidationRule;
 import org.springframework.stereotype.Component;
 
 @Component
-public class UpdateValidationRule implements ValidationRule {
-    
+public class UpdateValidationRule extends BaseValidationRule {
+
     @Override
-    public void validate(ValidationContext context) {
+    protected void doValidate(ValidationContext context) throws ValidationException {
         BookingStatus status = context.getBooking().getStatus();
         if (status == BookingStatus.APPROVED ||
                 status == BookingStatus.CANCELLED ||
                 status == BookingStatus.ACTIVE ||
                 status == BookingStatus.INACTIVE) {
-            throw new IllegalStateException("Cannot edit booking after it has been approved, activated, cancelled, or deactivated");
+            throw new ValidationException(
+                    "Cannot edit booking after it has been approved, activated, cancelled, or deactivated",
+                    getOperationType(),
+                    context.getOperation()
+            );
         }
     }
 
@@ -32,5 +38,10 @@ public class UpdateValidationRule implements ValidationRule {
     @Override
     public int getPriority() {
         return 3;
+    }
+
+    @Override
+    public ValidationRequirement getRequirements() {
+        return ValidationRequirement.BOOKING_ONLY;
     }
 }

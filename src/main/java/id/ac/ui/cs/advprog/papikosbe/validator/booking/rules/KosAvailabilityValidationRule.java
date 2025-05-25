@@ -1,25 +1,35 @@
 package id.ac.ui.cs.advprog.papikosbe.validator.booking.rules;
 
 import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
+import id.ac.ui.cs.advprog.papikosbe.enums.ValidationRequirement;
+import id.ac.ui.cs.advprog.papikosbe.exception.ValidationException;
 import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
+import id.ac.ui.cs.advprog.papikosbe.validator.booking.BaseValidationRule;
 import id.ac.ui.cs.advprog.papikosbe.validator.booking.ValidationContext;
-import id.ac.ui.cs.advprog.papikosbe.validator.booking.ValidationRule;
 import org.springframework.stereotype.Component;
 
 @Component
-public class KosAvailabilityValidationRule implements ValidationRule {
+public class KosAvailabilityValidationRule extends BaseValidationRule {
 
     @Override
-    public void validate(ValidationContext context) {
-        if (!context.hasKos()) return;
-
+    protected void doValidate(ValidationContext context) throws ValidationException {
+        // ✅ LSP: No early return - always process since BaseValidationRule already checks requirements
         Kos kos = context.getKos();
+
         if (!kos.isAvailable()) {
-            throw new IllegalStateException("Kos is not available for booking");
+            throw new ValidationException(
+                    "Kos is not available for booking",
+                    getOperationType(),
+                    context.getOperation()
+            );
         }
 
         if (kos.getAvailableRooms() <= 0) {
-            throw new IllegalStateException("No rooms available for booking");
+            throw new ValidationException(
+                    "No rooms available for booking",
+                    getOperationType(),
+                    context.getOperation()
+            );
         }
     }
 
@@ -35,6 +45,11 @@ public class KosAvailabilityValidationRule implements ValidationRule {
 
     @Override
     public int getPriority() {
-        return 1; // High priority
+        return 1;
+    }
+
+    @Override
+    public ValidationRequirement getRequirements() {
+        return ValidationRequirement.BOOKING_AND_KOS; // ✅ Explicit requirement
     }
 }

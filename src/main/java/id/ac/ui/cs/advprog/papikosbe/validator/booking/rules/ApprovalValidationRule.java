@@ -1,17 +1,23 @@
 package id.ac.ui.cs.advprog.papikosbe.validator.booking.rules;
 
 import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
+import id.ac.ui.cs.advprog.papikosbe.enums.ValidationRequirement;
+import id.ac.ui.cs.advprog.papikosbe.exception.ValidationException;
+import id.ac.ui.cs.advprog.papikosbe.validator.booking.BaseValidationRule;
 import id.ac.ui.cs.advprog.papikosbe.validator.booking.ValidationContext;
-import id.ac.ui.cs.advprog.papikosbe.validator.booking.ValidationRule;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ApprovalValidationRule implements ValidationRule {
-    
+public class ApprovalValidationRule extends BaseValidationRule {
+
     @Override
-    public void validate(ValidationContext context) {
+    protected void doValidate(ValidationContext context) throws ValidationException {
         if (context.getBooking().getStatus() != BookingStatus.PAID) {
-            throw new IllegalStateException("Only PAID bookings can be approved");
+            throw new ValidationException(
+                    "Only PAID bookings can be approved",
+                    getOperationType(),
+                    context.getOperation()
+            );
         }
     }
 
@@ -28,5 +34,10 @@ public class ApprovalValidationRule implements ValidationRule {
     @Override
     public int getPriority() {
         return 2;
+    }
+
+    @Override
+    public ValidationRequirement getRequirements() {
+        return ValidationRequirement.BOOKING_ONLY;
     }
 }

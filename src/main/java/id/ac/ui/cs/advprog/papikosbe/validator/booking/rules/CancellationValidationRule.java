@@ -1,20 +1,26 @@
 package id.ac.ui.cs.advprog.papikosbe.validator.booking.rules;
 
 import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
+import id.ac.ui.cs.advprog.papikosbe.enums.ValidationRequirement;
+import id.ac.ui.cs.advprog.papikosbe.exception.ValidationException;
+import id.ac.ui.cs.advprog.papikosbe.validator.booking.BaseValidationRule;
 import id.ac.ui.cs.advprog.papikosbe.validator.booking.ValidationContext;
-import id.ac.ui.cs.advprog.papikosbe.validator.booking.ValidationRule;
 import org.springframework.stereotype.Component;
 
 @Component
-public class CancellationValidationRule implements ValidationRule {
-    
+public class CancellationValidationRule extends BaseValidationRule {
+
     @Override
-    public void validate(ValidationContext context) {
+    protected void doValidate(ValidationContext context) throws ValidationException {
         BookingStatus status = context.getBooking().getStatus();
         if (status == BookingStatus.APPROVED ||
                 status == BookingStatus.ACTIVE ||
                 status == BookingStatus.INACTIVE) {
-            throw new IllegalStateException("Cannot cancel approved, active, or inactive bookings");
+            throw new ValidationException(
+                    "Cannot cancel approved, active, or inactive bookings",
+                    getOperationType(),
+                    context.getOperation()
+            );
         }
     }
 
@@ -31,5 +37,10 @@ public class CancellationValidationRule implements ValidationRule {
     @Override
     public int getPriority() {
         return 3;
+    }
+
+    @Override
+    public ValidationRequirement getRequirements() {
+        return ValidationRequirement.BOOKING_ONLY;
     }
 }

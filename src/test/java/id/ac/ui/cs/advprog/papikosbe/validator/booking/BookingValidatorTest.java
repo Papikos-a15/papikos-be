@@ -1,4 +1,5 @@
 package id.ac.ui.cs.advprog.papikosbe.validator.booking;
+import id.ac.ui.cs.advprog.papikosbe.exception.ValidationException;
 
 import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
 import id.ac.ui.cs.advprog.papikosbe.model.booking.Booking;
@@ -12,15 +13,13 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-
 class BookingValidatorTest {
 
-        private BookingValidator validator;
+    private BookingValidator validator;
     private Booking booking;
 
     @BeforeEach
     void setUp() {
-
         // ✅ Create real validation rules with actual logic
         List<ValidationRule> rules = List.of(
                 new UpdateValidationRule(),
@@ -64,19 +63,40 @@ class BookingValidatorTest {
     @Test
     void validateForUpdate_approved_throwsException() {
         booking.setStatus(BookingStatus.APPROVED);
-        Exception exception = assertThrows(IllegalStateException.class,
+        ValidationException exception = assertThrows(ValidationException.class,
                 () -> validator.validateForUpdate(booking));
-        // Update message to match new implementation
         assertTrue(exception.getMessage().contains("Cannot edit booking after it has been approved, activated, cancelled, or deactivated"));
+        assertEquals("UPDATE", exception.getValidationRule());
     }
 
     @Test
     void validateForUpdate_cancelled_throwsException() {
         booking.setStatus(BookingStatus.CANCELLED);
-        Exception exception = assertThrows(IllegalStateException.class,
+        // ✅ CHANGE: Expect ValidationException instead of IllegalStateException
+        ValidationException exception = assertThrows(ValidationException.class,
                 () -> validator.validateForUpdate(booking));
-        // Update message to match new implementation
         assertTrue(exception.getMessage().contains("Cannot edit booking after it has been approved, activated, cancelled, or deactivated"));
+        assertEquals("UPDATE", exception.getValidationRule());
+    }
+
+    @Test
+    void validateForUpdate_active_throwsException() {
+        booking.setStatus(BookingStatus.ACTIVE);
+        // ✅ CHANGE: Expect ValidationException instead of IllegalStateException
+        ValidationException exception = assertThrows(ValidationException.class,
+                () -> validator.validateForUpdate(booking));
+        assertTrue(exception.getMessage().contains("Cannot edit booking after it has been approved, activated, cancelled, or deactivated"));
+        assertEquals("UPDATE", exception.getValidationRule());
+    }
+
+    @Test
+    void validateForUpdate_inactive_throwsException() {
+        booking.setStatus(BookingStatus.INACTIVE);
+        // ✅ CHANGE: Expect ValidationException instead of IllegalStateException
+        ValidationException exception = assertThrows(ValidationException.class,
+                () -> validator.validateForUpdate(booking));
+        assertTrue(exception.getMessage().contains("Cannot edit booking after it has been approved, activated, cancelled, or deactivated"));
+        assertEquals("UPDATE", exception.getValidationRule());
     }
 
     // Payment Validation Tests
@@ -90,17 +110,19 @@ class BookingValidatorTest {
     @Test
     void validateForPayment_paid_throwsException() {
         booking.setStatus(BookingStatus.PAID);
-        Exception exception = assertThrows(IllegalStateException.class,
+        ValidationException exception = assertThrows(ValidationException.class,
                 () -> validator.validateForPayment(booking));
         assertTrue(exception.getMessage().contains("Only bookings in PENDING_PAYMENT status can be paid"));
+        assertEquals("PAYMENT", exception.getValidationRule());
     }
 
     @Test
     void validateForPayment_approved_throwsException() {
         booking.setStatus(BookingStatus.APPROVED);
-        Exception exception = assertThrows(IllegalStateException.class,
+        ValidationException exception = assertThrows(ValidationException.class,
                 () -> validator.validateForPayment(booking));
         assertTrue(exception.getMessage().contains("Only bookings in PENDING_PAYMENT status can be paid"));
+        assertEquals("PAYMENT", exception.getValidationRule());
     }
 
     // Approval Validation Tests
@@ -114,17 +136,20 @@ class BookingValidatorTest {
     @Test
     void validateForApproval_pendingPayment_throwsException() {
         booking.setStatus(BookingStatus.PENDING_PAYMENT);
-        Exception exception = assertThrows(IllegalStateException.class,
+        ValidationException exception = assertThrows(ValidationException.class,
                 () -> validator.validateForApproval(booking));
         assertTrue(exception.getMessage().contains("Only PAID bookings can be approved"));
+        assertEquals("APPROVAL", exception.getValidationRule());
     }
 
     @Test
     void validateForApproval_approved_throwsException() {
         booking.setStatus(BookingStatus.APPROVED);
-        Exception exception = assertThrows(IllegalStateException.class,
+        // ✅ CHANGE: Expect ValidationException instead of IllegalStateException
+        ValidationException exception = assertThrows(ValidationException.class,
                 () -> validator.validateForApproval(booking));
         assertTrue(exception.getMessage().contains("Only PAID bookings can be approved"));
+        assertEquals("APPROVAL", exception.getValidationRule());
     }
 
     // Cancellation Validation Tests
@@ -144,44 +169,33 @@ class BookingValidatorTest {
     @Test
     void validateForCancellation_approved_throwsException() {
         booking.setStatus(BookingStatus.APPROVED);
-        Exception exception = assertThrows(IllegalStateException.class,
+        ValidationException exception = assertThrows(ValidationException.class,
                 () -> validator.validateForCancellation(booking));
-        // Update message to match new implementation
         assertTrue(exception.getMessage().contains("Cannot cancel approved, active, or inactive bookings"));
-    }
-
-    @Test
-    void validateForUpdate_active_throwsException() {
-        booking.setStatus(BookingStatus.ACTIVE);
-        Exception exception = assertThrows(IllegalStateException.class,
-                () -> validator.validateForUpdate(booking));
-        assertTrue(exception.getMessage().contains("Cannot edit booking after it has been approved, activated, cancelled, or deactivated"));
-    }
-
-    @Test
-    void validateForUpdate_inactive_throwsException() {
-        booking.setStatus(BookingStatus.INACTIVE);
-        Exception exception = assertThrows(IllegalStateException.class,
-                () -> validator.validateForUpdate(booking));
-        assertTrue(exception.getMessage().contains("Cannot edit booking after it has been approved, activated, cancelled, or deactivated"));
+        assertEquals("CANCELLATION", exception.getValidationRule());
     }
 
     @Test
     void validateForCancellation_active_throwsException() {
         booking.setStatus(BookingStatus.ACTIVE);
-        Exception exception = assertThrows(IllegalStateException.class,
+        // ✅ CHANGE: Expect ValidationException instead of IllegalStateException
+        ValidationException exception = assertThrows(ValidationException.class,
                 () -> validator.validateForCancellation(booking));
         assertTrue(exception.getMessage().contains("Cannot cancel approved, active, or inactive bookings"));
+        assertEquals("CANCELLATION", exception.getValidationRule());
     }
 
     @Test
     void validateForCancellation_inactive_throwsException() {
         booking.setStatus(BookingStatus.INACTIVE);
-        Exception exception = assertThrows(IllegalStateException.class,
+        // ✅ CHANGE: Expect ValidationException instead of IllegalStateException
+        ValidationException exception = assertThrows(ValidationException.class,
                 () -> validator.validateForCancellation(booking));
         assertTrue(exception.getMessage().contains("Cannot cancel approved, active, or inactive bookings"));
+        assertEquals("CANCELLATION", exception.getValidationRule());
     }
 
+    // Activation Validation Tests
 
     @Test
     void validateForActivation_approved_doesNotThrowException() {
@@ -193,19 +207,24 @@ class BookingValidatorTest {
     @Test
     void validateForActivation_paid_throwsException() {
         booking.setStatus(BookingStatus.PAID);
-        Exception exception = assertThrows(IllegalStateException.class,
+        ValidationException exception = assertThrows(ValidationException.class,
                 () -> validator.validateForActivation(booking));
         assertTrue(exception.getMessage().contains("Only APPROVED bookings can be activated"));
+        assertEquals("ACTIVATION", exception.getValidationRule());
     }
 
     @Test
     void validateForActivation_futureCheckIn_throwsException() {
         booking.setStatus(BookingStatus.APPROVED);
         booking.setCheckInDate(LocalDate.now().plusDays(1)); // future check-in date
-        Exception exception = assertThrows(IllegalStateException.class,
+        // ✅ CHANGE: Expect ValidationException instead of IllegalStateException
+        ValidationException exception = assertThrows(ValidationException.class,
                 () -> validator.validateForActivation(booking));
         assertTrue(exception.getMessage().contains("Booking cannot be activated before check-in date"));
+        assertEquals("ACTIVATION", exception.getValidationRule());
     }
+
+    // Deactivation Validation Tests
 
     @Test
     void validateForDeactivation_active_doesNotThrowException() {
@@ -216,8 +235,9 @@ class BookingValidatorTest {
     @Test
     void validateForDeactivation_approved_throwsException() {
         booking.setStatus(BookingStatus.APPROVED);
-        Exception exception = assertThrows(IllegalStateException.class,
+        ValidationException exception = assertThrows(ValidationException.class,
                 () -> validator.validateForDeactivation(booking));
         assertTrue(exception.getMessage().contains("Only ACTIVE bookings can be deactivated"));
+        assertEquals("DEACTIVATION", exception.getValidationRule());
     }
 }

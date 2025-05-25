@@ -18,4 +18,9 @@ public class ValidationContext {
     public boolean hasKos() {
         return kos != null;
     }
+
+    public boolean hasRequester() {
+        return requesterId != null;
+    }
+
 }

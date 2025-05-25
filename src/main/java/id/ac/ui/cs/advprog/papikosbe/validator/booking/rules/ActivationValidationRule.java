@@ -1,23 +1,33 @@
 package id.ac.ui.cs.advprog.papikosbe.validator.booking.rules;
 
 import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
+import id.ac.ui.cs.advprog.papikosbe.enums.ValidationRequirement;
+import id.ac.ui.cs.advprog.papikosbe.exception.ValidationException;
+import id.ac.ui.cs.advprog.papikosbe.validator.booking.BaseValidationRule;
 import id.ac.ui.cs.advprog.papikosbe.validator.booking.ValidationContext;
-import id.ac.ui.cs.advprog.papikosbe.validator.booking.ValidationRule;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 
 @Component
-public class ActivationValidationRule implements ValidationRule {
-    
+public class ActivationValidationRule extends BaseValidationRule {
+
     @Override
-    public void validate(ValidationContext context) {
+    protected void doValidate(ValidationContext context) throws ValidationException {
         if (context.getBooking().getStatus() != BookingStatus.APPROVED) {
-            throw new IllegalStateException("Only APPROVED bookings can be activated");
+            throw new ValidationException(
+                    "Only APPROVED bookings can be activated",
+                    getOperationType(),
+                    context.getOperation()
+            );
         }
 
         if (context.getBooking().getCheckInDate().isAfter(LocalDate.now())) {
-            throw new IllegalStateException("Booking cannot be activated before check-in date");
+            throw new ValidationException(
+                    "Booking cannot be activated before check-in date",
+                    getOperationType(),
+                    context.getOperation()
+            );
         }
     }
 
@@ -34,5 +44,10 @@ public class ActivationValidationRule implements ValidationRule {
     @Override
     public int getPriority() {
         return 2;
+    }
+
+    @Override
+    public ValidationRequirement getRequirements() {
+        return ValidationRequirement.BOOKING_ONLY;
     }
 }

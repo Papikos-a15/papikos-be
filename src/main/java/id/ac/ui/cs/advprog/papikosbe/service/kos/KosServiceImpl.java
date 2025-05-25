@@ -1,7 +1,7 @@
 package id.ac.ui.cs.advprog.papikosbe.service.kos;
 
-import id.ac.ui.cs.advprog.papikosbe.observer.KosStatusChangedEvent;
-import org.springframework.context.ApplicationEventPublisher;
+import id.ac.ui.cs.advprog.papikosbe.observer.handler.EventHandlerContext;
+import id.ac.ui.cs.advprog.papikosbe.observer.event.KosStatusChangedEvent;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
@@ -18,7 +18,7 @@ import java.util.concurrent.CompletableFuture;
 public class KosServiceImpl implements KosService {
 
     private final KosRepository kosRepository;
-    private final ApplicationEventPublisher eventPublisher;
+    private final EventHandlerContext eventHandlerContext;
 
     @Override
     public Kos addKos(Kos kos) {
@@ -45,10 +45,8 @@ public class KosServiceImpl implements KosService {
     @Override
     public Optional<Kos> updateKos(UUID id, Kos updatedKos) {
         Optional<Kos> foundKos = kosRepository.findById(id);
-        System.out.println("ini update kos");
         if (foundKos.isPresent()) {
             boolean avail = foundKos.get().isAvailable();
-            System.out.println("avail: " + avail);
 
             foundKos.get().setName(updatedKos.getName());
             foundKos.get().setDescription(updatedKos.getDescription());
@@ -57,12 +55,13 @@ public class KosServiceImpl implements KosService {
             foundKos.get().setAvailable(updatedKos.isAvailable());
 
             if (!avail && foundKos.get().isAvailable()) {
-                System.out.println("yeah");
-                eventPublisher.publishEvent(new KosStatusChangedEvent(
+                KosStatusChangedEvent event = new KosStatusChangedEvent(
                         this,
                         foundKos.get().getId(),
                         foundKos.get().getName(),
-                        true));
+                        true
+                );
+                eventHandlerContext.handleEvent(event);
             }
         }
 

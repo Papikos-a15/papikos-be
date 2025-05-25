@@ -2,6 +2,8 @@ package id.ac.ui.cs.advprog.papikosbe.service.booking;
 
 import id.ac.ui.cs.advprog.papikosbe.model.booking.Booking;
 import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
+import id.ac.ui.cs.advprog.papikosbe.observer.event.BookingApprovedEvent;
+import id.ac.ui.cs.advprog.papikosbe.observer.handler.EventHandlerContext;
 import id.ac.ui.cs.advprog.papikosbe.repository.booking.BookingRepository;
 import id.ac.ui.cs.advprog.papikosbe.service.kos.KosService;
 import id.ac.ui.cs.advprog.papikosbe.service.transaction.TransactionService;
@@ -26,16 +28,19 @@ public class BookingServiceImpl implements BookingService {
     private final KosService kosService;
     private final TransactionService transactionService;
     private final BookingValidator stateValidator;
+    private final EventHandlerContext eventHandlerContext;
 
     @Autowired
     public BookingServiceImpl(BookingRepository bookingRepository,
                               KosService kosService,
                               TransactionService transactionService,
-                              BookingValidator stateValidator) {
+                              BookingValidator stateValidator, EventHandlerContext eventHandlerContext) {
         this.bookingRepository = bookingRepository;
         this.kosService = kosService;
         this.transactionService = transactionService;
-        this.stateValidator = stateValidator;}
+        this.stateValidator = stateValidator;
+        this.eventHandlerContext = eventHandlerContext;
+    }
 
     @Override
     public Booking createBooking(Booking booking) {
@@ -121,6 +126,9 @@ public class BookingServiceImpl implements BookingService {
         // Update booking status to APPROVED
         booking.setStatus(BookingStatus.APPROVED);
         bookingRepository.save(booking);
+
+        BookingApprovedEvent event = new BookingApprovedEvent(this, booking.getBookingId(), booking.getUserId());
+        eventHandlerContext.handleEvent(event);
     }
 
     @Override

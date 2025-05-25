@@ -1,154 +1,100 @@
 package id.ac.ui.cs.advprog.papikosbe.validator.booking;
 
-import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
 import id.ac.ui.cs.advprog.papikosbe.model.booking.Booking;
 import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
-
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
+import java.util.Comparator;
+import java.util.List;
+import java.util.UUID;
 
 @Component
 public class BookingValidator {
 
+    private final List<ValidationRule> validationRules;
+
+    @Autowired
+    public BookingValidator(List<ValidationRule> validationRules) {
+        this.validationRules = validationRules;
+    }
+
     /**
-     * Validates if a booking can be updated based on its current state
+     * Universal validation method with ValidationContext
      */
+    public void validate(ValidationContext context) {
+        validationRules.stream()
+                .filter(rule -> rule.supports(context.getOperation(), context.getBooking().getStatus()))
+                .sorted(Comparator.comparingInt(ValidationRule::getPriority))
+                .forEach(rule -> rule.validate(context));
+    }
+
+    // Convenience methods for common operations
+    public void validateForCreation(Booking booking, Kos kos) {
+        ValidationContext context = ValidationContext.builder()
+                .booking(booking)
+                .kos(kos)
+                .operation("CREATION")
+                .build();
+        validate(context);
+    }
+
     public void validateForUpdate(Booking booking) {
-        if (booking.getStatus() == BookingStatus.APPROVED ||
-                booking.getStatus() == BookingStatus.CANCELLED ||
-                booking.getStatus() == BookingStatus.ACTIVE ||
-                booking.getStatus() == BookingStatus.INACTIVE) {
-            throw new IllegalStateException("Cannot edit booking after it has been approved, activated, cancelled, or deactivated");
-        }
+        ValidationContext context = ValidationContext.builder()
+                .booking(booking)
+                .operation("UPDATE")
+                .build();
+        validate(context);
     }
 
-    /**
-     * Validates if a booking can be paid based on its current state
-     */
     public void validateForPayment(Booking booking) {
-        if (booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
-            throw new IllegalStateException("Only bookings in PENDING_PAYMENT status can be paid");
-        }
+        ValidationContext context = ValidationContext.builder()
+                .booking(booking)
+                .operation("PAYMENT")
+                .build();
+        validate(context);
     }
 
-    /**
-     * Validates if a booking can be approved based on its current state
-     */
     public void validateForApproval(Booking booking) {
-        if (booking.getStatus() != BookingStatus.PAID) {
-            throw new IllegalStateException("Only PAID bookings can be approved");
-        }
+        ValidationContext context = ValidationContext.builder()
+                .booking(booking)
+                .operation("APPROVAL")
+                .build();
+        validate(context);
     }
 
-    /**
-     * Validates if a booking can be cancelled based on its current state
-     */
     public void validateForCancellation(Booking booking) {
-        if (booking.getStatus() == BookingStatus.APPROVED ||
-                booking.getStatus() == BookingStatus.ACTIVE ||
-                booking.getStatus() == BookingStatus.INACTIVE) {
-            throw new IllegalStateException("Cannot cancel approved, active, or inactive bookings");
-        }
+        ValidationContext context = ValidationContext.builder()
+                .booking(booking)
+                .operation("CANCELLATION")
+                .build();
+        validate(context);
     }
 
-    /**
-     * Validates minimum advance booking requirement
-     */
-    public void validateBookingAdvance(LocalDate checkInDate) {
-        LocalDate tomorrow = LocalDate.now().plusDays(1);
-        if (checkInDate.isBefore(tomorrow)) {
-            throw new IllegalArgumentException("Booking must be made at least 1 day in advance to allow owner approval time");
-        }
-    }
-
-    /**
-     * Validates status transition to ACTIVE
-     */
     public void validateForActivation(Booking booking) {
-        if (booking.getStatus() != BookingStatus.APPROVED) {
-            throw new IllegalStateException("Only APPROVED bookings can be activated");
-        }
-
-        if (booking.getCheckInDate().isAfter(LocalDate.now())) {
-            throw new IllegalStateException("Booking cannot be activated before check-in date");
-        }
+        ValidationContext context = ValidationContext.builder()
+                .booking(booking)
+                .operation("ACTIVATION")
+                .build();
+        validate(context);
     }
 
-    /**
-     * Validates status transition to INACTIVE
-     */
     public void validateForDeactivation(Booking booking) {
-        if (booking.getStatus() != BookingStatus.ACTIVE) {
-            throw new IllegalStateException("Only ACTIVE bookings can be deactivated");
-        }
+        ValidationContext context = ValidationContext.builder()
+                .booking(booking)
+                .operation("DEACTIVATION")
+                .build();
+        validate(context);
     }
 
-    /**
-     * Validates basic booking fields - general data validation regardless of state
-     */
-    public void validateBasicFields(Booking booking) {
-        if (booking.getBookingId() == null) {
-            throw new IllegalArgumentException("Booking ID cannot be null");
-        }
-
-        if (booking.getUserId() == null) {
-            throw new IllegalArgumentException("User ID cannot be null");
-        }
-
-        if (booking.getKosId() == null) {
-            throw new IllegalArgumentException("Kos ID cannot be null");
-        }
-
-        if (booking.getCheckInDate() == null || booking.getCheckInDate().isBefore(LocalDate.now())) {
-            throw new IllegalArgumentException("Check-in date must be today or in the future");
-        }
-
-        if (booking.getDuration() < 1) {
-            throw new IllegalArgumentException("Duration must be at least 1 month");
-        }
-
-        if (booking.getMonthlyPrice() <= 0) {
-            throw new IllegalArgumentException("Monthly price must be greater than 0");
-        }
-
-        if (booking.getFullName() == null || booking.getFullName().trim().isEmpty()) {
-            throw new IllegalArgumentException("Full name cannot be empty");
-        }
-
-        if (booking.getPhoneNumber() == null || booking.getPhoneNumber().trim().isEmpty()) {
-            throw new IllegalArgumentException("Phone number cannot be empty");
-        }
-    }
-
-    /**
-     * Validates if a kos is available for booking
-     * @param kos The kos to check for availability
-     * @throws IllegalStateException if kos is not available or has no rooms
-     */
     public void validateKosAvailability(Kos kos) {
+        // ✅ Direct validation - no need for temp booking
         if (!kos.isAvailable()) {
             throw new IllegalStateException("Kos is not available for booking");
         }
-        
+
         if (kos.getAvailableRooms() <= 0) {
             throw new IllegalStateException("No rooms available for booking");
         }
     }
-
-    /**
-     * Validates if a booking can be created
-     * @param booking The booking to validate
-     * @param kos The kos associated with the booking
-     * @throws IllegalStateException if validation fails
-     */
-    public void validateForCreation(Booking booking, Kos kos) {
-        // Validate basic booking fields
-        validateBasicFields(booking);
-        
-        // Validate kos availability
-        validateKosAvailability(kos);
-    }
-
-
 }

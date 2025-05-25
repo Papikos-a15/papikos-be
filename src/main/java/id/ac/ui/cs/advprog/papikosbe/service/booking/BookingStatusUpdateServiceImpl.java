@@ -111,7 +111,6 @@ public class BookingStatusUpdateServiceImpl implements BookingStatusUpdateServic
             try {
                 // Validate transition is allowed
                 stateValidator.validateForActivation(booking);
-                
                 booking.setStatus(BookingStatus.ACTIVE);
                 bookingRepository.save(booking);
                 updatedCount++;

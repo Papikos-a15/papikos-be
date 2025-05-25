@@ -2,10 +2,12 @@ package id.ac.ui.cs.advprog.papikosbe.validator.booking;
 
 import id.ac.ui.cs.advprog.papikosbe.model.booking.Booking;
 import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
+import id.ac.ui.cs.advprog.papikosbe.validator.booking.rules.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -18,7 +20,17 @@ class BookingValidatorKosAvailabilityTest {
 
     @BeforeEach
     void setUp() {
-        validator = new BookingValidator();
+
+        List<ValidationRule> rules = List.of(
+                new UpdateValidationRule(),
+                new PaymentValidationRule(),
+                new ApprovalValidationRule(),
+                new CancellationValidationRule(),
+                new ActivationValidationRule(),
+                new DeactivationValidationRule(),
+                new KosAvailabilityValidationRule()
+        );
+        validator = new BookingValidator(rules);
 
         // Create a valid booking
         booking = new Booking();

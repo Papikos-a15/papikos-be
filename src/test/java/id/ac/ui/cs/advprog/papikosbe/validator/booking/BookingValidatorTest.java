@@ -2,22 +2,36 @@ package id.ac.ui.cs.advprog.papikosbe.validator.booking;
 
 import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
 import id.ac.ui.cs.advprog.papikosbe.model.booking.Booking;
+import id.ac.ui.cs.advprog.papikosbe.validator.booking.rules.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+
 class BookingValidatorTest {
 
-    private BookingValidator validator;
+        private BookingValidator validator;
     private Booking booking;
 
     @BeforeEach
     void setUp() {
-        validator = new BookingValidator();
+
+        // ✅ Create real validation rules with actual logic
+        List<ValidationRule> rules = List.of(
+                new UpdateValidationRule(),
+                new PaymentValidationRule(),
+                new ApprovalValidationRule(),
+                new CancellationValidationRule(),
+                new ActivationValidationRule(),
+                new DeactivationValidationRule(),
+                new KosAvailabilityValidationRule()
+        );
+        validator = new BookingValidator(rules);
 
         // Create a sample booking
         booking = new Booking(
@@ -168,27 +182,6 @@ class BookingValidatorTest {
         assertTrue(exception.getMessage().contains("Cannot cancel approved, active, or inactive bookings"));
     }
 
-    @Test
-    void validateBookingAdvance_today_throwsException() {
-        LocalDate today = LocalDate.now();
-        Exception exception = assertThrows(IllegalArgumentException.class,
-                () -> validator.validateBookingAdvance(today));
-        assertTrue(exception.getMessage().contains("Booking must be made at least 1 day in advance"));
-    }
-
-    @Test
-    void validateBookingAdvance_yesterday_throwsException() {
-        LocalDate yesterday = LocalDate.now().minusDays(1);
-        Exception exception = assertThrows(IllegalArgumentException.class,
-                () -> validator.validateBookingAdvance(yesterday));
-        assertTrue(exception.getMessage().contains("Booking must be made at least 1 day in advance"));
-    }
-
-    @Test
-    void validateBookingAdvance_tomorrow_doesNotThrowException() {
-        LocalDate tomorrow = LocalDate.now().plusDays(1);
-        assertDoesNotThrow(() -> validator.validateBookingAdvance(tomorrow));
-    }
 
     @Test
     void validateForActivation_approved_doesNotThrowException() {

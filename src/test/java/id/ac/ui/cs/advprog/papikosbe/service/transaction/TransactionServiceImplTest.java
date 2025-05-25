@@ -1,19 +1,42 @@
 package id.ac.ui.cs.advprog.papikosbe.service.transaction;
 
+import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
+import id.ac.ui.cs.advprog.papikosbe.enums.TransactionStatus;
+import id.ac.ui.cs.advprog.papikosbe.enums.WalletStatus;
 import id.ac.ui.cs.advprog.papikosbe.factory.TransactionFactory;
+import id.ac.ui.cs.advprog.papikosbe.model.booking.Booking;
+import id.ac.ui.cs.advprog.papikosbe.model.booking.PaymentBooking;
+import id.ac.ui.cs.advprog.papikosbe.model.transaction.Payment;
+import id.ac.ui.cs.advprog.papikosbe.model.transaction.TopUp;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Transaction;
 import id.ac.ui.cs.advprog.papikosbe.enums.TransactionType;
-import org.junit.jupiter.api.BeforeEach;
+import id.ac.ui.cs.advprog.papikosbe.model.transaction.Wallet;
+import id.ac.ui.cs.advprog.papikosbe.model.user.Owner;
+import id.ac.ui.cs.advprog.papikosbe.model.user.Tenant;
+import id.ac.ui.cs.advprog.papikosbe.observer.handler.EventHandlerContext;
+import id.ac.ui.cs.advprog.papikosbe.repository.booking.BookingRepository;
+import id.ac.ui.cs.advprog.papikosbe.repository.booking.PaymentBookingRepository;
+import id.ac.ui.cs.advprog.papikosbe.repository.transaction.TransactionRepository;
+import id.ac.ui.cs.advprog.papikosbe.repository.transaction.WalletRepository;
+import id.ac.ui.cs.advprog.papikosbe.repository.user.UserRepository;
+import id.ac.ui.cs.advprog.papikosbe.service.booking.BookingServiceImpl;
+import id.ac.ui.cs.advprog.papikosbe.service.kos.KosServiceImpl;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -22,80 +45,449 @@ import static org.mockito.Mockito.*;
 class TransactionServiceImplTest {
 
     @Mock
-    TransactionFactory transactionFactory;
+    private TransactionRepository transactionRepository;
+
+    @Mock
+    private BookingRepository bookingRepository;
+
+    @Mock
+    private PaymentBookingRepository paymentBookingRepository;
+
+    @Mock
+    private KosServiceImpl kosService;
 
     @InjectMocks
-    TransactionServiceImpl transactionService;
+    private BookingServiceImpl bookingService;
 
-    Transaction transaction;
-    UUID userId;
-    BigDecimal amount;
-    TransactionType type;
+    @Mock
+    private UserRepository userRepository;
 
-    @BeforeEach
-    void setUp() {
-        userId = UUID.randomUUID();
-        amount = new BigDecimal("75.00");
-        type = TransactionType.PAYMENT;
+    @Mock
+    private WalletRepository walletRepository;
 
-        transaction = new Transaction(UUID.randomUUID(), userId, amount, type, LocalDateTime.now());
-    }
+    @Mock
+    private WalletService walletService;
+
+    @Mock
+    private TransactionFactory transactionFactory;
+
+    @Mock
+    private EventHandlerContext eventHandlerContext;
+
+    @InjectMocks
+    private TransactionServiceImpl transactionService;
 
     @Test
-    void testCreateTransaction() {
-        when(transactionFactory.createTransaction(userId, amount, type)).thenReturn(transaction);
+    void testCreatePayment_Success() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        BigDecimal amount = new BigDecimal("30000");
 
-        Transaction result = transactionService.createTransaction(userId, amount, type);
+        Tenant tenant = Tenant.builder().email("tenant@example.com").password("tenantpass").build();
+        tenant.setId(tenantId);
 
+        Owner owner = Owner.builder().email("owner@example.com").password("ownerpass").build();
+        owner.setId(ownerId);
+
+        Wallet tenantWallet = new Wallet();
+        tenantWallet.setUser(tenant);
+        tenantWallet.setStatus(WalletStatus.ACTIVE);
+        tenantWallet.setBalance(new BigDecimal("100000"));
+
+        Wallet ownerWallet = new Wallet();
+        ownerWallet.setUser(owner);
+        ownerWallet.setStatus(WalletStatus.ACTIVE);
+        ownerWallet.setBalance(new BigDecimal("50000"));
+
+        Payment payment = Mockito.spy(new Payment());
+        payment.setUser(tenant);
+        payment.setOwner(owner);
+        payment.setAmount(amount);
+
+        // SETUP MOCKS
+        when(userRepository.findById(tenantId)).thenReturn(Optional.of(tenant));
+        when(userRepository.findById(ownerId)).thenReturn(Optional.of(owner));
+        when(walletRepository.findByUserId(tenantId)).thenReturn(Optional.of(tenantWallet));
+        when(walletRepository.findByUserId(ownerId)).thenReturn(Optional.of(ownerWallet));
+        when(walletService.getOrCreateWallet(tenant)).thenReturn(tenantWallet);
+        when(walletService.getOrCreateWallet(owner)).thenReturn(ownerWallet);
+        when(transactionFactory.createTransaction(TransactionType.PAYMENT, tenantId, amount, ownerId))
+                .thenReturn(payment);
+        when(payment.process(tenantWallet, ownerWallet)).thenReturn(TransactionStatus.COMPLETED);
+        when(transactionRepository.save(payment)).thenReturn(payment);
+
+        // ACTION - Call the asynchronous method
+        CompletableFuture<Payment> resultFuture = transactionService.createPayment(tenantId, ownerId, amount);
+
+        // Wait for the result to complete
+        Payment result = resultFuture.join();  // This will block until the future completes
+
+        // ASSERTION
         assertNotNull(result);
-        assertEquals(transaction.getUserId(), result.getUserId());
-        assertEquals(transaction.getAmount(), result.getAmount());
+        assertEquals(TransactionStatus.COMPLETED, result.getStatus());
+        verify(walletRepository).save(tenantWallet);
+        verify(walletRepository).save(ownerWallet);
+        verify(transactionRepository).save(payment);
+    }
+
+
+    @Test
+    void testCreatePayment_Failure_InsufficientBalance() {
+        UUID tenantId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        BigDecimal amount = new BigDecimal("150000");
+
+        Tenant tenant = Tenant.builder().email("tenant@example.com").password("tenantpass").build();
+        tenant.setId(tenantId);
+
+        Owner owner = Owner.builder().email("owner@example.com").password("ownerpass").build();
+        owner.setId(ownerId);
+
+        Wallet tenantWallet = new Wallet();
+        tenantWallet.setUser(tenant);
+        tenantWallet.setStatus(WalletStatus.ACTIVE);
+        tenantWallet.setBalance(new BigDecimal("50000"));
+
+        Wallet ownerWallet = new Wallet();
+        ownerWallet.setUser(owner);
+        ownerWallet.setStatus(WalletStatus.ACTIVE);
+        ownerWallet.setBalance(new BigDecimal("100000"));
+
+        Payment payment = new Payment();
+        payment.setUser(tenant);
+        payment.setOwner(owner);
+        payment.setAmount(amount);
+
+        when(userRepository.findById(tenantId)).thenReturn(Optional.of(tenant));
+        when(userRepository.findById(ownerId)).thenReturn(Optional.of(owner));
+
+        assertThrows(Exception.class, () -> transactionService.createPayment(tenantId, ownerId, amount));
     }
 
     @Test
-    void testFindAllTransactions() {
-        when(transactionFactory.createTransaction(userId, amount, type)).thenReturn(transaction);
-        transactionService.createTransaction(userId, amount, type);
+    void testCreateTopUp_Success() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        BigDecimal amount = new BigDecimal("30000");
 
-        List<Transaction> allTransactions = transactionService.findAll();
-        assertEquals(1, allTransactions.size());
-        assertEquals(transaction, allTransactions.getFirst());
+        Tenant tenant = Tenant.builder().email("tenant@example.com").password("tenantpass").build();
+        tenant.setId(tenantId);
+
+        Wallet tenantWallet = new Wallet();
+        tenantWallet.setUser(tenant);
+        tenantWallet.setStatus(WalletStatus.ACTIVE);
+        tenantWallet.setBalance(new BigDecimal("50000"));
+
+        TopUp topUp = Mockito.spy(new TopUp());
+        topUp.setUser(tenant);
+        topUp.setAmount(amount);
+        topUp.setStatus(TransactionStatus.COMPLETED);
+
+        // Mocking the repositories and methods
+        when(walletRepository.findByUserId(tenantId)).thenReturn(Optional.of(tenantWallet));
+        when(transactionFactory.createTransaction(TransactionType.TOP_UP, tenantId, amount, null)).thenReturn(topUp);
+        when(topUp.process(tenantWallet, null)).thenReturn(TransactionStatus.COMPLETED);
+        when(transactionRepository.save(topUp)).thenReturn(topUp);
+
+        // Call the asynchronous method
+        CompletableFuture<TopUp> resultFuture = transactionService.createTopUp(tenantId, amount);
+
+        // Wait for the result
+        TopUp result = resultFuture.join(); // join() waits for the result
+
+        // Assertions
+        assertNotNull(result);
+        assertEquals(TransactionStatus.COMPLETED, result.getStatus());
+        verify(walletRepository).save(tenantWallet);
+        verify(transactionRepository).save(topUp);
+    }
+
+
+    @Test
+    void testCreateTopUp_Failure_InvalidAmount() {
+        UUID tenantId = UUID.randomUUID();
+        BigDecimal amount = new BigDecimal("5000"); // assume this is below minimum allowed
+
+        Tenant tenant = Tenant.builder().email("tenant@example.com").password("tenantpass").build();
+        tenant.setId(tenantId);
+
+        Wallet tenantWallet = new Wallet();
+        tenantWallet.setUser(tenant);
+        tenantWallet.setStatus(WalletStatus.ACTIVE);
+        tenantWallet.setBalance(new BigDecimal("50000"));
+
+        TopUp topUp = new TopUp();
+        topUp.setUser(tenant);
+        topUp.setAmount(amount);
+
+        assertThrows(Exception.class, () -> transactionService.createTopUp(tenantId, amount));
     }
 
     @Test
-    void testFindTransactionById() {
-        when(transactionFactory.createTransaction(userId, amount, type)).thenReturn(transaction);
-        transactionService.createTransaction(userId, amount, type);
+    void testGetTransactionById() {
+        // Arrange
+        UUID transactionId = UUID.randomUUID();
+        Payment payment = new Payment();
+        when(transactionRepository.findById(transactionId)).thenReturn(Optional.of(payment));
 
-        Transaction found = transactionService.findById(transaction.getId());
-        assertEquals(transaction, found);
+        // Act
+        Transaction result = transactionService.getTransactionById(transactionId);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(payment, result);
     }
 
     @Test
-    void testFindAllTransactionsByUserId() {
-        when(transactionFactory.createTransaction(userId, amount, type)).thenReturn(transaction);
-        transactionService.createTransaction(userId, amount, type);
+    void testGetTransactionById_TransactionNotFound() {
+        // Arrange
+        UUID transactionId = UUID.randomUUID();
+        when(transactionRepository.findById(transactionId)).thenReturn(Optional.empty());
 
-        List<Transaction> userTransactions = transactionService.findAllByUserId(userId);
-        assertFalse(userTransactions.isEmpty());
-        assertEquals(userId, userTransactions.getFirst().getUserId());
+        // Act & Assert
+        assertThrows(Exception.class, () -> transactionService.getTransactionById(transactionId));
     }
 
     @Test
-    void testFindTransactionByType(){
-        when(transactionFactory.createTransaction(userId, amount, type)).thenReturn(transaction);
-        transactionService.createTransaction(userId, amount, type);
+    void testGetUserTransactions() {
+        // Arrange
+        List<Payment> payments = Collections.singletonList(new Payment());
+        List<TopUp> topUps = Collections.singletonList(new TopUp());
+        UUID userId = UUID.randomUUID();
 
-        List<Transaction> paymentTransactions = transactionService.findByType(type);
-        assertFalse(paymentTransactions.isEmpty());
-        assertEquals(type, paymentTransactions.getFirst().getType());
+        when(transactionRepository.findPaymentsByUser(userId)).thenReturn(payments);
+        when(transactionRepository.findTopUpsByUser(userId)).thenReturn(topUps);
+
+        // Act
+        List<Transaction> result = transactionService.getUserTransactions(userId);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(2, result.size());  // One payment and one top-up
     }
 
     @Test
-    void testFindTransactionByDate(){
-        when(transactionFactory.createTransaction(userId, amount, type)).thenReturn(transaction);
-        transactionService.createTransaction(userId, amount, type);
+    void testRefundPayment_ThrowsIfNotCompleted() {
+        UUID paymentId = UUID.randomUUID();
+        UUID requesterId = UUID.randomUUID();
 
-        assertTrue(transactionService.findByDate(transaction.getTimestamp()).contains(transaction));
+        Payment payment = new Payment();
+        payment.setStatus(TransactionStatus.PENDING);
+
+        when(transactionRepository.findPaymentById(paymentId)).thenReturn(Optional.of(payment));
+
+        Exception ex = assertThrows(Exception.class, () -> {
+            transactionService.refundPayment(paymentId, requesterId).join();
+        });
+
+        assertTrue(ex.getMessage().contains("Transaksi belum selesai"));
     }
+
+    @Test
+    void testValidatePaymentFailsIfTenantEqualsOwner() {
+        UUID id = UUID.randomUUID();
+        BigDecimal amount = new BigDecimal("10000");
+
+        Exception ex = assertThrows(Exception.class, () ->
+                transactionService.validatePayment(id, id, amount)
+        );
+
+        assertTrue(ex.getMessage().contains("tidak boleh sama"));
+    }
+
+    @Test
+    void testValidateTopUpFailsIfAmountNull() {
+        UUID userId = UUID.randomUUID();
+
+        Exception ex = assertThrows(Exception.class, () ->
+                transactionService.validateTopUp(userId, null)
+        );
+
+        assertTrue(ex.getMessage().contains("lebih dari 0"));
+    }
+
+    @Test
+    void testValidateTopUpFailsIfWalletNotFound() {
+        UUID userId = UUID.randomUUID();
+        BigDecimal amount = new BigDecimal("50000");
+
+        Exception ex = assertThrows(Exception.class, () ->
+                transactionService.validateTopUp(userId, amount)
+        );
+
+        assertTrue(ex.getMessage().contains("Wallet user tidak ditemukan"));
+    }
+
+    @Test
+    void testGetTransactionByDate() {
+        // Arrange
+        LocalDateTime now = LocalDateTime.of(2025, 5, 25, 10, 30); // bebas waktu
+        LocalDate dateOnly = LocalDate.from(now); // yang dikirim ke repo
+        Payment transaction1 = new Payment();
+        TopUp transaction2 = new TopUp();
+        List<Transaction> expected = List.of(transaction1, transaction2);
+
+        when(transactionRepository.findByDate(dateOnly)).thenReturn(expected);
+
+        // Act
+        List<Transaction> result = transactionService.getTransactionByDate(now);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals(expected, result);
+        verify(transactionRepository).findByDate(dateOnly);
+    }
+
+    @Test
+    void testRefundPayment_Success() throws Exception {
+        UUID paymentId = UUID.randomUUID();
+        UUID tenantId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID bookingId = UUID.randomUUID();
+        BigDecimal amount = new BigDecimal("30000");
+
+        Tenant tenant = Tenant.builder().email("tenant@example.com").password("pass").build();
+        tenant.setId(tenantId);
+
+        Owner owner = Owner.builder().email("owner@example.com").password("pass").build();
+        owner.setId(ownerId);
+
+        Wallet tenantWallet = new Wallet();
+        tenantWallet.setUser(tenant);
+        tenantWallet.setBalance(new BigDecimal("10000"));
+        tenantWallet.setStatus(WalletStatus.ACTIVE);
+
+        Wallet ownerWallet = new Wallet();
+        ownerWallet.setUser(owner);
+        ownerWallet.setBalance(new BigDecimal("100000"));
+        ownerWallet.setStatus(WalletStatus.ACTIVE);
+
+        Payment originalPayment = Mockito.spy(new Payment());
+        originalPayment.setId(paymentId);
+        originalPayment.setUser(tenant);
+        originalPayment.setOwner(owner);
+        originalPayment.setAmount(amount);
+        originalPayment.setStatus(TransactionStatus.COMPLETED); // <--- penting
+
+        PaymentBooking paymentBooking = new PaymentBooking();
+        paymentBooking.setPaymentId(paymentId);
+        paymentBooking.setBookingId(bookingId);
+
+        Booking booking = new Booking();
+        booking.setBookingId(bookingId);
+        booking.setStatus(BookingStatus.APPROVED);
+
+        when(transactionRepository.findPaymentById(paymentId)).thenReturn(Optional.of(originalPayment));
+        when(paymentBookingRepository.findByPaymentId(paymentId)).thenReturn(Optional.of(paymentBooking));
+        when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
+        when(walletRepository.findByUserId(tenantId)).thenReturn(Optional.of(tenantWallet));
+        when(walletRepository.findByUserId(ownerId)).thenReturn(Optional.of(ownerWallet));
+
+        when(transactionRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // ACT
+        CompletableFuture<Payment> resultFuture = transactionService.refundPayment(paymentId, ownerId);
+        Payment refund = resultFuture.join();
+
+        // ASSERT
+        assertNotNull(refund);
+        assertEquals(TransactionStatus.COMPLETED, refund.getStatus());
+        verify(transactionRepository).save(originalPayment);
+        verify(walletRepository).save(ownerWallet);
+        verify(walletRepository).save(tenantWallet);
+    }
+
+    @Test
+    void processBookingPayment_successfulFlow() throws Exception {
+        UUID bookingId = UUID.randomUUID();
+        UUID paymentId = UUID.randomUUID();
+        Booking booking = new Booking();
+        booking.setBookingId(bookingId);
+        booking.setStatus(BookingStatus.PENDING_PAYMENT);
+
+        when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
+
+        transactionService.processBookingPayment(bookingId, paymentId);
+
+        verify(paymentBookingRepository).save(argThat(payment ->
+                payment.getBookingId().equals(bookingId) &&
+                        payment.getPaymentId().equals(paymentId)
+        ));
+        assertEquals(BookingStatus.PAID, booking.getStatus());
+        verify(bookingRepository).save(booking);
+    }
+
+    @Test
+    void processBookingPayment_bookingNotFound_throwsException() {
+        UUID bookingId = UUID.randomUUID();
+        UUID paymentId = UUID.randomUUID();
+
+        when(bookingRepository.findById(bookingId)).thenReturn(Optional.empty());
+
+        EntityNotFoundException exception = assertThrows(EntityNotFoundException.class, () ->
+                transactionService.processBookingPayment(bookingId, paymentId)
+        );
+
+        assertEquals("Booking not found", exception.getMessage());
+    }
+
+    @Test
+    void processBookingPayment_invalidStatus_throwsException() {
+        UUID bookingId = UUID.randomUUID();
+        UUID paymentId = UUID.randomUUID();
+        Booking booking = new Booking();
+        booking.setBookingId(bookingId);
+        booking.setStatus(BookingStatus.CANCELLED); // any status other than PENDING_PAYMENT
+
+        when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
+                transactionService.processBookingPayment(bookingId, paymentId)
+        );
+
+        assertEquals("Booking is not in PENDING_PAYMENT status", exception.getMessage());
+    }
+
+    @Test
+    void getPaymentsByTenant_shouldReturnPayments() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        List<Payment> mockPayments = List.of(new Payment(), new Payment());
+
+        when(transactionRepository.findPaymentsByTenant(tenantId)).thenReturn(mockPayments);
+
+        CompletableFuture<List<Payment>> future = transactionService.getPaymentsByTenant(tenantId);
+        List<Payment> result = future.get(); // Waits for the async result
+
+        assertEquals(mockPayments, result);
+        verify(transactionRepository).findPaymentsByTenant(tenantId);
+    }
+
+    @Test
+    void getPaymentsByOwner_shouldReturnPayments() throws Exception {
+        UUID ownerId = UUID.randomUUID();
+        List<Payment> mockPayments = List.of(new Payment());
+
+        when(transactionRepository.findPaymentsByOwner(ownerId)).thenReturn(mockPayments);
+
+        CompletableFuture<List<Payment>> future = transactionService.getPaymentsByOwner(ownerId);
+        List<Payment> result = future.get();
+
+        assertEquals(mockPayments, result);
+        verify(transactionRepository).findPaymentsByOwner(ownerId);
+    }
+
+    @Test
+    void getTopUpsByUser_shouldReturnTopUps() throws Exception {
+        UUID userId = UUID.randomUUID();
+        List<TopUp> mockTopUps = List.of(new TopUp(), new TopUp(), new TopUp());
+
+        when(transactionRepository.findTopUpsByUser(userId)).thenReturn(mockTopUps);
+
+        CompletableFuture<List<TopUp>> future = transactionService.getTopUpsByUser(userId);
+        List<TopUp> result = future.get();
+
+        assertEquals(mockTopUps, result);
+        verify(transactionRepository).findTopUpsByUser(userId);
+    }
+
 }

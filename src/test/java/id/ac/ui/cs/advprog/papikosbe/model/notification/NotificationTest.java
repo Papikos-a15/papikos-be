@@ -25,15 +25,16 @@ public class NotificationTest {
         dummyMessage = "Ada kamar kosong di kos yang kamu favoritkan!";
         createdAt = LocalDateTime.now();
 
-        notification = new Notification(
-                UUID.randomUUID(),
-                dummyUserId,
-                dummyTitle,
-                dummyMessage,
-                createdAt,
-                NotificationType.SYSTEM,
-                false
-        );
+        // Using the Builder pattern to create the Notification
+        notification = Notification.builder()
+                .id(UUID.randomUUID())
+                .userId(dummyUserId)
+                .title(dummyTitle)
+                .message(dummyMessage)
+                .createdAt(createdAt)
+                .type(NotificationType.SYSTEM)
+                .isRead(false)
+                .build();
     }
 
     @Test
@@ -66,4 +67,86 @@ public class NotificationTest {
         notification.setMessage(newMessage);
         assertEquals(newMessage, notification.getMessage());
     }
+
+    @Test
+    public void testNotificationTitleCannotBeNull() {
+        notification.setTitle(null);
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
+            notification.validate();
+        });
+        assertEquals("Title cannot be null or empty", thrown.getMessage());
+    }
+
+    @Test
+    public void testNotificationMessageCannotBeNull() {
+        notification.setMessage(null);
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
+            notification.validate();
+        });
+        assertEquals("Message cannot be null or empty", thrown.getMessage());
+    }
+
+    @Test
+    public void testNotificationTitleCannotBeEmpty() {
+        notification.setTitle(" ");
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
+            notification.validate();
+        });
+        assertEquals("Title cannot be null or empty", thrown.getMessage());
+    }
+
+    @Test
+    public void testNotificationMessageCannotBeEmpty() {
+        notification.setMessage(" ");
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
+            notification.validate();
+        });
+        assertEquals("Message cannot be null or empty", thrown.getMessage());
+    }
+
+    @Test
+    public void testDeprecatedConstructor() {
+        LocalDateTime customCreatedAt = LocalDateTime.now().minusDays(1);
+        Notification deprecatedNotification = new Notification(UUID.randomUUID(), dummyUserId, "Old Notification", "Old Message", customCreatedAt, NotificationType.SYSTEM, false);
+        assertNotNull(deprecatedNotification.getId());
+        assertEquals(dummyUserId, deprecatedNotification.getUserId());
+        assertEquals("Old Notification", deprecatedNotification.getTitle());
+        assertEquals("Old Message", deprecatedNotification.getMessage());
+        assertEquals(customCreatedAt, deprecatedNotification.getCreatedAt());
+        assertEquals(NotificationType.SYSTEM, deprecatedNotification.getType());
+        assertFalse(deprecatedNotification.isRead());
+    }
+
+    @Test
+    public void testNotificationWithNonNullCreatedAt() {
+        notification = Notification.builder()
+                .id(UUID.randomUUID())
+                .userId(dummyUserId)
+                .title(dummyTitle)
+                .message(dummyMessage)
+                .createdAt(createdAt)  // Provided createdAt
+                .type(NotificationType.SYSTEM)
+                .isRead(false)
+                .build();
+
+        assertEquals(createdAt, notification.getCreatedAt(), "The createdAt should be the same as the provided value.");
+    }
+
+    @Test
+    public void testNotificationWithNullCreatedAt() {
+        notification = Notification.builder()
+                .id(UUID.randomUUID())
+                .userId(dummyUserId)
+                .title(dummyTitle)
+                .message(dummyMessage)
+                .createdAt(null)  // Null createdAt
+                .type(NotificationType.SYSTEM)
+                .isRead(false)
+                .build();
+
+        assertNotNull(notification.getCreatedAt(), "The createdAt should not be null.");
+        assertTrue(notification.getCreatedAt().isBefore(LocalDateTime.now().plusSeconds(1)),
+                "The createdAt should be close to the current time.");
+    }
+
 }

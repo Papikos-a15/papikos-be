@@ -2,6 +2,8 @@ package id.ac.ui.cs.advprog.papikosbe.service.transaction;
 
 import id.ac.ui.cs.advprog.papikosbe.factory.WalletFactory;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Wallet;
+import id.ac.ui.cs.advprog.papikosbe.model.user.User;
+import id.ac.ui.cs.advprog.papikosbe.repository.user.UserRepository;
 import id.ac.ui.cs.advprog.papikosbe.repository.transaction.WalletRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -10,25 +12,33 @@ import java.util.*;
 
 @Service
 public class WalletServiceImpl implements WalletService {
+    private final WalletRepository walletRepository;
+    private final WalletFactory walletFactory;
+    private final UserRepository userRepository;
 
     @Autowired
-    private WalletRepository walletRepository;
-
-    @Autowired
-    private WalletFactory walletFactory;
+    public WalletServiceImpl(
+            WalletRepository walletRepository,
+            WalletFactory walletFactory,
+            UserRepository userRepository
+    ) {
+        this.walletRepository = walletRepository;
+        this.walletFactory = walletFactory;
+        this.userRepository = userRepository;
+    }
 
     @Override
     public Wallet create(UUID userId) {
-        Wallet wallet = walletFactory.createWallet(userId);
-        return walletRepository.create(wallet);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Wallet wallet = walletFactory.createWallet(user);
+        return walletRepository.save(wallet);
     }
 
     @Override
     public List<Wallet> findAll() {
-        Iterator<Wallet> iterator = walletRepository.findAll();
-        List<Wallet> wallets = new ArrayList<>();
-        iterator.forEachRemaining(wallets::add);
-        return wallets;
+        return walletRepository.findAll();
     }
 
     @Override
@@ -37,29 +47,27 @@ public class WalletServiceImpl implements WalletService {
     }
 
     @Override
-    public Wallet findByUserId(UUID userId) {
-        Iterator<Wallet> iterator = walletRepository.findAll();
-        while (iterator.hasNext()) {
-            Wallet wallet = iterator.next();
-            if (wallet.getUserId().equals(userId)) {
-                return wallet;
-            }
+    public Wallet getOrCreateWallet(User user) {
+        Wallet wallet = walletRepository.findByUserId(user.getId()).orElse(null);
+        if (wallet == null) {
+            wallet = create(user.getId());
         }
-        return null;
+        return wallet;
     }
 
     @Override
-    public Wallet edit(UUID id, Wallet wallet) {
-        Wallet existing = walletRepository.findById(id).orElse(null);
-        if (existing != null) {
-            existing.setBalance(wallet.getBalance());
-            return existing;
+    public Wallet edit(UUID id, Wallet updatedWallet) {
+        Optional<Wallet> optionalWallet = walletRepository.findById(id);
+        if (optionalWallet.isPresent()) {
+            Wallet existingWallet = optionalWallet.get();
+            existingWallet.setBalance(updatedWallet.getBalance());
+            return walletRepository.save(existingWallet);
         }
         return null;
     }
 
     @Override
     public void delete(UUID id) {
-        walletRepository.delete(id);
+        walletRepository.deleteById(id);
     }
 }

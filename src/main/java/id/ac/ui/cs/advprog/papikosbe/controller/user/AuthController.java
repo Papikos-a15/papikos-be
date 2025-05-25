@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -20,10 +22,16 @@ public class AuthController {
     /* ---------- LOGIN ---------- */
     @PostMapping("/login")
     public ResponseEntity<TokenResponse> login(@RequestBody LoginRequest body) {
+        // Authenticate the user and generate the JWT token
         String token = authService.login(body.email(), body.password());
 
-        return ResponseEntity.ok(new TokenResponse(token));
+        // Retrieve the userId (assuming you have a method to get user by email)
+        UUID userId = authService.getUserIdByEmail(body.email());
+
+        // Return the token and userId in the response
+        return ResponseEntity.ok(new TokenResponse(token, userId));
     }
+
 
     /* ---------- LOGOUT ---------- */
     @PostMapping("/logout")

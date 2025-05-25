@@ -1,9 +1,18 @@
 package id.ac.ui.cs.advprog.papikosbe.repository.transaction;
 
+import id.ac.ui.cs.advprog.papikosbe.enums.TransactionStatus;
+import id.ac.ui.cs.advprog.papikosbe.model.transaction.Payment;
+import id.ac.ui.cs.advprog.papikosbe.model.transaction.TopUp;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Transaction;
 import id.ac.ui.cs.advprog.papikosbe.enums.TransactionType;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -11,50 +20,27 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public class TransactionRepository {
-    private final List<Transaction> transactionData = new ArrayList<>();
+public interface TransactionRepository extends JpaRepository<Transaction, UUID> {
+    @Query("SELECT t FROM Transaction t WHERE CAST(t.createdAt AS date) = :date")
+    List<Transaction> findByDate(@Param("date") LocalDate date);
 
-    public Transaction save(Transaction transaction) {
-        Optional<Transaction> existing = findById(transaction.getId());
-        existing.ifPresent(transactionData::remove); // Remove jika ada
-        transactionData.add(transaction);
-        return transaction;
-    }
+    @Query("SELECT p FROM Payment p WHERE p.user.id = :userId OR p.owner.id = :userId ORDER BY p.createdAt DESC")
+    List<Payment> findPaymentsByUser(@Param("userId") UUID userId);
 
-    public Iterator<Transaction> findAll() {
-        return transactionData.iterator();
-    }
+    @Query("SELECT COUNT(t) FROM Transaction t WHERE t.status = :status")
+    long countByStatus(@Param("status") TransactionStatus status);
 
-    public Optional<Transaction> findById(UUID transactionId) {
-        for (Transaction transaction : transactionData) {
-            if (transaction.getId().equals(transactionId)) {
-                return Optional.of(transaction);
-            }
-        }
-        return Optional.empty();
-    }
+    // --- Payment Specific Queries ---
+    @Query("SELECT p FROM Payment p WHERE p.user.id = :tenantId")
+    List<Payment> findPaymentsByTenant(@Param("tenantId") UUID tenantId);
 
-    public List<Transaction> findAllByUserId(UUID userId) {
-        List<Transaction> result = new ArrayList<>();
-        for (Transaction transaction : transactionData) {
-            if (transaction.getUserId().equals(userId)) {
-                result.add(transaction);
-            }
-        }
-        return result;
-    }
+    @Query("SELECT p FROM Payment p WHERE p.owner.id = :ownerId")
+    List<Payment> findPaymentsByOwner(@Param("ownerId") UUID ownerId);
 
-    public List<Transaction> findAllByUserIdAndTransactionType(UUID userId, TransactionType type) {
-        List<Transaction> result = new ArrayList<>();
-        for (Transaction transaction : transactionData) {
-            if (transaction.getUserId().equals(userId) && transaction.getType() == type) {
-                result.add(transaction);
-            }
-        }
-        return result;
-    }
+    // --- TopUp Specific Queries ---
+    @Query("SELECT t FROM TopUp t WHERE t.user.id = :userId ORDER BY t.createdAt DESC")
+    List<TopUp> findTopUpsByUser(@Param("userId") UUID userId);
 
-    public void delete(UUID transactionId) {
-        findById(transactionId).ifPresent(transactionData::remove);
-    }
+    @Query("SELECT p FROM Payment p WHERE p.id = :id")
+    Optional<Payment> findPaymentById(@Param("id") UUID id);
 }

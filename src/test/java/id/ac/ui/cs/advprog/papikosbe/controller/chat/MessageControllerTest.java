@@ -1,7 +1,13 @@
 package id.ac.ui.cs.advprog.papikosbe.controller.chat;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import id.ac.ui.cs.advprog.papikosbe.controller.chat.dto.SendMessageRequest;
+import id.ac.ui.cs.advprog.papikosbe.enums.SendType;
 import id.ac.ui.cs.advprog.papikosbe.model.chat.Message;
+import id.ac.ui.cs.advprog.papikosbe.model.chat.RoomChat;
+import id.ac.ui.cs.advprog.papikosbe.repository.chat.RoomChatRepository;
 import id.ac.ui.cs.advprog.papikosbe.service.chat.MessageService;
+import id.ac.ui.cs.advprog.papikosbe.service.user.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,6 +18,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 import static org.mockito.Mockito.*;
@@ -25,6 +32,12 @@ public class MessageControllerTest {
 
     @Mock
     private MessageService messageService;
+
+    @Mock
+    private RoomChatRepository roomChatRepository;
+
+    @Mock
+    private UserService userService;
 
     @InjectMocks
     private MessageController messageController;
@@ -40,27 +53,69 @@ public class MessageControllerTest {
                 {
                     "roomChatId": "00000000-0000-0000-0000-000000000001",
                     "senderId": "00000000-0000-0000-0000-000000000002",
-                    "content": "Halo!"
+                    "content": "Halo!",
+                    "sendType": "TO_ONE"
                 }
                 """;
+
+        UUID roomChatId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        RoomChat mockRoom = new RoomChat(UUID.randomUUID(), UUID.randomUUID());
+
+        when(roomChatRepository.findById(roomChatId)).thenReturn(Optional.of(mockRoom));
 
         mockMvc.perform(post("/api/messages")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isCreated());
+
+        verify(messageService).saveMessage(any(Message.class));
+    }
+
+    @Test
+    void testEditMessage_shouldReturnOk() throws Exception {
+        UUID messageId = UUID.randomUUID();
+        UUID senderId = UUID.randomUUID();
+        RoomChat room = new RoomChat(UUID.randomUUID(), UUID.randomUUID());
+        Message message = new Message(room, senderId, "Old", SendType.TO_ONE);
+        message.setId(messageId);
+
+        when(messageService.getMessageById(messageId)).thenReturn(message);
+
+        // DTO: {"newContent": "Updated content"}
+        String requestBody = """
+        {
+            "newContent": "Updated content"
+        }
+        """;
+
+        mockMvc.perform(put("/api/messages/" + messageId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk());
+
+        verify(messageService).editMessage(any(Message.class));
     }
 
     @Test
     void testDeleteMessage_shouldReturnOk() throws Exception {
-        UUID messageId = UUID.randomUUID();
-        when(messageService.deleteMessage(messageId)).thenReturn(true);
+        UUID id = UUID.randomUUID();
+        when(messageService.deleteMessage(id)).thenReturn(true);
 
-        mockMvc.perform(delete("/api/messages/" + messageId))
+        mockMvc.perform(delete("/api/messages/" + id))
                 .andExpect(status().isOk());
     }
 
     @Test
-    void testGetMessages_shouldReturnList() throws Exception {
+    void testDeleteMessage_shouldReturnNotFound() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(messageService.deleteMessage(id)).thenReturn(false);
+
+        mockMvc.perform(delete("/api/messages/" + id))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void testGetMessagesByRoom_shouldReturnOk() throws Exception {
         UUID roomId = UUID.randomUUID();
         when(messageService.getMessagesByRoomId(roomId)).thenReturn(new ArrayList<>());
 
@@ -70,24 +125,95 @@ public class MessageControllerTest {
     }
 
     @Test
-    void testEditMessage_shouldReturnOk() throws Exception {
-        UUID messageId = UUID.randomUUID();
+    void testGetMessagesByRoom() throws Exception {
         UUID roomId = UUID.randomUUID();
         UUID senderId = UUID.randomUUID();
+        UUID messageId = UUID.randomUUID();
 
-        Message existingMessage = new Message(roomId, senderId, "Pesan lama");
-        existingMessage.setId(messageId);
+        RoomChat roomChat = new RoomChat();
+        roomChat.setId(roomId);
 
-        when(messageService.getMessageById(messageId)).thenReturn(existingMessage);
+        Message message = new Message();
+        message.setId(messageId);
+        message.setRoomChat(roomChat);
+        message.setSenderId(senderId);
+        message.setContent("Halo!");
+        message.setEdited(false);
+        message.setSendType(SendType.TO_ONE);
+        message.setTimestamp(LocalDateTime.now());
 
-        String newContent = "Pesan baru";
-        String requestBody = "\"" + newContent + "\"";
+        when(messageService.getMessagesByRoomId(roomId)).thenReturn(List.of(message));
+        when(userService.getEmailById(senderId)).thenReturn("sender@email.com");
 
-        mockMvc.perform(put("/api/messages/" + messageId)
-                        .contentType("application/json")
+        mockMvc.perform(get("/api/messages")
+                        .param("roomId", roomId.toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(messageId.toString()))
+                .andExpect(jsonPath("$[0].senderId").value(senderId.toString()))
+                .andExpect(jsonPath("$[0].senderEmail").value("sender@email.com"));
+    }
+
+    @Test
+    void testSendMessage_ToAll_WithOwnerRole_ShouldReturnCreated() throws Exception {
+        String requestBody = """
+            {
+                "roomChatId": "00000000-0000-0000-0000-000000000001", 
+                "senderId": "00000000-0000-0000-0000-000000000002",
+                "content": "Halo semua!",
+                "sendType": "TO_ALL",
+                "role": "OWNER"
+            }
+            """;
+
+        mockMvc.perform(post("/api/messages")
+                        .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
 
-        verify(messageService, times(1)).editMessage(any(Message.class));
+        verify(messageService).saveMessage(any(Message.class));
+    }
+
+    @Test
+    void testSendMessage_ToAll_WithNonOwnerRole_ShouldReturnForbidden() throws Exception {
+        String requestBody = """
+            {
+                "roomChatId": "00000000-0000-0000-0000-000000000001",
+                "senderId": "00000000-0000-0000-0000-000000000002",
+                "content": "Broadcast ini tidak boleh!",
+                "sendType": "TO_ALL",
+                "role": "TENANT"
+            }
+            """;
+
+        mockMvc.perform(post("/api/messages")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isForbidden());
+
+        verify(messageService, never()).saveMessage(any(Message.class));
+    }
+
+    @Test
+    void testSendMessage_ToOne_WithInvalidRoomChat_ShouldReturnBadRequest() throws Exception {
+        String requestBody = """
+            {
+                "roomChatId": "00000000-0000-0000-0000-000000000001",
+                "senderId": "00000000-0000-0000-0000-000000000002",
+                "content": "Halo!",
+                "sendType": "TO_ONE",
+                "role": "TENANT"
+            }
+            """;
+
+        UUID roomChatId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+
+        when(roomChatRepository.findById(roomChatId)).thenReturn(Optional.empty());
+
+        mockMvc.perform(post("/api/messages")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest()); // atau isNotFound(), tergantung yang kamu mau
+
+        verify(messageService, never()).saveMessage(any(Message.class));
     }
 }

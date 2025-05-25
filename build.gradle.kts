@@ -31,6 +31,7 @@ dependencies {
     // --- Tambahan untuk Security & JWT ---
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("io.jsonwebtoken:jjwt-api:0.11.5")
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
     runtimeOnly  ("io.jsonwebtoken:jjwt-impl:0.11.5")      // implementasi JJWT
     runtimeOnly  ("io.jsonwebtoken:jjwt-jackson:0.11.5")    // untuk serialisasi JSON
 
@@ -59,6 +60,11 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    implementation("org.springframework.boot:spring-boot-starter-websocket")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("com.fasterxml.jackson.core:jackson-databind")
+    implementation ("org.springframework.boot:spring-boot-starter-actuator")
+    implementation ("io.micrometer:micrometer-registry-prometheus")
 }
 
 tasks.withType<Test> {

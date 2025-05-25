@@ -1,61 +1,64 @@
 package id.ac.ui.cs.advprog.papikosbe.repository.chat;
 
 import id.ac.ui.cs.advprog.papikosbe.model.chat.RoomChat;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@DataJpaTest
 public class RoomChatRepositoryTest {
 
+    @Autowired
     private RoomChatRepository repository;
-    private RoomChat room1;
-    private RoomChat room2;
 
-    @BeforeEach
-    public void setUp() {
-        repository = new RoomChatRepository();
+    @Test
+    public void testFindAllByPenyewaId() {
+        UUID penyewaId = UUID.randomUUID();
+        repository.save(new RoomChat(penyewaId, UUID.randomUUID()));
 
-        room1 = new RoomChat(UUID.randomUUID(), UUID.randomUUID());
-        room2 = new RoomChat(UUID.randomUUID(), UUID.randomUUID());
-
-        repository.createRoomChat(room1);
-        repository.createRoomChat(room2);
+        List<RoomChat> result = repository.findAllByPenyewaId(penyewaId);
+        assertEquals(1, result.size());
+        assertEquals(penyewaId, result.get(0).getPenyewaId());
     }
 
     @Test
-    public void testCreateRoomChat() {
-        RoomChat newRoom = new RoomChat(UUID.randomUUID(), UUID.randomUUID());
-        repository.createRoomChat(newRoom);
+    public void testFindAllByPemilikKosId() {
+        UUID pemilikId = UUID.randomUUID();
+        repository.save(new RoomChat(UUID.randomUUID(), pemilikId));
 
-        RoomChat fetched = repository.getRoomChatById(newRoom.getId());
-        assertNotNull(fetched);
-        assertEquals(newRoom.getId(), fetched.getId());
-        assertEquals(newRoom.getPenyewaId(), fetched.getPenyewaId());
+        List<RoomChat> result = repository.findAllByPemilikKosId(pemilikId);
+        assertEquals(1, result.size());
+        assertEquals(pemilikId, result.get(0).getPemilikKosId());
     }
 
     @Test
-    public void testGetRoomChatById() {
-        RoomChat found = repository.getRoomChatById(room1.getId());
-        assertNotNull(found);
-        assertEquals(room1.getId(), found.getId());
+    public void testFindByPenyewaIdAndPemilikKosId() {
+        UUID penyewaId = UUID.randomUUID();
+        UUID pemilikKosId = UUID.randomUUID();
+
+        RoomChat savedRoom = repository.save(new RoomChat(penyewaId, pemilikKosId));
+
+        var result = repository.findByPenyewaIdAndPemilikKosId(penyewaId, pemilikKosId);
+
+        assertTrue(result.isPresent());
+        assertEquals(savedRoom.getId(), result.get().getId());
+        assertEquals(penyewaId, result.get().getPenyewaId());
+        assertEquals(pemilikKosId, result.get().getPemilikKosId());
     }
 
     @Test
-    public void testGetRoomChatById_NotFound() {
-        RoomChat found = repository.getRoomChatById(UUID.randomUUID());
-        assertNull(found);
-    }
+    public void testFindByPenyewaIdAndPemilikKosId_NotFound() {
+        UUID penyewaId = UUID.randomUUID();
+        UUID pemilikKosId = UUID.randomUUID();
 
-    @Test
-    public void testGetRoomChatsByUser() {
-        List<RoomChat> chatsByPenyewa = repository.getRoomChatsByUser(room1.getPenyewaId());
-        assertTrue(chatsByPenyewa.stream().anyMatch(r -> r.getId().equals(room1.getId())));
+        // Jangan simpan apa-apa, langsung test pencarian yang gagal
+        var result = repository.findByPenyewaIdAndPemilikKosId(penyewaId, pemilikKosId);
 
-        List<RoomChat> chatsByPemilik = repository.getRoomChatsByUser(room1.getPemilikKosId());
-        assertTrue(chatsByPemilik.stream().anyMatch(r -> r.getId().equals(room1.getId())));
+        assertTrue(result.isEmpty());
     }
 }

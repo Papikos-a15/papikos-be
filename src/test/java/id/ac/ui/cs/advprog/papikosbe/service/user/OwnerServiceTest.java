@@ -139,4 +139,21 @@ class OwnerServiceTest {
         verify(ownerRepo).findById(id);
     }
 
+    @Test
+    void testApproveAlreadyApprovedOwnerDoesNotResave() {
+        UUID id = UUID.randomUUID();
+        Owner alreadyApproved = Owner.builder()
+                .email("already@approved.com")
+                .password("p")
+                .build();
+        alreadyApproved.setId(id);
+        alreadyApproved.setApproved(true); // Sudah disetujui
+
+        when(ownerRepo.findById(id)).thenReturn(Optional.of(alreadyApproved));
+
+        Owner result = ownerService.approve(id);
+
+        assertThat(result.isApproved()).isTrue();
+        verify(ownerRepo, never()).save(any()); // Tidak ada simpan ulang
+    }
 }

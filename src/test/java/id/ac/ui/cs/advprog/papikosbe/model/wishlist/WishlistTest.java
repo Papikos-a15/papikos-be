@@ -18,7 +18,8 @@ public class WishlistTest {
         dummyUserId = UUID.randomUUID();
         dummyKosId = UUID.randomUUID();
 
-        wishlist = new Wishlist(UUID.randomUUID(), dummyUserId, dummyKosId);
+        wishlist = new Wishlist(dummyUserId, dummyKosId);
+        wishlist.setId(UUID.randomUUID());
     }
 
     @Test
@@ -45,5 +46,37 @@ public class WishlistTest {
         UUID newUserId = UUID.randomUUID();
         wishlist.setUserId(newUserId);
         assertEquals(newUserId, wishlist.getUserId());
+    }
+
+    @Test
+    public void testWishlistConstructorWithNullUserId() {
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
+            new Wishlist(null, dummyKosId);
+        });
+        assertEquals("User ID and Kos ID cannot be null", thrown.getMessage());
+    }
+
+    @Test
+    public void testWishlistConstructorWithNullKosId() {
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
+            new Wishlist(dummyUserId, null);
+        });
+        assertEquals("User ID and Kos ID cannot be null", thrown.getMessage());
+    }
+
+    @Test
+    public void testWishlistConstructorWithNullUserIdAndKosId() {
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
+            new Wishlist(null, null);
+        });
+        assertEquals("User ID and Kos ID cannot be null", thrown.getMessage());
+    }
+
+    @Test
+    public void testWishlistNoArgConstructor() {
+        Wishlist noArgWishlist = new Wishlist();
+        assertNull(noArgWishlist.getUserId(), "User ID should be null by default");
+        assertNull(noArgWishlist.getKosId(), "Kos ID should be null by default");
+        assertNull(noArgWishlist.getId(), "ID should be null until explicitly set");
     }
 }

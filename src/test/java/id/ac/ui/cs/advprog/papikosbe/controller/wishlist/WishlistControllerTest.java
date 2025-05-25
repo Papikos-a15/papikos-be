@@ -32,7 +32,7 @@ class WishlistControllerTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        testWishlist = new Wishlist(wishlistId, userId, kosId);
+        testWishlist = new Wishlist(userId, kosId);
     }
 
     @Test
@@ -61,9 +61,12 @@ class WishlistControllerTest {
 
     @Test
     void testAddWishlist() {
-        doNothing().when(wishlistService).addWishlist(any(Wishlist.class));
+        Wishlist testWishlist = new Wishlist();
+        testWishlist.setId(UUID.randomUUID());
+        when(wishlistService.addWishlist(testWishlist)).thenReturn(testWishlist);
 
         ResponseEntity<Map<String, String>> response = wishlistController.addWishlist(testWishlist);
+        System.out.println(response.getBody());
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertNotNull(response.getBody());
@@ -158,11 +161,11 @@ class WishlistControllerTest {
 
     @Test
     void testGetWishlistsByUserId_IdNull() {
-    ResponseEntity<List<Wishlist>> response = wishlistController.getWishlistsByUserId(null);
+        ResponseEntity<List<Wishlist>> response = wishlistController.getWishlistsByUserId(null);
 
-    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());  // Expecting BAD_REQUEST
-    assertNotNull(response.getBody());  // The body should not be null
-    assertEquals(0, response.getBody().size());
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());  // Expecting BAD_REQUEST
+        assertNotNull(response.getBody());  // The body should not be null
+        assertEquals(0, response.getBody().size());
     }
 
     @Test

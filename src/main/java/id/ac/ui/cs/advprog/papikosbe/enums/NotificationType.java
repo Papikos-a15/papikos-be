@@ -7,20 +7,14 @@ public enum NotificationType {
     BOOKING("BOOKING"),
     PAYMENT("PAYMENT"),
     SYSTEM("SYSTEM"),
-    OTHER("OTHER");
+    OTHER("OTHER"),
+    WISHLIST("WISHLIST"),
+    ADMIN("ADMIN");
+
 
     private final String value;
 
-    private NotificationType(String value) {
+    NotificationType(String value) {
         this.value = value;
-    }
-
-    public static boolean contains(String param) {
-        for (NotificationType type : NotificationType.values()) {
-            if (type.getValue().equals(param)) {
-                return true;
-            }
-        }
-        return false;
     }
 }

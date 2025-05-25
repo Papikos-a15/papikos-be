@@ -1,159 +1,279 @@
 package id.ac.ui.cs.advprog.papikosbe.service.booking;
 
+import id.ac.ui.cs.advprog.papikosbe.enums.TransactionStatus;
 import id.ac.ui.cs.advprog.papikosbe.model.booking.Booking;
 import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
+import id.ac.ui.cs.advprog.papikosbe.model.booking.PaymentBooking;
+import id.ac.ui.cs.advprog.papikosbe.model.transaction.Payment;
+import id.ac.ui.cs.advprog.papikosbe.observer.event.BookingApprovedEvent;
+import id.ac.ui.cs.advprog.papikosbe.observer.handler.EventHandlerContext;
+import id.ac.ui.cs.advprog.papikosbe.repository.booking.BookingRepository;
+import id.ac.ui.cs.advprog.papikosbe.repository.booking.PaymentBookingRepository;
+import id.ac.ui.cs.advprog.papikosbe.repository.transaction.TransactionRepository;
+import id.ac.ui.cs.advprog.papikosbe.service.kos.KosService;
+import id.ac.ui.cs.advprog.papikosbe.service.transaction.TransactionService;
+import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
+import id.ac.ui.cs.advprog.papikosbe.validator.booking.BookingValidator;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
+import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
-import org.springframework.stereotype.Service;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 @Service
 public class BookingServiceImpl implements BookingService {
 
-    private static BookingServiceImpl instance;
-    private Map<UUID, Booking> bookingStore;
+    private final BookingRepository bookingRepository;
+    private final KosService kosService;
+    private final TransactionService transactionService;
+    private final BookingValidator stateValidator;
+    private static final Logger log = LoggerFactory.getLogger(BookingServiceImpl.class);
 
-    // Private constructor dengan inisialisasi bookingStore
-    private BookingServiceImpl() {
-        bookingStore = new ConcurrentHashMap<>();
+    private final PaymentBookingRepository paymentBookingRepository;
+    private final TransactionRepository transactionRepository;
+    private final EventHandlerContext eventHandlerContext;
+
+    @Autowired
+    public BookingServiceImpl(BookingRepository bookingRepository,
+                              KosService kosService,
+                              TransactionService transactionService,
+                              BookingValidator stateValidator, EventHandlerContext eventHandlerContext,
+                              PaymentBookingRepository paymentBookingRepository, TransactionRepository transactionRepository) {
+        this.bookingRepository = bookingRepository;
+        this.kosService = kosService;
+        this.transactionService = transactionService;
+        this.stateValidator = stateValidator;
+        this.eventHandlerContext = eventHandlerContext;
+        this.paymentBookingRepository = paymentBookingRepository;
+        this.transactionRepository = transactionRepository;
     }
 
-    public static synchronized BookingServiceImpl getInstance() {
-        if (instance == null) {
-            instance = new BookingServiceImpl();
-        }
-        return instance;
+
+    private Optional<Booking> findBookingByIdSync(UUID id) {
+        return bookingRepository.findById(id);
     }
 
     @Override
     public Booking createBooking(Booking booking) {
-        // Full validation of all booking fields
-        validateBookingData(booking);
 
-        // Set booking ID if not provided
         if (booking.getBookingId() == null) {
             booking.setBookingId(UUID.randomUUID());
         }
 
-        // Ensure initial status is PENDING_PAYMENT
+        Kos kos = kosService.getKosById(booking.getKosId())
+                .orElseThrow(() -> new EntityNotFoundException("Kos not found"));
+        booking.setMonthlyPrice(kos.getPrice());
+
+
         booking.setStatus(BookingStatus.PENDING_PAYMENT);
-
-        // Save booking to store
-        bookingStore.put(booking.getBookingId(), booking);
-        return booking;
+        kosService.subtractAvailableRoom(kos.getId());
+        return bookingRepository.save(booking);
     }
 
+    // Public async method
     @Override
-    public Optional<Booking> findBookingById(UUID bookingId) {
-        return Optional.ofNullable(bookingStore.get(bookingId));
-    }
-
-    @Override
-    public List<Booking> findAllBookings() {
-        return new ArrayList<>(bookingStore.values());
-    }
-
-    @Override
-    public void cancelBooking(UUID bookingId) {
-        Booking booking = bookingStore.get(bookingId);
-        if (booking == null) {
-            throw new EntityNotFoundException("Booking with ID " + bookingId + " not found");
+    @Async("bookingTaskExecutor")
+    public CompletableFuture<Optional<Booking>> findBookingById(UUID id) {
+        try {
+            Optional<Booking> booking = findBookingByIdSync(id);
+            return CompletableFuture.completedFuture(booking);
+        } catch (Exception e) {
+            log.error("Error fetching booking {}: {}", id, e.getMessage());
+            return CompletableFuture.failedFuture(e);
         }
+    }
 
-        booking.setStatus(BookingStatus.CANCELLED);
-        bookingStore.put(bookingId, booking);
+    @Override
+    @Async("bookingTaskExecutor")
+    public CompletableFuture<List<Booking>> findAllBookings() {
+        try {
+            List<Booking> bookings = bookingRepository.findAll();
+            return CompletableFuture.completedFuture(bookings);
+        } catch (Exception e) {
+            log.error("Error fetching all bookings: {}", e.getMessage());
+            return CompletableFuture.failedFuture(e);
+        }
     }
 
     @Override
     public void updateBooking(Booking booking) {
-        // Validate booking exists
-        if (!bookingStore.containsKey(booking.getBookingId())) {
-            throw new EntityNotFoundException("Booking with ID " + booking.getBookingId() + " not found");
-        }
+        Booking existingBooking = findBookingByIdSync(booking.getBookingId())
+                .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 
-        // Get existing booking
-        Booking existingBooking = bookingStore.get(booking.getBookingId());
+        // Validate state allows update
+        stateValidator.validateForUpdate(existingBooking);
 
-        // Check if booking can be edited (PENDING_PAYMENT or PAID status)
-        if (existingBooking.getStatus() != BookingStatus.PENDING_PAYMENT &&
-                existingBooking.getStatus() != BookingStatus.PAID) {
-            throw new IllegalStateException("Cannot edit booking after it has been approved or cancelled");
-        }
-
-        // Preserve the current status to prevent status changes via general update
-        BookingStatus currentStatus = existingBooking.getStatus();
-
-        // Validate all updated data
-        validateBookingData(booking);
-
-        // Ensure status isn't changed through this method
-        booking.setStatus(currentStatus);
-
-        // Update the booking
-        bookingStore.put(booking.getBookingId(), booking);
+        bookingRepository.save(booking);
     }
 
     @Override
-    public void payBooking(UUID bookingId) {
-        Booking booking = bookingStore.get(bookingId);
-        if (booking == null) {
-            throw new EntityNotFoundException("Booking with ID " + bookingId + " not found");
-        }
+    public void payBooking(UUID bookingId) throws Exception {
+        Booking booking = findBookingByIdSync(bookingId)
+                .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 
-        if (booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
-            throw new IllegalStateException("Only bookings in PENDING_PAYMENT status can be paid");
-        }
+        // Validate state transition
+        stateValidator.validateForPayment(booking);
 
+        // Get kos to get owner ID
+        Kos kos = kosService.getKosById(booking.getKosId())
+                .orElseThrow(() -> new EntityNotFoundException("Kos not found"));
+
+        // Create payment and get the result
+        CompletableFuture<Payment> paymentFuture = transactionService.createPayment(
+                booking.getUserId(),
+                kos.getOwnerId(),
+                BigDecimal.valueOf(booking.getTotalPrice())
+        );
+
+        // Wait for the payment to complete and retrieve the savedPayment
+        Payment savedPayment = paymentFuture.get();  // This will block until the payment is completed
+
+        // Now you can get the savedPayment's ID
+        UUID paymentId = savedPayment.getId();
+
+        transactionService.processBookingPayment(bookingId, paymentId);
+
+        // Update booking status to PAID
         booking.setStatus(BookingStatus.PAID);
-        bookingStore.put(bookingId, booking);
+        bookingRepository.save(booking);
     }
 
     @Override
     public void approveBooking(UUID bookingId) {
-        Booking booking = bookingStore.get(bookingId);
-        if (booking == null) {
-            throw new EntityNotFoundException("Booking with ID " + bookingId + " not found");
-        }
+        Booking booking = findBookingByIdSync(bookingId)
+                .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 
-        if (booking.getStatus() != BookingStatus.PAID) {
-            throw new IllegalStateException("Only PAID bookings can be approved");
-        }
+        // Validate state transition
+        stateValidator.validateForApproval(booking);
 
+        // Update booking status to APPROVED
         booking.setStatus(BookingStatus.APPROVED);
-        bookingStore.put(bookingId, booking);
+        bookingRepository.save(booking);
+
+        BookingApprovedEvent event = new BookingApprovedEvent(this, booking.getBookingId(), booking.getUserId());
+        eventHandlerContext.handleEvent(event);
     }
 
-    // Helper method to validate booking data
-    private void validateBookingData(Booking booking) {
-        if (booking.getDuration() < 1) {
-            throw new IllegalArgumentException("Duration must be at least 1 month");
-        }
+    @Override
+    public void cancelBooking(UUID bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 
-        if (booking.getCheckInDate() == null || booking.getCheckInDate().isBefore(LocalDate.now())) {
-            throw new IllegalArgumentException("Check-in date cannot be in the past");
-        }
+        // Validate state transition
+        stateValidator.validateForCancellation(booking);
 
-        if (booking.getMonthlyPrice() <= 0) {
-            throw new IllegalArgumentException("Monthly price must be greater than 0");
-        }
+        // Check if booking is PAID and needs refund
+        if (booking.getStatus() == BookingStatus.PAID) {
+            try {
+                // Find the associated payment (might not exist if booking was never paid)
+                Optional<PaymentBooking> paymentBookingOpt = paymentBookingRepository.findByBookingId(bookingId);
 
-        if (booking.getFullName() == null || booking.getFullName().trim().isEmpty()) {
-            throw new IllegalArgumentException("Full name cannot be empty");
-        }
+                if (paymentBookingOpt.isPresent() && paymentBookingOpt.get().getPaymentId() != null) {
+                    PaymentBooking paymentBooking = paymentBookingOpt.get();
+                    // Get the payment to find the owner (who will process the refund)
+                    Payment payment = transactionRepository.findPaymentById(paymentBooking.getPaymentId())
+                            .orElseThrow(() -> new EntityNotFoundException("Payment not found"));
 
-        if (booking.getPhoneNumber() == null || booking.getPhoneNumber().trim().isEmpty()) {
-            throw new IllegalArgumentException("Phone number cannot be empty");
+                    // Call refund function with owner's ID as requester
+                    UUID ownerId = payment.getOwner().getId();
+                    CompletableFuture<Payment> refundFuture = transactionService.refundPayment(
+                            paymentBooking.getPaymentId(),
+                            ownerId
+                    );
+
+                    // Wait for refund to complete
+                    Payment refundPayment = refundFuture.get();
+
+                    if (refundPayment.getStatus() == TransactionStatus.COMPLETED) {
+                        // Refund successful, set status to CANCELLED
+                        booking.setStatus(BookingStatus.CANCELLED);
+                        bookingRepository.save(booking);
+
+                        // ADD THIS: Make room available again
+                        kosService.addAvailableRoom(booking.getKosId());
+
+                        log.info("Booking {} cancelled and refunded successfully", bookingId);
+                    } else {
+                        throw new RuntimeException("Refund failed with status: " + refundPayment.getStatus());
+                    }
+                } else {
+                    // No payment found, just cancel the booking
+                    booking.setStatus(BookingStatus.CANCELLED);
+                    bookingRepository.save(booking);
+
+                    // ADD THIS: Make room available again
+                    kosService.addAvailableRoom(booking.getKosId());
+
+                    log.warn("Booking {} cancelled but no payment found to refund", bookingId);
+                }
+            } catch (Exception e) {
+                if (e instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                    log.warn("Refund processing interrupted for booking {}", bookingId);
+                    throw new RuntimeException("Refund processing was interrupted", e);
+                }
+
+                log.error("Error processing refund for booking {}: {}", bookingId, e.getMessage(), e);
+                throw new RuntimeException("Failed to process refund: " + e.getMessage(), e);
+            }
+        } else {
+            // Booking is not paid, just cancel normally
+            booking.setStatus(BookingStatus.CANCELLED);
+            bookingRepository.save(booking);
+
+            // ADD THIS: Make room available again
+            kosService.addAvailableRoom(booking.getKosId());
+
+            log.info("Booking {} cancelled (no payment to refund)", bookingId);
         }
     }
 
-    // Utility for tests
+    @Override
+    public CompletableFuture<List<Booking>> findBookingsByOwnerId(UUID ownerId) {
+        return kosService.getAllKos()
+                .thenApply(kosList ->
+                        kosList.stream()
+                                .filter(kos -> kos.getOwnerId().equals(ownerId))
+                                .collect(Collectors.toList())
+                )
+                .thenApply(ownerKos -> {
+                    List<UUID> ownerKosIds = ownerKos.stream()
+                            .map(Kos::getId)
+                            .toList();
+
+                    // Booking repo is synchronous; if needed, make it async too.
+                    return bookingRepository.findAll().stream()
+                            .filter(booking -> ownerKosIds.contains(booking.getKosId()))
+                            .collect(Collectors.toList());
+                });
+    }
+
+    @Override
+    @Async("bookingTaskExecutor")
+    public CompletableFuture<List<Booking>> findBookingsByUserId(UUID userId) {
+        try {
+            List<Booking> userBookings = bookingRepository.findAll().stream()
+                    .filter(booking -> booking.getUserId().equals(userId))
+                    .collect(Collectors.toList());
+            return CompletableFuture.completedFuture(userBookings);
+        } catch (Exception e) {
+            log.error("Error fetching bookings for user {}: {}", userId, e.getMessage());
+            return CompletableFuture.failedFuture(e);
+        }
+    }
+
+
+    @Override
     public void clearStore() {
-        bookingStore.clear();
+        bookingRepository.deleteAll();
     }
 }

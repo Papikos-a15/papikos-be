@@ -4,6 +4,7 @@ package id.ac.ui.cs.advprog.papikosbe.service.user;
 import id.ac.ui.cs.advprog.papikosbe.exception.DuplicateEmailException;
 import id.ac.ui.cs.advprog.papikosbe.model.user.Owner;
 import id.ac.ui.cs.advprog.papikosbe.model.user.Tenant;
+import id.ac.ui.cs.advprog.papikosbe.model.user.User;
 import id.ac.ui.cs.advprog.papikosbe.repository.user.OwnerRepository;
 import id.ac.ui.cs.advprog.papikosbe.repository.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import static org.mockito.Mockito.lenient;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -89,5 +91,18 @@ class UserServiceTest {
                 .isInstanceOf(DuplicateEmailException.class);
 
         verify(ownerRepo, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("getEmailById returns email if user exists")
+    void getEmailByIdSuccess() {
+        UUID id = UUID.randomUUID();
+        User user = mock(User.class);
+        when(user.getEmail()).thenReturn("found@mail.com");
+
+        when(userRepo.findById(id)).thenReturn(Optional.of(user));
+
+        String email = userService.getEmailById(id);
+        assertThat(email).isEqualTo("found@mail.com");
     }
 }

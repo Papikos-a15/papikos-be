@@ -11,6 +11,7 @@ import id.ac.ui.cs.advprog.papikosbe.security.JwtTokenProvider;
 import id.ac.ui.cs.advprog.papikosbe.util.AuthenticationUtils;
 import id.ac.ui.cs.advprog.papikosbe.validator.booking.BookingValidator;
 import id.ac.ui.cs.advprog.papikosbe.validator.booking.BookingAccessValidator;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,13 +32,11 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import static org.mockito.Mockito.doThrow;
-import java.util.concurrent.CompletionException;
 
 @WebMvcTest(BookingController.class)
 @Import(SecurityConfig.class)

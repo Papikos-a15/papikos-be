@@ -52,7 +52,7 @@ public class Notification {
     }
 
     @PrePersist @PreUpdate
-    private void validate() {
+    void validate() {
         if (title == null || title.trim().isEmpty()) {
             throw new IllegalArgumentException("Title cannot be null or empty");
         }

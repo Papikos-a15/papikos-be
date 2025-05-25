@@ -63,6 +63,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-websocket")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("com.fasterxml.jackson.core:jackson-databind")
+    implementation ("org.springframework.boot:spring-boot-starter-actuator")
+    implementation ("io.micrometer:micrometer-registry-prometheus")
 }
 
 tasks.withType<Test> {

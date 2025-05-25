@@ -164,6 +164,7 @@ public class KosControllerTest {
             1200000.0,
             30
         );
+        newKos.setAvailableRooms(30);
         when(kosService.updateKos(any(), any())).thenReturn(Optional.ofNullable(dummy));
 
         mockMvc.perform(patch("/api/management/update/"+dummy.getId().toString())

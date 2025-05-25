@@ -10,6 +10,7 @@ import id.ac.ui.cs.advprog.papikosbe.validator.booking.BookingAccessValidator;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -22,20 +23,26 @@ import java.util.concurrent.CompletableFuture;
 @RestController
 @RequestMapping("/api/bookings")
 public class BookingController {
-    @Autowired
-    private AuthenticationUtils authUtils;
+    private final AuthenticationUtils authUtils;
+    private final BookingService bookingService;
+    private final KosService kosService;
+    private final BookingAccessValidator bookingAccessValidator;
+    private final BookingValidator stateValidator;
 
     @Autowired
-    private BookingService bookingService;
-
-    @Autowired
-    private KosService kosService;
-
-    @Autowired
-    private BookingAccessValidator bookingAccessValidator;
-
-    @Autowired
-    private BookingValidator stateValidator;
+    public BookingController(
+            AuthenticationUtils authUtils,
+            BookingService bookingService,
+            KosService kosService,
+            BookingAccessValidator bookingAccessValidator,
+            BookingValidator stateValidator
+    ){
+        this.authUtils = authUtils;
+        this.bookingService = bookingService;
+        this.kosService = kosService;
+        this.bookingAccessValidator = bookingAccessValidator;
+        this.stateValidator = stateValidator;
+    }
 
     @PostMapping
     public ResponseEntity<Booking> createBooking(@RequestBody Booking booking, Authentication authentication) {
@@ -131,10 +138,10 @@ public class BookingController {
 
             bookingService.updateBooking(booking);
 
-            // Return updated booking using async method with .join()
+            // FIX: Return updated booking (b) instead of input booking
             return bookingService.findBookingById(id).join()
-                    .map(ResponseEntity::ok)
-                    .orElse(ResponseEntity.notFound().build());
+                    .map(b -> ResponseEntity.status(HttpStatus.OK).body(b)) // ← FIXED: use 'b' not 'booking'
+                    .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
         } catch (IllegalStateException e) {
             return ResponseEntity.status(403).build();
         } catch (IllegalArgumentException e) {
@@ -159,10 +166,10 @@ public class BookingController {
 
             bookingService.payBooking(id);
 
-            // Return updated booking using async method with .join()
+            // FIX: Return the updated booking (b) instead of the old booking
             return bookingService.findBookingById(id).join()
-                    .map(ResponseEntity::ok)
-                    .orElse(ResponseEntity.notFound().build());
+                    .map(b -> ResponseEntity.status(HttpStatus.OK).body(b)) // ← FIXED: use 'b' not 'booking'
+                    .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (IllegalStateException e) {
@@ -188,10 +195,10 @@ public class BookingController {
 
             bookingService.approveBooking(id);
 
-            // Return updated booking using async method with .join()
+            // FIX: Return updated booking (b) instead of old booking
             return bookingService.findBookingById(id).join()
-                    .map(ResponseEntity::ok)
-                    .orElse(ResponseEntity.notFound().build());
+                    .map(b -> ResponseEntity.status(HttpStatus.OK).body(b)) // ← FIXED: use 'b' not 'booking'
+                    .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (IllegalStateException e) {

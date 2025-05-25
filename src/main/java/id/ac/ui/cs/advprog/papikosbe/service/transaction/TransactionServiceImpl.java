@@ -4,6 +4,7 @@ import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
 import id.ac.ui.cs.advprog.papikosbe.enums.TransactionStatus;
 import id.ac.ui.cs.advprog.papikosbe.enums.TransactionType;
 import id.ac.ui.cs.advprog.papikosbe.enums.WalletStatus;
+import id.ac.ui.cs.advprog.papikosbe.exception.InactiveWalletException;
 import id.ac.ui.cs.advprog.papikosbe.factory.TransactionFactory;
 import id.ac.ui.cs.advprog.papikosbe.model.booking.Booking;
 import id.ac.ui.cs.advprog.papikosbe.model.booking.PaymentBooking;
@@ -34,30 +35,35 @@ import java.util.stream.Stream;
 
 @Service
 public class TransactionServiceImpl implements TransactionService {
+    private final TransactionRepository transactionRepository;
+    private final PaymentBookingRepository paymentBookingRepository;
+    private final BookingRepository bookingRepository;
+    private final UserRepository userRepository;
+    private final WalletRepository walletRepository;
+    private final TransactionFactory transactionFactory;
+    private final WalletService walletService;
+    private final EventHandlerContext eventHandlerContext;
 
     @Autowired
-    private TransactionRepository transactionRepository;
-
-    @Autowired
-    private PaymentBookingRepository paymentBookingRepository;
-
-    @Autowired
-    private BookingRepository bookingRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private WalletRepository walletRepository;
-
-    @Autowired
-    private TransactionFactory transactionFactory;
-
-    @Autowired
-    private WalletService walletService;
-
-    @Autowired
-    private EventHandlerContext eventHandlerContext;
+    public TransactionServiceImpl(
+            TransactionRepository transactionRepository,
+            PaymentBookingRepository paymentBookingRepository,
+            BookingRepository bookingRepository,
+            UserRepository userRepository,
+            WalletRepository walletRepository,
+            TransactionFactory transactionFactory,
+            WalletService walletService,
+            EventHandlerContext eventHandlerContext
+    ) {
+        this.transactionRepository = transactionRepository;
+        this.paymentBookingRepository = paymentBookingRepository;
+        this.bookingRepository = bookingRepository;
+        this.userRepository = userRepository;
+        this.walletRepository = walletRepository;
+        this.transactionFactory = transactionFactory;
+        this.walletService = walletService;
+        this.eventHandlerContext = eventHandlerContext;
+    }
 
     @Override
     public Transaction getTransactionById(UUID userId) {
@@ -94,8 +100,11 @@ public class TransactionServiceImpl implements TransactionService {
                 TransactionType.PAYMENT, tenantId, amount, ownerId
         );
 
-        Wallet tenantWallet = walletRepository.findByUserId(tenantId).get();
-        Wallet ownerWallet = walletRepository.findByUserId(ownerId).get();
+        Wallet tenantWallet = walletRepository.findByUserId(tenantId)
+                .orElseThrow(() -> new EntityNotFoundException("Tenant wallet not found"));
+
+        Wallet ownerWallet = walletRepository.findByUserId(ownerId)
+                .orElseThrow(() -> new EntityNotFoundException("Owner wallet not found"));
 
         TransactionStatus status = payment.process(tenantWallet, ownerWallet);
 
@@ -118,7 +127,8 @@ public class TransactionServiceImpl implements TransactionService {
                 TransactionType.TOP_UP, userId, amount, null
         );
 
-        Wallet userWallet = walletRepository.findByUserId(userId).get();
+        Wallet userWallet = walletRepository.findByUserId(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Wallet for user " + userId + " not found"));
 
         TransactionStatus status = topUp.process(userWallet, null);
 
@@ -172,14 +182,11 @@ public class TransactionServiceImpl implements TransactionService {
             throw new Exception("Minimum top up adalah Rp 10.000");
         }
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new Exception("User tidak ditemukan"));
-
         Wallet userWallet = walletRepository.findByUserId(userId)
                 .orElseThrow(() -> new Exception("Wallet user tidak ditemukan"));
 
         if (userWallet.getStatus() != WalletStatus.ACTIVE) {
-            throw new Exception("Wallet user tidak aktif");
+            throw new InactiveWalletException("Wallet user tidak aktif");
         }
     }
 
@@ -249,14 +256,8 @@ public class TransactionServiceImpl implements TransactionService {
         refundPayment.setCreatedAt(LocalDateTime.now());
         refundPayment.setPaidDate(LocalDateTime.now());
 
-        // Debugging log: Check if refund payment is populated correctly
-        System.out.println("Refund Payment before save: " + refundPayment);
-
         // Process the refund transaction
         TransactionStatus status = refundPayment.process(ownerWallet, tenantWallet);
-
-        // Debugging log: Check refund status after processing
-        System.out.println("Refund Payment status after processing: " + status);
 
         if (status == TransactionStatus.COMPLETED) {
             originalPayment.setStatus(TransactionStatus.REFUNDED);
@@ -268,9 +269,6 @@ public class TransactionServiceImpl implements TransactionService {
 
             // Save refund payment
             Payment savedRefund = transactionRepository.save(refundPayment);
-
-            // Debugging log: Check if refund payment is saved
-            System.out.println("Refund Payment saved: " + savedRefund);
 
             PaymentRefundedEvent event = new PaymentRefundedEvent(this, savedRefund.getId());
             eventHandlerContext.handleEvent(event);

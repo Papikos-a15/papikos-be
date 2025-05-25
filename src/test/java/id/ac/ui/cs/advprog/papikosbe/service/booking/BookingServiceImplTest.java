@@ -8,15 +8,12 @@
     import id.ac.ui.cs.advprog.papikosbe.model.booking.PaymentBooking;
     import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
     import id.ac.ui.cs.advprog.papikosbe.model.transaction.Payment;
-    import id.ac.ui.cs.advprog.papikosbe.model.transaction.Wallet;
     import id.ac.ui.cs.advprog.papikosbe.model.user.Owner;
-    import id.ac.ui.cs.advprog.papikosbe.model.user.Tenant;
     import id.ac.ui.cs.advprog.papikosbe.repository.booking.BookingRepository;
     import id.ac.ui.cs.advprog.papikosbe.repository.booking.PaymentBookingRepository;
     import id.ac.ui.cs.advprog.papikosbe.repository.transaction.TransactionRepository;
     import id.ac.ui.cs.advprog.papikosbe.repository.transaction.WalletRepository;
     import id.ac.ui.cs.advprog.papikosbe.service.kos.KosService;
-    import id.ac.ui.cs.advprog.papikosbe.service.transaction.TransactionService;
     import id.ac.ui.cs.advprog.papikosbe.service.transaction.TransactionService;
     import id.ac.ui.cs.advprog.papikosbe.validator.booking.BookingValidator;
     import id.ac.ui.cs.advprog.papikosbe.validator.booking.BookingAccessValidator;
@@ -27,14 +24,12 @@
     import org.junit.jupiter.api.Test;
     import org.junit.jupiter.api.extension.ExtendWith;
     import org.mockito.ArgumentCaptor;
-    import org.mockito.InjectMocks;
     import org.mockito.Mock;
     import org.mockito.junit.jupiter.MockitoExtension;
     import java.time.LocalDate;
     import java.util.Optional;
     import java.util.UUID;
     import java.util.List;
-    import java.util.ArrayList;
     import java.math.BigDecimal;
     import java.util.concurrent.CompletableFuture;
     import java.util.concurrent.ExecutionException;
@@ -45,7 +40,7 @@
     import static org.mockito.Mockito.doReturn;
 
     @ExtendWith(MockitoExtension.class)
-    public class BookingServiceImplTest {
+    class BookingServiceImplTest {
 
         // Mocks for constructor injection
         @Mock private BookingRepository bookingRepository;
@@ -74,14 +69,16 @@
         private UUID userId;
 
         @BeforeEach
-        public void setUp() {
+        void setUp() {
             // Create service with constructor dependencies
             bookingService = new BookingServiceImpl(
                     bookingRepository,
                     kosService,
                     transactionService,
                     stateValidator,
-                    eventHandlerContext
+                    eventHandlerContext,
+                    paymentBookingRepository,
+                    transactionRepository
             );
 
             // Manually inject field dependencies using reflection
@@ -107,7 +104,7 @@
         }
     
         @Test
-        public void testCreateBookingWithPersonalDetails() {
+        void testCreateBookingWithPersonalDetails() {
             // Create booking with test kos
             Booking booking = new Booking(
                     UUID.randomUUID(),
@@ -140,7 +137,7 @@
         }
 
         @Test
-        public void testCalculateTotalPrice() throws ExecutionException, InterruptedException {
+        void testCalculateTotalPrice() throws ExecutionException, InterruptedException {
             Booking booking = new Booking(
                     UUID.randomUUID(),
                     userId,
@@ -170,7 +167,7 @@
         }
 
         @Test
-        public void testEditBookingBeforeApproval() throws ExecutionException, InterruptedException {
+        void testEditBookingBeforeApproval() throws ExecutionException, InterruptedException {
             Booking booking = new Booking(
                     UUID.randomUUID(),
                     userId,
@@ -224,7 +221,7 @@
         }
 
         @Test
-        public void testEditBookingAfterPaymentBeforeApproval() throws Exception {
+        void testEditBookingAfterPaymentBeforeApproval() throws Exception {
             // Create booking with test kos
             Booking booking = new Booking(
                     UUID.randomUUID(),
@@ -246,19 +243,6 @@
             // Create booking
             Booking createdBooking = bookingService.createBooking(booking);
 
-            // Setup for the paid state AFTER initial call
-            Booking paidBooking = new Booking(
-                    booking.getBookingId(),
-                    booking.getUserId(),
-                    booking.getKosId(),
-                    booking.getCheckInDate(),
-                    booking.getDuration(),
-                    booking.getMonthlyPrice(),
-                    booking.getFullName(),
-                    booking.getPhoneNumber(),
-                    BookingStatus.PAID
-            );
-
             // Mock the return value of the transactionService.createPayment to return a CompletableFuture
             Payment mockPayment = new Payment();
             mockPayment.setId(UUID.randomUUID());  // Set a mock payment ID
@@ -271,23 +255,10 @@
 
             // Now pay the booking - this transitions from PENDING to PAID
             bookingService.payBooking(createdBooking.getBookingId());
-
-            // Edit after payment
-            Booking updatedBooking = new Booking(
-                    paidBooking.getBookingId(),
-                    paidBooking.getUserId(),
-                    paidBooking.getKosId(),
-                    paidBooking.getCheckInDate(),
-                    5,  // Updated duration
-                    paidBooking.getMonthlyPrice(),
-                    "New Name After Payment",
-                    paidBooking.getPhoneNumber(),
-                    paidBooking.getStatus()
-            );
         }
 
         @Test
-        public void testEditBookingAfterApprovalShouldFail() throws Exception {
+        void testEditBookingAfterApprovalShouldFail() throws Exception {
             // Create booking with test kos
             Booking booking = new Booking(
                     UUID.randomUUID(),
@@ -380,7 +351,7 @@
         }
 
         @Test
-        public void testApproveBooking() {
+        void testApproveBooking() {
             // Create paid booking
             Booking booking = new Booking(
                     UUID.randomUUID(),
@@ -408,7 +379,7 @@
         }
     
         @Test
-        public void testFindBookingsByOwnerId() throws ExecutionException, InterruptedException {
+        void testFindBookingsByOwnerId() throws ExecutionException, InterruptedException {
             // Create test kos owned by our test owner
             Kos kos1 = Kos.builder()
             .id(UUID.randomUUID())
@@ -470,7 +441,7 @@
         }
 
         @Test
-        public void testPayBooking() throws Exception {
+        void testPayBooking() throws Exception {
             // Create a booking
             Booking booking = new Booking(
                     UUID.randomUUID(),
@@ -512,7 +483,7 @@
         }
 
         @Test
-        public void testCancelBooking() throws ExecutionException, InterruptedException { // Add throws
+        void testCancelBooking() throws ExecutionException, InterruptedException { // Add throws
             Booking booking = new Booking(
                     UUID.randomUUID(),
                     userId,
@@ -561,7 +532,7 @@
         }
 
         @Test
-        public void testFindBookingByIdAsync() throws ExecutionException, InterruptedException {
+        void testFindBookingByIdAsync() throws ExecutionException, InterruptedException {
             // Setup
             Booking booking = new Booking(
                     UUID.randomUUID(),
@@ -587,7 +558,7 @@
         }
 
         @Test
-        public void testFindBookingByIdNotFoundAsync() throws ExecutionException, InterruptedException {
+        void testFindBookingByIdNotFoundAsync() throws ExecutionException, InterruptedException {
             UUID randomId = UUID.randomUUID();
             when(bookingRepository.findById(randomId)).thenReturn(Optional.empty());
 
@@ -598,7 +569,7 @@
         }
 
         @Test
-        public void testFindAllBookingsAsync() throws ExecutionException, InterruptedException {
+        void testFindAllBookingsAsync() throws ExecutionException, InterruptedException {
             // Setup - Create booking for this test
             Booking booking = new Booking(
                     UUID.randomUUID(),
@@ -624,7 +595,7 @@
         }
     
         @Test
-        public void testClearStore() {
+        void testClearStore() {
             // Test the clearStore method
             bookingService.clearStore();
     
@@ -633,7 +604,7 @@
         }
 
         @Test
-        public void testFindBookingsByUserIdAsync() throws ExecutionException, InterruptedException {
+        void testFindBookingsByUserIdAsync() throws ExecutionException, InterruptedException {
             // Setup
             Booking booking = new Booking(
                     UUID.randomUUID(),
@@ -798,7 +769,7 @@
         }
       
         @Test
-        public void testApproveBookingTriggersEvent() {
+        void testApproveBookingTriggersEvent() {
             Booking booking = new Booking(
                     UUID.randomUUID(),
                     userId,

@@ -6,7 +6,6 @@ import id.ac.ui.cs.advprog.papikosbe.enums.WalletStatus;
 import id.ac.ui.cs.advprog.papikosbe.factory.TransactionFactory;
 import id.ac.ui.cs.advprog.papikosbe.model.booking.Booking;
 import id.ac.ui.cs.advprog.papikosbe.model.booking.PaymentBooking;
-import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Payment;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.TopUp;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Transaction;
@@ -14,6 +13,7 @@ import id.ac.ui.cs.advprog.papikosbe.enums.TransactionType;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Wallet;
 import id.ac.ui.cs.advprog.papikosbe.model.user.Owner;
 import id.ac.ui.cs.advprog.papikosbe.model.user.Tenant;
+import id.ac.ui.cs.advprog.papikosbe.observer.handler.EventHandlerContext;
 import id.ac.ui.cs.advprog.papikosbe.repository.booking.BookingRepository;
 import id.ac.ui.cs.advprog.papikosbe.repository.booking.PaymentBookingRepository;
 import id.ac.ui.cs.advprog.papikosbe.repository.transaction.TransactionRepository;
@@ -21,6 +21,7 @@ import id.ac.ui.cs.advprog.papikosbe.repository.transaction.WalletRepository;
 import id.ac.ui.cs.advprog.papikosbe.repository.user.UserRepository;
 import id.ac.ui.cs.advprog.papikosbe.service.booking.BookingServiceImpl;
 import id.ac.ui.cs.advprog.papikosbe.service.kos.KosServiceImpl;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -69,6 +70,9 @@ class TransactionServiceImplTest {
 
     @Mock
     private TransactionFactory transactionFactory;
+
+    @Mock
+    private EventHandlerContext eventHandlerContext;
 
     @InjectMocks
     private TransactionServiceImpl transactionService;
@@ -179,7 +183,6 @@ class TransactionServiceImplTest {
         topUp.setStatus(TransactionStatus.COMPLETED);
 
         // Mocking the repositories and methods
-        when(userRepository.findById(tenantId)).thenReturn(Optional.of(tenant));
         when(walletRepository.findByUserId(tenantId)).thenReturn(Optional.of(tenantWallet));
         when(transactionFactory.createTransaction(TransactionType.TOP_UP, tenantId, amount, null)).thenReturn(topUp);
         when(topUp.process(tenantWallet, null)).thenReturn(TransactionStatus.COMPLETED);
@@ -262,73 +265,6 @@ class TransactionServiceImplTest {
         assertEquals(2, result.size());  // One payment and one top-up
     }
 
-//    @Test
-//    void testRefundPayment_Success() throws Exception {
-//        UUID paymentId = UUID.randomUUID();
-//        UUID tenantId = UUID.randomUUID();
-//        UUID ownerId = UUID.randomUUID();
-//        BigDecimal amount = new BigDecimal("20000");
-//
-//        // Create Tenant and Owner objects
-//        Tenant tenant = Tenant.builder().email("tenant@example.com").password("tenantpass").build();
-//        tenant.setId(tenantId);
-//
-//        Owner owner = Owner.builder().email("owner@example.com").password("ownerpass").build();
-//        owner.setId(ownerId);
-//
-//        // Create a mock Payment object
-//        Payment originalPayment = new Payment();
-//        originalPayment.setId(paymentId);
-//        originalPayment.setUser(tenant);
-//        originalPayment.setOwner(owner);
-//        originalPayment.setAmount(amount);
-//        originalPayment.setStatus(TransactionStatus.COMPLETED);
-//
-//        // Mock the repository to return the originalPayment for findPaymentById(paymentId)
-//        when(transactionRepository.findPaymentById(paymentId)).thenReturn(Optional.of(originalPayment));
-//
-//        // Mock other dependencies
-//        Wallet tenantWallet = new Wallet();
-//        tenantWallet.setUser(tenant);
-//        tenantWallet.setStatus(WalletStatus.ACTIVE);
-//        tenantWallet.setBalance(new BigDecimal("10000"));
-//
-//        Wallet ownerWallet = new Wallet();
-//        ownerWallet.setUser(owner);
-//        ownerWallet.setStatus(WalletStatus.ACTIVE);
-//        ownerWallet.setBalance(new BigDecimal("50000"));
-//
-//        // Mock the walletRepository behavior
-//        when(walletRepository.findByUserId(tenantId)).thenReturn(Optional.of(tenantWallet));
-//        when(walletRepository.findByUserId(ownerId)).thenReturn(Optional.of(ownerWallet));
-//
-//        // Mock the paymentBookingRepository behavior
-//        PaymentBooking paymentBooking = new PaymentBooking();
-//        paymentBooking.setBookingId(UUID.randomUUID());  // Assign a valid bookingId
-//        paymentBooking.setPaymentId(paymentId);
-//        when(paymentBookingRepository.findByPaymentId(paymentId)).thenReturn(Optional.of(paymentBooking));
-//
-//        // Mock the bookingRepository behavior
-//        Booking mockBooking = new Booking();
-//        mockBooking.setBookingId(paymentBooking.getBookingId());
-//        mockBooking.setStatus(BookingStatus.PENDING_PAYMENT);  // Set a valid booking status
-//        when(bookingRepository.findById(paymentBooking.getBookingId())).thenReturn(Optional.of(mockBooking));
-//
-//        // When refund is processed
-//        CompletableFuture<Payment> resultFuture = transactionService.refundPayment(paymentId, ownerId);
-//        Payment result = resultFuture.join();
-//
-//        // Assertions and verifications
-//        assertNotNull(result);
-//        assertEquals(TransactionStatus.COMPLETED, result.getStatus());
-//
-//        // Verify repository interactions
-//        verify(walletRepository).save(ownerWallet);
-//        verify(walletRepository).save(tenantWallet);
-//        verify(transactionRepository).save(any(Payment.class));  // Verify save was called
-//        verify(paymentBookingRepository).findByPaymentId(paymentId);  // Verify the repository method was called
-//    }
-
     @Test
     void testRefundPayment_ThrowsIfNotCompleted() {
         UUID paymentId = UUID.randomUUID();
@@ -374,11 +310,6 @@ class TransactionServiceImplTest {
         UUID userId = UUID.randomUUID();
         BigDecimal amount = new BigDecimal("50000");
 
-        Tenant user = Tenant.builder().email("user@example.com").password("123").build();
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(walletRepository.findByUserId(userId)).thenReturn(Optional.empty());
-
         Exception ex = assertThrows(Exception.class, () ->
                 transactionService.validateTopUp(userId, amount)
         );
@@ -406,4 +337,157 @@ class TransactionServiceImplTest {
         assertEquals(expected, result);
         verify(transactionRepository).findByDate(dateOnly);
     }
+
+    @Test
+    void testRefundPayment_Success() throws Exception {
+        UUID paymentId = UUID.randomUUID();
+        UUID tenantId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID bookingId = UUID.randomUUID();
+        BigDecimal amount = new BigDecimal("30000");
+
+        Tenant tenant = Tenant.builder().email("tenant@example.com").password("pass").build();
+        tenant.setId(tenantId);
+
+        Owner owner = Owner.builder().email("owner@example.com").password("pass").build();
+        owner.setId(ownerId);
+
+        Wallet tenantWallet = new Wallet();
+        tenantWallet.setUser(tenant);
+        tenantWallet.setBalance(new BigDecimal("10000"));
+        tenantWallet.setStatus(WalletStatus.ACTIVE);
+
+        Wallet ownerWallet = new Wallet();
+        ownerWallet.setUser(owner);
+        ownerWallet.setBalance(new BigDecimal("100000"));
+        ownerWallet.setStatus(WalletStatus.ACTIVE);
+
+        Payment originalPayment = Mockito.spy(new Payment());
+        originalPayment.setId(paymentId);
+        originalPayment.setUser(tenant);
+        originalPayment.setOwner(owner);
+        originalPayment.setAmount(amount);
+        originalPayment.setStatus(TransactionStatus.COMPLETED); // <--- penting
+
+        PaymentBooking paymentBooking = new PaymentBooking();
+        paymentBooking.setPaymentId(paymentId);
+        paymentBooking.setBookingId(bookingId);
+
+        Booking booking = new Booking();
+        booking.setBookingId(bookingId);
+        booking.setStatus(BookingStatus.APPROVED);
+
+        when(transactionRepository.findPaymentById(paymentId)).thenReturn(Optional.of(originalPayment));
+        when(paymentBookingRepository.findByPaymentId(paymentId)).thenReturn(Optional.of(paymentBooking));
+        when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
+        when(walletRepository.findByUserId(tenantId)).thenReturn(Optional.of(tenantWallet));
+        when(walletRepository.findByUserId(ownerId)).thenReturn(Optional.of(ownerWallet));
+
+        when(transactionRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // ACT
+        CompletableFuture<Payment> resultFuture = transactionService.refundPayment(paymentId, ownerId);
+        Payment refund = resultFuture.join();
+
+        // ASSERT
+        assertNotNull(refund);
+        assertEquals(TransactionStatus.COMPLETED, refund.getStatus());
+        verify(transactionRepository).save(originalPayment);
+        verify(walletRepository).save(ownerWallet);
+        verify(walletRepository).save(tenantWallet);
+    }
+
+    @Test
+    void processBookingPayment_successfulFlow() throws Exception {
+        UUID bookingId = UUID.randomUUID();
+        UUID paymentId = UUID.randomUUID();
+        Booking booking = new Booking();
+        booking.setBookingId(bookingId);
+        booking.setStatus(BookingStatus.PENDING_PAYMENT);
+
+        when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
+
+        transactionService.processBookingPayment(bookingId, paymentId);
+
+        verify(paymentBookingRepository).save(argThat(payment ->
+                payment.getBookingId().equals(bookingId) &&
+                        payment.getPaymentId().equals(paymentId)
+        ));
+        assertEquals(BookingStatus.PAID, booking.getStatus());
+        verify(bookingRepository).save(booking);
+    }
+
+    @Test
+    void processBookingPayment_bookingNotFound_throwsException() {
+        UUID bookingId = UUID.randomUUID();
+        UUID paymentId = UUID.randomUUID();
+
+        when(bookingRepository.findById(bookingId)).thenReturn(Optional.empty());
+
+        EntityNotFoundException exception = assertThrows(EntityNotFoundException.class, () ->
+                transactionService.processBookingPayment(bookingId, paymentId)
+        );
+
+        assertEquals("Booking not found", exception.getMessage());
+    }
+
+    @Test
+    void processBookingPayment_invalidStatus_throwsException() {
+        UUID bookingId = UUID.randomUUID();
+        UUID paymentId = UUID.randomUUID();
+        Booking booking = new Booking();
+        booking.setBookingId(bookingId);
+        booking.setStatus(BookingStatus.CANCELLED); // any status other than PENDING_PAYMENT
+
+        when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
+                transactionService.processBookingPayment(bookingId, paymentId)
+        );
+
+        assertEquals("Booking is not in PENDING_PAYMENT status", exception.getMessage());
+    }
+
+    @Test
+    void getPaymentsByTenant_shouldReturnPayments() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        List<Payment> mockPayments = List.of(new Payment(), new Payment());
+
+        when(transactionRepository.findPaymentsByTenant(tenantId)).thenReturn(mockPayments);
+
+        CompletableFuture<List<Payment>> future = transactionService.getPaymentsByTenant(tenantId);
+        List<Payment> result = future.get(); // Waits for the async result
+
+        assertEquals(mockPayments, result);
+        verify(transactionRepository).findPaymentsByTenant(tenantId);
+    }
+
+    @Test
+    void getPaymentsByOwner_shouldReturnPayments() throws Exception {
+        UUID ownerId = UUID.randomUUID();
+        List<Payment> mockPayments = List.of(new Payment());
+
+        when(transactionRepository.findPaymentsByOwner(ownerId)).thenReturn(mockPayments);
+
+        CompletableFuture<List<Payment>> future = transactionService.getPaymentsByOwner(ownerId);
+        List<Payment> result = future.get();
+
+        assertEquals(mockPayments, result);
+        verify(transactionRepository).findPaymentsByOwner(ownerId);
+    }
+
+    @Test
+    void getTopUpsByUser_shouldReturnTopUps() throws Exception {
+        UUID userId = UUID.randomUUID();
+        List<TopUp> mockTopUps = List.of(new TopUp(), new TopUp(), new TopUp());
+
+        when(transactionRepository.findTopUpsByUser(userId)).thenReturn(mockTopUps);
+
+        CompletableFuture<List<TopUp>> future = transactionService.getTopUpsByUser(userId);
+        List<TopUp> result = future.get();
+
+        assertEquals(mockTopUps, result);
+        verify(transactionRepository).findTopUpsByUser(userId);
+    }
+
 }

@@ -103,4 +103,48 @@ class BookingValidationReflectionTest {
         InvocationTargetException ex = invokePrivate(validBooking, "validateNewBooking");
         assertEquals("Full name cannot be empty", ex.getCause().getMessage());
     }
+
+    /* =========================================================
+     *  validateUpdate() – cabang sisa (duration==0, price==0,
+     *                     whitespace string)
+     * ========================================================= */
+
+    @Test
+    void validateUpdate_durationZero_shouldThrow() throws Exception {
+        validBooking.setDuration(0);                            // = 0
+        InvocationTargetException ex = invokePrivate(validBooking, "validateUpdate");
+        assertEquals("Duration must be at least 1 month", ex.getCause().getMessage());
+    }
+
+    @Test
+    void validateUpdate_monthlyPriceZero_shouldThrow() throws Exception {
+        validBooking.setMonthlyPrice(0);                        // = 0
+        InvocationTargetException ex = invokePrivate(validBooking, "validateUpdate");
+        assertEquals("Monthly price must be greater than 0", ex.getCause().getMessage());
+    }
+
+    @Test
+    void validateUpdate_fullNameWhitespace_shouldThrow() throws Exception {
+        validBooking.setFullName("   ");                        // whitespace
+        InvocationTargetException ex = invokePrivate(validBooking, "validateUpdate");
+        assertEquals("Full name cannot be empty", ex.getCause().getMessage());
+    }
+
+    @Test
+    void validateUpdate_phoneWhitespace_shouldThrow() throws Exception {
+        validBooking.setPhoneNumber("   ");                     // whitespace
+        InvocationTargetException ex = invokePrivate(validBooking, "validateUpdate");
+        assertEquals("Phone number cannot be empty", ex.getCause().getMessage());
+    }
+
+    /* =========================================================
+     *  validateNewBooking() – propagasi error lain (price==0)
+     * ========================================================= */
+    @Test
+    void validateNewBooking_validDateButPriceZero_shouldPropagate() throws Exception {
+        validBooking.setMonthlyPrice(0);                        // valid H+1, tapi price salah
+        InvocationTargetException ex = invokePrivate(validBooking, "validateNewBooking");
+        assertEquals("Monthly price must be greater than 0", ex.getCause().getMessage());
+    }
+
 }

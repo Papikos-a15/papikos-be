@@ -16,7 +16,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * Covers the default logic in ValidationRule and all branches in BaseValidationRule.
  */
 class ValidationFrameworkTest {
-
+    private static final Booking dummyBooking = new Booking();      // butuh objek non-null saja
+    private static final Kos     dummyKos     = new Kos();
+    private static final UUID    requesterId  = UUID.randomUUID();
     /* ------------------------------------------------------------------
      * Dummy rule   →  memberi kita kendali penuh untuk mem-icu setiap cabang
      * ------------------------------------------------------------------ */
@@ -183,5 +185,51 @@ class ValidationFrameworkTest {
             assertEquals("OPERATION", ex.getOperation());   // ctx.getOperation()
         }
     }
+    /* =======  CABANG TAMBAHAN UNTUK 100 % BRANCH  ======= */
+    @Test
+    void bookingAndKos_bookingNull_returnsFalse() {
+        ValidationRule rule = new DummyRule("TEST", ValidationRequirement.BOOKING_AND_KOS, false);
+
+        ValidationContext ctx = ValidationContext.builder()
+                .kos(dummyKos)                       // kos ada
+                .build();                            // booking null
+        assertFalse(rule.contextMeetsRequirements(ctx));
+    }
+
+    @Test
+    void bookingAndRequester_bookingNull_returnsFalse() {
+        ValidationRule rule = new DummyRule("TEST", ValidationRequirement.BOOKING_AND_REQUESTER, false);
+
+        ValidationContext ctx = ValidationContext.builder()
+                .requesterId(requesterId)            // requester ada
+                .build();                            // booking null
+        assertFalse(rule.contextMeetsRequirements(ctx));
+    }
+
+    @Test
+    void fullContext_bookingNull_returnsFalse() {
+        ValidationRule rule = new DummyRule("TEST", ValidationRequirement.FULL_CONTEXT, false);
+
+        ValidationContext ctx = ValidationContext.builder()
+                .kos(dummyKos)
+                .requesterId(requesterId)
+                .build();                            // booking null
+        assertFalse(rule.contextMeetsRequirements(ctx));
+    }
+
+    @Test
+    void fullContext_requesterNull_returnsFalse() {
+        ValidationRule rule = new DummyRule("TEST", ValidationRequirement.FULL_CONTEXT, false);
+
+        ValidationContext ctx = ValidationContext.builder()
+                .booking(dummyBooking)
+                .kos(dummyKos)
+                // requesterId null
+                .build();
+        assertFalse(rule.contextMeetsRequirements(ctx));
+    }
+
+
+
 
 }

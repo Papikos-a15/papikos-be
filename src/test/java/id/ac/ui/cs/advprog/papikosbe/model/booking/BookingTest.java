@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.papikosbe.model.booking;
-
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,6 +38,15 @@ public class BookingTest {
                 phoneNumber,
                 BookingStatus.PENDING_PAYMENT
         );
+    }
+
+    /* ---------- helper refleksi untuk method private ---------- */
+    private static InvocationTargetException invokePrivate(Object target, String method)
+            throws NoSuchMethodException, IllegalAccessException {
+        Method m = target.getClass().getDeclaredMethod(method);
+        m.setAccessible(true);
+        try { m.invoke(target); return null; }
+        catch (InvocationTargetException ex) { return ex; }
     }
 
     // ===== BASIC FUNCTIONALITY TESTS =====
@@ -422,5 +432,87 @@ public class BookingTest {
         
         jakarta.persistence.Table table = Booking.class.getAnnotation(jakarta.persistence.Table.class);
         assertEquals("bookings", table.name());
+    }
+    @Test
+    void validateUpdate_durationNegative() throws Exception {
+        booking.setDuration(-3);
+        InvocationTargetException ex = invokePrivate(booking, "validateUpdate");
+        assertEquals("Duration must be at least 1 month", ex.getCause().getMessage());
+    }
+
+    @Test
+    void validateUpdate_durationZero() throws Exception {
+        booking.setDuration(0);
+        InvocationTargetException ex = invokePrivate(booking, "validateUpdate");
+        assertEquals("Duration must be at least 1 month", ex.getCause().getMessage());
+    }
+
+    @Test
+    void validateUpdate_priceNegative() throws Exception {
+        booking.setMonthlyPrice(-1);
+        InvocationTargetException ex = invokePrivate(booking, "validateUpdate");
+        assertEquals("Monthly price must be greater than 0", ex.getCause().getMessage());
+    }
+
+    @Test
+    void validateUpdate_priceZero() throws Exception {
+        booking.setMonthlyPrice(0);
+        InvocationTargetException ex = invokePrivate(booking, "validateUpdate");
+        assertEquals("Monthly price must be greater than 0", ex.getCause().getMessage());
+    }
+
+    @Test
+    void validateUpdate_fullNameNull() throws Exception {
+        booking.setFullName(null);
+        InvocationTargetException ex = invokePrivate(booking, "validateUpdate");
+        assertEquals("Full name cannot be empty", ex.getCause().getMessage());
+    }
+
+    @Test
+    void validateUpdate_fullNameWhitespace() throws Exception {
+        booking.setFullName("   ");
+        InvocationTargetException ex = invokePrivate(booking, "validateUpdate");
+        assertEquals("Full name cannot be empty", ex.getCause().getMessage());
+    }
+
+    @Test
+    void validateUpdate_phoneNull() throws Exception {
+        booking.setPhoneNumber(null);
+        InvocationTargetException ex = invokePrivate(booking, "validateUpdate");
+        assertEquals("Phone number cannot be empty", ex.getCause().getMessage());
+    }
+
+    @Test
+    void validateUpdate_phoneWhitespace() throws Exception {
+        booking.setPhoneNumber("   ");
+        InvocationTargetException ex = invokePrivate(booking, "validateUpdate");
+        assertEquals("Phone number cannot be empty", ex.getCause().getMessage());
+    }
+
+    @Test
+    void validateUpdate_allValid_passes() throws Exception {
+        assertNull(invokePrivate(booking, "validateUpdate"));
+    }
+
+    /* ---- validateNewBooking() : H+1 & propagasi validateUpdate() ---- */
+    @Test
+    void validateNewBooking_checkInToday_throws() throws Exception {
+        booking.setCheckInDate(LocalDate.now());          // sebelum besok
+        InvocationTargetException ex = invokePrivate(booking, "validateNewBooking");
+        assertEquals("Booking must be made at least 1 day in advance to allow owner approval time",
+                ex.getCause().getMessage());
+    }
+
+    @Test
+    void validateNewBooking_validDateButBadPrice_propagates() throws Exception {
+        booking.setMonthlyPrice(0);                       // gagal di validateUpdate()
+        InvocationTargetException ex = invokePrivate(booking, "validateNewBooking");
+        assertEquals("Monthly price must be greater than 0", ex.getCause().getMessage());
+    }
+
+    @Test
+    void validateNewBooking_validAll_passes() throws Exception {
+        booking.setCheckInDate(LocalDate.now().plusDays(2));
+        assertNull(invokePrivate(booking, "validateNewBooking"));
     }
 }

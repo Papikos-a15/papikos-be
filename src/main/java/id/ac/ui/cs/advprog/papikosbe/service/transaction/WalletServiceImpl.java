@@ -12,15 +12,20 @@ import java.util.*;
 
 @Service
 public class WalletServiceImpl implements WalletService {
+    private final WalletRepository walletRepository;
+    private final WalletFactory walletFactory;
+    private final UserRepository userRepository;
 
     @Autowired
-    private WalletRepository walletRepository;
-
-    @Autowired
-    private WalletFactory walletFactory;
-
-    @Autowired
-    private UserRepository userRepository;
+    public WalletServiceImpl(
+            WalletRepository walletRepository,
+            WalletFactory walletFactory,
+            UserRepository userRepository
+    ) {
+        this.walletRepository = walletRepository;
+        this.walletFactory = walletFactory;
+        this.userRepository = userRepository;
+    }
 
     @Override
     public Wallet create(UUID userId) {

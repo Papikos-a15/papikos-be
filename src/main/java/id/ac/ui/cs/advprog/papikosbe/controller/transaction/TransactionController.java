@@ -22,10 +22,8 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/transactions")
 public class TransactionController {
-    @Autowired
-    AuthenticationUtils authenticationUtils;
 
-    @Autowired
+    AuthenticationUtils authenticationUtils;
     TransactionService transactionService;
 
     @GetMapping("/{id}")
@@ -41,11 +39,13 @@ public class TransactionController {
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<TransactionResponse>> getUserTransactions(@PathVariable UUID userId) {
+        System.out.println("FETCH USER TRANSACTIONS");
+        System.out.println("userId = " + userId);
         try {
             List<Transaction> transactions = transactionService.getUserTransactions(userId);
             List<TransactionResponse> responses = transactions.stream()
                     .map(this::mapToTransactionResponse)
-                    .collect(Collectors.toList());
+                    .toList(); // cleaner and more idiomatic
             return ResponseEntity.ok(responses);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
@@ -66,11 +66,15 @@ public class TransactionController {
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
         } catch (Exception ex) {
-            // Handle both execution exceptions and other exceptions
+            if (ex instanceof InterruptedException) {
+                Thread.currentThread().interrupt(); // Re-interrupt
+            }
+
             String errorMessage = ex.getCause() != null ? ex.getCause().getMessage() : ex.getMessage();
             TransactionResponse errorResponse = new TransactionResponse("Error processing payment", errorMessage);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
         }
+
     }
 
     @GetMapping("/payment/tenant/{tenantId}")
@@ -106,6 +110,10 @@ public class TransactionController {
             TransactionResponse response = mapToTransactionResponse(topUp);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (Exception ex) {
+            if (ex instanceof InterruptedException) {
+                Thread.currentThread().interrupt(); // Re-interrupt the thread
+            }
+
             TransactionResponse errorResponse = new TransactionResponse(
                     "Error processing top-up",
                     ex.getCause() != null ? ex.getCause().getMessage() : ex.getMessage()

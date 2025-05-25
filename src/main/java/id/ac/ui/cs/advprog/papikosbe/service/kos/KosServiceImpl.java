@@ -45,6 +45,10 @@ public class KosServiceImpl implements KosService {
     @Override
     public Optional<Kos> updateKos(UUID id, Kos updatedKos) {
         Optional<Kos> foundKos = kosRepository.findById(id);
+        if (updatedKos.getAvailableRooms() > updatedKos.getMaxCapacity()) {
+            return foundKos;
+        }
+
         if (foundKos.isPresent()) {
             boolean avail = foundKos.get().isAvailable();
 
@@ -52,6 +56,7 @@ public class KosServiceImpl implements KosService {
             foundKos.get().setDescription(updatedKos.getDescription());
             foundKos.get().setAddress(updatedKos.getAddress());
             foundKos.get().setPrice(updatedKos.getPrice());
+            foundKos.get().setAvailableRooms(updatedKos.getAvailableRooms());
             foundKos.get().setAvailable(updatedKos.isAvailable());
 
             if (!avail && foundKos.get().isAvailable()) {
@@ -74,13 +79,8 @@ public class KosServiceImpl implements KosService {
             Kos kos = foundKos.get();
             if (kos.getAvailableRooms() < kos.getMaxCapacity()) {
                 kos.setAvailableRooms(kos.getAvailableRooms() + 1);
-                // If rooms are now available (i.e., > 0) and the kos was marked as unavailable,
-                // update its status.
-                if (kos.getAvailableRooms() > 0 && !kos.isAvailable()) {
-                    kos.setAvailable(true);
-                }
             }
-            kosRepository.save(kos); // Persist changes
+            kosRepository.save(kos);
             return foundKos;
         }
         return foundKos;
@@ -97,6 +97,7 @@ public class KosServiceImpl implements KosService {
             else if (kos.getAvailableRooms() == 0) {
                 kos.setAvailable(false);
             }
+            kosRepository.save(kos);
             return foundKos;
         }
         return foundKos;

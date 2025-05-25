@@ -226,6 +226,7 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
+
     @Override
     public CompletableFuture<List<Booking>> findBookingsByOwnerId(UUID ownerId) {
         return kosService.getAllKos()

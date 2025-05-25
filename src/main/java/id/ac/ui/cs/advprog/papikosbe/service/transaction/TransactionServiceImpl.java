@@ -214,13 +214,12 @@ public class TransactionServiceImpl implements TransactionService {
         Booking booking = bookingRepository.findById(paymentBooking.getBookingId())
                 .orElseThrow(() -> new Exception("Booking tidak ditemukan"));
 
-        // Check if booking can be refunded (e.g., not already cancelled or completed)
         if (booking.getStatus() == BookingStatus.CANCELLED) {
             throw new Exception("Booking sudah dibatalkan atau sudah direfund");
         }
 
         // Proceed with wallet operations
-        UUID tenantId = originalPayment.getUser().getId(); // Tenant = user yg membayar
+        UUID tenantId = originalPayment.getUser().getId();
         UUID ownerId = originalPayment.getOwner().getId();
         BigDecimal amount = originalPayment.getAmount();
 
@@ -236,16 +235,22 @@ public class TransactionServiceImpl implements TransactionService {
 
         // Create refund payment
         Payment refundPayment = new Payment();
-        refundPayment.setUser(originalPayment.getOwner()); // Owner sends refund
-        refundPayment.setOwner(originalPayment.getUser()); // Tenant receives refund
+        refundPayment.setUser(originalPayment.getOwner());
+        refundPayment.setOwner(originalPayment.getUser());
         refundPayment.setAmount(amount);
-        refundPayment.setType(TransactionType.PAYMENT); // Use REFUND type if available, or PAYMENT
+        refundPayment.setType(TransactionType.PAYMENT);
         refundPayment.setStatus(TransactionStatus.PENDING);
         refundPayment.setCreatedAt(LocalDateTime.now());
         refundPayment.setPaidDate(LocalDateTime.now());
 
+        // Debugging log: Check if refund payment is populated correctly
+        System.out.println("Refund Payment before save: " + refundPayment);
+
         // Process the refund transaction
         TransactionStatus status = refundPayment.process(ownerWallet, tenantWallet);
+
+        // Debugging log: Check refund status after processing
+        System.out.println("Refund Payment status after processing: " + status);
 
         if (status == TransactionStatus.COMPLETED) {
             originalPayment.setStatus(TransactionStatus.REFUNDED);
@@ -258,15 +263,15 @@ public class TransactionServiceImpl implements TransactionService {
             // Save refund payment
             Payment savedRefund = transactionRepository.save(refundPayment);
 
-            // Optionally: Create a new payment_booking entry for the refund transaction
-            // or add a field to track refund relationships
+            // Debugging log: Check if refund payment is saved
+            System.out.println("Refund Payment saved: " + savedRefund);
 
             return CompletableFuture.completedFuture(savedRefund);
         } else {
             throw new Exception("Refund gagal: " + status);
         }
     }
-    
+
     @Override
     public void processBookingPayment(UUID bookingId, UUID paymentId) throws Exception {
         Booking booking = bookingRepository.findById(bookingId)

@@ -1,17 +1,23 @@
 package id.ac.ui.cs.advprog.papikosbe.service.transaction;
 
+import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
 import id.ac.ui.cs.advprog.papikosbe.enums.TransactionStatus;
 import id.ac.ui.cs.advprog.papikosbe.enums.TransactionType;
 import id.ac.ui.cs.advprog.papikosbe.enums.WalletStatus;
 import id.ac.ui.cs.advprog.papikosbe.factory.TransactionFactory;
+import id.ac.ui.cs.advprog.papikosbe.model.booking.Booking;
+import id.ac.ui.cs.advprog.papikosbe.model.booking.PaymentBooking;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Payment;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.TopUp;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Transaction;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Wallet;
 import id.ac.ui.cs.advprog.papikosbe.model.user.User;
+import id.ac.ui.cs.advprog.papikosbe.repository.booking.BookingRepository;
+import id.ac.ui.cs.advprog.papikosbe.repository.booking.PaymentBookingRepository;
 import id.ac.ui.cs.advprog.papikosbe.repository.transaction.TransactionRepository;
 import id.ac.ui.cs.advprog.papikosbe.repository.transaction.WalletRepository;
 import id.ac.ui.cs.advprog.papikosbe.repository.user.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +34,12 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Autowired
     private TransactionRepository transactionRepository;
+
+    @Autowired
+    private PaymentBookingRepository paymentBookingRepository;
+
+    @Autowired
+    private BookingRepository bookingRepository;
 
     @Autowired
     private UserRepository userRepository;
@@ -182,6 +194,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public CompletableFuture<Payment> refundPayment(UUID paymentId, UUID requesterId) throws Exception {
+        // Find the original payment
         Payment originalPayment = transactionRepository.findPaymentById(paymentId)
                 .orElseThrow(() -> new Exception("Transaksi pembayaran tidak ditemukan"));
 
@@ -193,7 +206,20 @@ public class TransactionServiceImpl implements TransactionService {
             throw new Exception("Hanya pemilik kos (owner) yang dapat melakukan refund");
         }
 
-        UUID tenantId = originalPayment.getUser().getId(); // Tenant = user yg membayar
+        // Find the associated booking through payment_booking table
+        PaymentBooking paymentBooking = paymentBookingRepository.findByPaymentId(paymentId)
+                .orElseThrow(() -> new Exception("Booking terkait dengan pembayaran tidak ditemukan"));
+
+        // Get the booking and update its status
+        Booking booking = bookingRepository.findById(paymentBooking.getBookingId())
+                .orElseThrow(() -> new Exception("Booking tidak ditemukan"));
+
+        if (booking.getStatus() == BookingStatus.CANCELLED) {
+            throw new Exception("Booking sudah dibatalkan atau sudah direfund");
+        }
+
+        // Proceed with wallet operations
+        UUID tenantId = originalPayment.getUser().getId();
         UUID ownerId = originalPayment.getOwner().getId();
         BigDecimal amount = originalPayment.getAmount();
 
@@ -207,6 +233,7 @@ public class TransactionServiceImpl implements TransactionService {
             throw new Exception("Saldo owner tidak mencukupi untuk refund");
         }
 
+        // Create refund payment
         Payment refundPayment = new Payment();
         refundPayment.setUser(originalPayment.getOwner());
         refundPayment.setOwner(originalPayment.getUser());
@@ -216,16 +243,53 @@ public class TransactionServiceImpl implements TransactionService {
         refundPayment.setCreatedAt(LocalDateTime.now());
         refundPayment.setPaidDate(LocalDateTime.now());
 
+        // Debugging log: Check if refund payment is populated correctly
+        System.out.println("Refund Payment before save: " + refundPayment);
+
+        // Process the refund transaction
         TransactionStatus status = refundPayment.process(ownerWallet, tenantWallet);
 
+        // Debugging log: Check refund status after processing
+        System.out.println("Refund Payment status after processing: " + status);
+
         if (status == TransactionStatus.COMPLETED) {
+            originalPayment.setStatus(TransactionStatus.REFUNDED);
+            transactionRepository.save(originalPayment);
+
+            // Save wallet changes
             walletRepository.save(ownerWallet);
             walletRepository.save(tenantWallet);
+
+            // Save refund payment
             Payment savedRefund = transactionRepository.save(refundPayment);
+
+            // Debugging log: Check if refund payment is saved
+            System.out.println("Refund Payment saved: " + savedRefund);
+
             return CompletableFuture.completedFuture(savedRefund);
         } else {
             throw new Exception("Refund gagal: " + status);
         }
+    }
+
+    @Override
+    public void processBookingPayment(UUID bookingId, UUID paymentId) throws Exception {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
+
+        if (booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
+            throw new IllegalStateException("Booking is not in PENDING_PAYMENT status");
+        }
+
+        PaymentBooking paymentBooking = PaymentBooking.builder()
+                .bookingId(bookingId)
+                .paymentId(paymentId)
+                .build();
+
+        paymentBookingRepository.save(paymentBooking);
+
+        booking.setStatus(BookingStatus.PAID);
+        bookingRepository.save(booking);
     }
 
 }

@@ -2,6 +2,7 @@
 package id.ac.ui.cs.advprog.papikosbe.controller.user;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import id.ac.ui.cs.advprog.papikosbe.controller.user.dto.TokenResponse;
 import id.ac.ui.cs.advprog.papikosbe.exception.BadCredentialsException;
 import id.ac.ui.cs.advprog.papikosbe.service.user.AuthService;
 import org.junit.jupiter.api.Test;
@@ -14,6 +15,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Map;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -60,5 +64,30 @@ class AuthControllerTest {
                 .andExpect(status().isOk());
 
         Mockito.verify(authService).logout("jwt-token");
+    }
+
+    @Test
+    void testConstructorAndGetters() {
+        UUID userId = UUID.randomUUID();
+        String token = "abc.def.ghi";
+
+        TokenResponse response = new TokenResponse(token, userId);
+
+        assertEquals(token, response.getToken());
+        assertEquals(userId, response.getUserId());
+    }
+
+    @Test
+    void testSetters() {
+        TokenResponse response = new TokenResponse(null, null);
+
+        UUID newUserId = UUID.randomUUID();
+        String newToken = "xyz.123";
+
+        response.setToken(newToken);
+        response.setUserId(newUserId);
+
+        assertEquals(newToken, response.getToken());
+        assertEquals(newUserId, response.getUserId());
     }
 }

@@ -18,7 +18,6 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -39,23 +38,23 @@ public class BookingServiceImpl implements BookingService {
     private final BookingValidator stateValidator;
     private static final Logger log = LoggerFactory.getLogger(BookingServiceImpl.class);
 
-    @Autowired
-    private PaymentBookingRepository paymentBookingRepository;
-
-    @Autowired
-    private TransactionRepository transactionRepository;
+    private final PaymentBookingRepository paymentBookingRepository;
+    private final TransactionRepository transactionRepository;
     private final EventHandlerContext eventHandlerContext;
 
     @Autowired
     public BookingServiceImpl(BookingRepository bookingRepository,
                               KosService kosService,
                               TransactionService transactionService,
-                              BookingValidator stateValidator, EventHandlerContext eventHandlerContext) {
+                              BookingValidator stateValidator, EventHandlerContext eventHandlerContext,
+                              PaymentBookingRepository paymentBookingRepository, TransactionRepository transactionRepository) {
         this.bookingRepository = bookingRepository;
         this.kosService = kosService;
         this.transactionService = transactionService;
         this.stateValidator = stateValidator;
         this.eventHandlerContext = eventHandlerContext;
+        this.paymentBookingRepository = paymentBookingRepository;
+        this.transactionRepository = transactionRepository;
     }
 
 
@@ -217,7 +216,13 @@ public class BookingServiceImpl implements BookingService {
                     log.warn("Booking {} cancelled but no payment found to refund", bookingId);
                 }
             } catch (Exception e) {
-                log.error("Error processing refund for booking {}: {}", bookingId, e.getMessage());
+                if (e instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                    log.warn("Refund processing interrupted for booking {}", bookingId);
+                    throw new RuntimeException("Refund processing was interrupted", e);
+                }
+
+                log.error("Error processing refund for booking {}: {}", bookingId, e.getMessage(), e);
                 throw new RuntimeException("Failed to process refund: " + e.getMessage(), e);
             }
         } else {

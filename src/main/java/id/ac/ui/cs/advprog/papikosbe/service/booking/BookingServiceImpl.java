@@ -55,12 +55,12 @@ public class BookingServiceImpl implements BookingService {
         this.kosService = kosService;
         this.transactionService = transactionService;
         this.stateValidator = stateValidator;
+        this.eventHandlerContext = eventHandlerContext;
     }
 
 
     private Optional<Booking> findBookingByIdSync(UUID id) {
         return bookingRepository.findById(id);
-        this.eventHandlerContext = eventHandlerContext;
     }
 
     @Override

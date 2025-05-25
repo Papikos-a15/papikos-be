@@ -16,7 +16,6 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -35,12 +34,11 @@ public class BookingServiceImpl implements BookingService {
     private final KosService kosService;
     private final TransactionService transactionService;
     private final BookingValidator stateValidator;
+    private static final String BOOKING_NOT_FOUND_MESSAGE = "Booking not found";
     private static final Logger log = LoggerFactory.getLogger(BookingServiceImpl.class);
 
-    @Autowired
     private PaymentBookingRepository paymentBookingRepository;
 
-    @Autowired
     private TransactionRepository transactionRepository;
 
     @Autowired
@@ -104,7 +102,7 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public void updateBooking(Booking booking) {
         Booking existingBooking = findBookingByIdSync(booking.getBookingId())
-                .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
+                .orElseThrow(() -> new EntityNotFoundException(BOOKING_NOT_FOUND_MESSAGE));
 
         // Validate state allows update
         stateValidator.validateForUpdate(existingBooking);
@@ -115,7 +113,7 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public void payBooking(UUID bookingId) throws Exception {
         Booking booking = findBookingByIdSync(bookingId)
-                .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
+                .orElseThrow(() -> new EntityNotFoundException(BOOKING_NOT_FOUND_MESSAGE));
 
         // Validate state transition
         stateValidator.validateForPayment(booking);
@@ -147,7 +145,7 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public void approveBooking(UUID bookingId) {
         Booking booking = findBookingByIdSync(bookingId)
-                .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
+                .orElseThrow(() -> new EntityNotFoundException(BOOKING_NOT_FOUND_MESSAGE));
 
         // Validate state transition
         stateValidator.validateForApproval(booking);
@@ -160,7 +158,7 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public void cancelBooking(UUID bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
+                .orElseThrow(() -> new EntityNotFoundException(BOOKING_NOT_FOUND_MESSAGE));
 
         // Validate state transition
         stateValidator.validateForCancellation(booking);
@@ -210,6 +208,9 @@ public class BookingServiceImpl implements BookingService {
                     log.warn("Booking {} cancelled but no payment found to refund", bookingId);
                 }
             } catch (Exception e) {
+                if (e instanceof InterruptedException) {
+                    Thread.currentThread().interrupt(); // Important!
+                }
                 log.error("Error processing refund for booking {}: {}", bookingId, e.getMessage());
                 throw new RuntimeException("Failed to process refund: " + e.getMessage(), e);
             }

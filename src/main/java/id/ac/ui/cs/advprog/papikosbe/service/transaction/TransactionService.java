@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.papikosbe.service.transaction;
 
+import id.ac.ui.cs.advprog.papikosbe.dto.PaymentRequest;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Payment;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.TopUp;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Transaction;
@@ -25,5 +26,7 @@ public interface TransactionService {
     CompletableFuture<List<TopUp>> getTopUpsByUser(UUID userId);
 
     CompletableFuture<Payment> refundPayment(UUID paymentId, UUID requesterId) throws Exception;
+
+    void processBookingPayment(UUID bookingId, UUID paymentId) throws Exception;
 }
 

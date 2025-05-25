@@ -74,7 +74,13 @@ public class KosServiceImpl implements KosService {
             Kos kos = foundKos.get();
             if (kos.getAvailableRooms() < kos.getMaxCapacity()) {
                 kos.setAvailableRooms(kos.getAvailableRooms() + 1);
+                // If rooms are now available (i.e., > 0) and the kos was marked as unavailable,
+                // update its status.
+                if (kos.getAvailableRooms() > 0 && !kos.isAvailable()) {
+                    kos.setAvailable(true);
+                }
             }
+            kosRepository.save(kos); // Persist changes
             return foundKos;
         }
         return foundKos;

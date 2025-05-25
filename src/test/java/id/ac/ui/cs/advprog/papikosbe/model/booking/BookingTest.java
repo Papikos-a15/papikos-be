@@ -76,14 +76,29 @@ public class BookingTest {
 
     @Test
     public void testInvalidCheckInDate() {
-        // Check-in date sebelum hari ini harus mengeluarkan Exception
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+        // Test H+0 (today) - should fail with H+1 requirement
+        Exception exceptionToday = assertThrows(IllegalArgumentException.class, () -> {
+            new Booking(UUID.randomUUID(), dummyUserId, dummyKosId,
+                    LocalDate.now(), 2, monthlyPrice, fullName, phoneNumber, BookingStatus.PENDING_PAYMENT);
+        });
+        String expectedMessage = "Booking must be made at least 1 day in advance";
+        assertTrue(exceptionToday.getMessage().contains(expectedMessage));
+
+        // Test past date - should also fail
+        Exception exceptionPast = assertThrows(IllegalArgumentException.class, () -> {
             new Booking(UUID.randomUUID(), dummyUserId, dummyKosId,
                     LocalDate.now().minusDays(1), 2, monthlyPrice, fullName, phoneNumber, BookingStatus.PENDING_PAYMENT);
         });
-        String expectedMessage = "Check-in date cannot be in the past";
-        String actualMessage = exception.getMessage();
-        assertTrue(actualMessage.contains(expectedMessage));
+        assertTrue(exceptionPast.getMessage().contains(expectedMessage));
+    }
+
+    @Test
+    public void testValidCheckInDate() {
+        // Test H+1 (tomorrow) - should pass
+        assertDoesNotThrow(() -> {
+            new Booking(UUID.randomUUID(), dummyUserId, dummyKosId,
+                    LocalDate.now().plusDays(1), 2, monthlyPrice, fullName, phoneNumber, BookingStatus.PENDING_PAYMENT);
+        });
     }
 
     @Test

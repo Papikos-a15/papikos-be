@@ -45,10 +45,8 @@ public class KosServiceImpl implements KosService {
     @Override
     public Optional<Kos> updateKos(UUID id, Kos updatedKos) {
         Optional<Kos> foundKos = kosRepository.findById(id);
-        System.out.println("ini update kos");
         if (foundKos.isPresent()) {
             boolean avail = foundKos.get().isAvailable();
-            System.out.println("avail: " + avail);
 
             foundKos.get().setName(updatedKos.getName());
             foundKos.get().setDescription(updatedKos.getDescription());
@@ -57,13 +55,13 @@ public class KosServiceImpl implements KosService {
             foundKos.get().setAvailable(updatedKos.isAvailable());
 
             if (!avail && foundKos.get().isAvailable()) {
-                System.out.println("yeah");
                 eventPublisher.publishEvent(new KosStatusChangedEvent(
                         this,
                         foundKos.get().getId(),
                         foundKos.get().getName(),
                         true));
             }
+        kosRepository.save(foundKos.get());
         }
 
         return foundKos;

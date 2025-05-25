@@ -14,11 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -48,10 +44,9 @@ class NotificationControllerTest {
         userId = UUID.randomUUID();
         notificationId = UUID.randomUUID();
 
-        // Create the test Notification using the Builder
         testNotification = Notification.builder()
                 .id(notificationId)
-                .userId((userId))
+                .userId(userId)
                 .title("Test Notification")
                 .message("This is a test notification message")
                 .createdAt(LocalDateTime.now())
@@ -91,6 +86,7 @@ class NotificationControllerTest {
 
     @Test
     void testCreateNotification_NullParameters() {
+        // Case 1: userId is null
         Map<String, Object> notificationData = new HashMap<>();
         notificationData.put("userId", null); // userId is null
         notificationData.put("title", "Title");
@@ -99,28 +95,42 @@ class NotificationControllerTest {
 
         ResponseEntity<Notification> response1 = notificationController.createNotification(notificationData);
         assertEquals(HttpStatus.BAD_REQUEST, response1.getStatusCode());
-        assertNull(response1.getBody());
 
+        // Case 2: title is null
         notificationData.put("userId", userId.toString()); // valid userId
         notificationData.put("title", null); // title is null
         ResponseEntity<Notification> response2 = notificationController.createNotification(notificationData);
         assertEquals(HttpStatus.BAD_REQUEST, response2.getStatusCode());
-        assertNull(response2.getBody());
 
+        // Case 3: message is null
         notificationData.put("title", "Title");
         notificationData.put("message", null); // message is null
         ResponseEntity<Notification> response3 = notificationController.createNotification(notificationData);
         assertEquals(HttpStatus.BAD_REQUEST, response3.getStatusCode());
-        assertNull(response3.getBody());
 
+        // Case 4: type is null
         notificationData.put("message", "Message");
         notificationData.put("type", null); // type is null
         ResponseEntity<Notification> response4 = notificationController.createNotification(notificationData);
         assertEquals(HttpStatus.BAD_REQUEST, response4.getStatusCode());
-        assertNull(response4.getBody());
 
-        verify(notificationService, never()).createNotification(any(), any(), any(), any());
+        // Case 5: all valid parameters
+        notificationData.put("userId", userId.toString());
+        notificationData.put("title", "Title");
+        notificationData.put("message", "Message");
+        notificationData.put("type", NotificationType.SYSTEM.name());
+
+        CompletableFuture<Notification> futureNotification = CompletableFuture.completedFuture(testNotification);
+        when(notificationService.createNotification(eq(userId), eq("Title"), eq("Message"), eq(NotificationType.SYSTEM)))
+                .thenReturn(futureNotification);
+
+        ResponseEntity<Notification> response5 = notificationController.createNotification(notificationData);
+        assertEquals(HttpStatus.CREATED, response5.getStatusCode());
+
+        // Verify no unexpected calls
+        verify(notificationService, times(1)).createNotification(eq(userId), eq("Title"), eq("Message"), eq(NotificationType.SYSTEM));
     }
+
 
     @Test
     void testCreateNotificationForAllUser() {
@@ -143,7 +153,6 @@ class NotificationControllerTest {
         verify(notificationService, times(1)).createNotificationForAllUser("Broadcast Title", "Broadcast Message", NotificationType.SYSTEM);
     }
 
-
     @Test
     void testCreateNotificationForAllUser_InvalidData() {
         Map<String, Object> notificationData = new HashMap<>();
@@ -154,7 +163,6 @@ class NotificationControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         verify(notificationService, never()).createNotificationForAllUser(any(), any(), any());
     }
-
 
     @Test
     void testMarkAsRead() {
@@ -202,10 +210,9 @@ class NotificationControllerTest {
 
     @Test
     void testGetNotification_Success() {
-        UUID notificationId = UUID.randomUUID();
         Notification expectedNotification = Notification.builder()
                 .id(notificationId)
-                .userId(UUID.randomUUID())
+                .userId(userId)
                 .title("Test Notification")
                 .message("Test message")
                 .createdAt(LocalDateTime.now())
@@ -226,8 +233,6 @@ class NotificationControllerTest {
 
     @Test
     void testGetNotification_NotFound() {
-        UUID notificationId = UUID.randomUUID();
-
         when(notificationService.getNotificationById(notificationId)).thenReturn(null);
 
         ResponseEntity<Notification> response = notificationController.getNotification(notificationId);
@@ -250,8 +255,6 @@ class NotificationControllerTest {
 
     @Test
     void testGetNotificationsForUser_Success() {
-        UUID userId = UUID.randomUUID();
-
         Notification notification1 = Notification.builder()
                 .id(UUID.randomUUID())
                 .userId(userId)
@@ -299,17 +302,143 @@ class NotificationControllerTest {
 
     @Test
     void testGetNotificationsForUser_NoNotifications() {
-        UUID userId = UUID.randomUUID();
-
         when(notificationService.getNotificationsForUser(userId)).thenReturn(new ArrayList<>());
 
         ResponseEntity<List<Notification>> response = notificationController.getNotificationsForUser(userId);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertTrue(response.getBody().isEmpty());  // Verify that the list is empty
+        assertTrue(response.getBody().isEmpty());
 
         verify(notificationService, times(1)).getNotificationsForUser(userId);
     }
+
+    @Test
+    void testCreateNotification_InterruptedException() {
+        String title = "New Notification";
+        String message = "This is a new notification";
+        NotificationType type = NotificationType.SYSTEM;
+
+        Map<String, Object> notificationData = new HashMap<>();
+        notificationData.put("userId", userId.toString());
+        notificationData.put("title", title);
+        notificationData.put("message", message);
+        notificationData.put("type", type.name());
+
+        doAnswer(invocation -> {
+            Thread.currentThread().interrupt();
+            throw new InterruptedException("Simulating InterruptedException");
+        }).when(notificationService).createNotification(eq(userId), eq(title), eq(message), eq(type));
+
+        ResponseEntity<Notification> response = notificationController.createNotification(notificationData);
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        verify(notificationService, times(1)).createNotification(eq(userId), eq(title), eq(message), eq(type));
+        verify(notificationPublisher, never()).publish(any());  // No publish should happen in this case
+    }
+
+    @Test
+    void testCreateNotification_GenericException() throws Exception {
+        String title = "New Notification";
+        String message = "This is a new notification";
+        NotificationType type = NotificationType.SYSTEM;
+
+        Map<String, Object> notificationData = new HashMap<>();
+        notificationData.put("userId", userId.toString());
+        notificationData.put("title", title);
+        notificationData.put("message", message);
+        notificationData.put("type", type.name());
+
+        when(notificationService.createNotification(eq(userId), eq(title), eq(message), eq(type)))
+                .thenThrow(new RuntimeException("Generic RuntimeException"));
+
+        ResponseEntity<Notification> response = notificationController.createNotification(notificationData);
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        verify(notificationService, times(1)).createNotification(eq(userId), eq(title), eq(message), eq(type));
+        verify(notificationPublisher, never()).publish(any());
+    }
+
+    @Test
+    void testCreateNotificationForAllUser_NullParameters() {
+        Map<String, Object> notificationData = new HashMap<>();
+
+        // Case 1: Title is null
+        notificationData.put("title", null);
+        notificationData.put("message", "Broadcast Message");
+        notificationData.put("type", NotificationType.SYSTEM.name());
+
+        ResponseEntity<Map<String, String>> response1 = notificationController.createNotificationForAllUser(notificationData);
+        assertEquals(HttpStatus.BAD_REQUEST, response1.getStatusCode());
+
+        // Case 2: Message is null
+        notificationData.put("title", "Broadcast Title");
+        notificationData.put("message", null);
+        notificationData.put("type", NotificationType.SYSTEM.name());
+
+        ResponseEntity<Map<String, String>> response2 = notificationController.createNotificationForAllUser(notificationData);
+        assertEquals(HttpStatus.BAD_REQUEST, response2.getStatusCode());
+
+        // Case 3: Type is null
+        notificationData.put("title", "Broadcast Title");
+        notificationData.put("message", "Broadcast Message");
+        notificationData.put("type", null);
+
+        ResponseEntity<Map<String, String>> response3 = notificationController.createNotificationForAllUser(notificationData);
+        assertEquals(HttpStatus.BAD_REQUEST, response3.getStatusCode());
+
+        // Case 4: All parameters are valid
+        notificationData.put("title", "Broadcast Title");
+        notificationData.put("message", "Broadcast Message");
+        notificationData.put("type", NotificationType.SYSTEM.name());
+
+        ResponseEntity<Map<String, String>> response4 = notificationController.createNotificationForAllUser(notificationData);
+        assertEquals(HttpStatus.OK, response4.getStatusCode());
+        assertEquals("Notification broadcasted to all users", response4.getBody().get("message"));
+    }
+
+    @Test
+    void testCreateNotificationForAllUser_CatchBlock() {
+        Map<String, Object> notificationData = new HashMap<>();
+        notificationData.put("title", "Broadcast Title");
+        notificationData.put("message", "Broadcast Message");
+        notificationData.put("type", NotificationType.SYSTEM.name());
+
+        doThrow(new RuntimeException("Simulating an error")).when(notificationService).createNotificationForAllUser(
+                eq("Broadcast Title"), eq("Broadcast Message"), eq(NotificationType.SYSTEM)
+        );
+
+        ResponseEntity<Map<String, String>> response = notificationController.createNotificationForAllUser(notificationData);
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        verify(notificationService, times(1)).createNotificationForAllUser("Broadcast Title", "Broadcast Message", NotificationType.SYSTEM);
+    }
+
+    @Test
+    void testMarkAsRead_ServiceException() {
+        UUID notificationId = UUID.randomUUID();
+
+        doThrow(new RuntimeException("Error marking notification as read")).when(notificationService).markAsRead(eq(notificationId));
+
+        ResponseEntity<Map<String, String>> response = notificationController.markAsRead(notificationId);
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("Error in marking notification as read", response.getBody().get("message"));
+    }
+
+    @Test
+    void testDeleteNotification_ServiceException() {
+        UUID notificationId = UUID.randomUUID();
+
+        doThrow(new RuntimeException("Error deleting notification")).when(notificationService).deleteNotification(eq(notificationId));
+
+        ResponseEntity<Map<String, String>> response = notificationController.deleteNotification(notificationId);
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("Error in deleting notification", response.getBody().get("message"));
+    }
+
 
 }

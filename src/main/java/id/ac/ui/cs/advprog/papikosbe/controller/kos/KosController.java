@@ -48,6 +48,9 @@ public class KosController {
 
     @PatchMapping("/update/{id}")
     public ResponseEntity<Kos> updateKos(@PathVariable UUID id, @RequestBody Kos updatedKos) {
+        if (updatedKos.getAvailableRooms() > updatedKos.getMaxCapacity()) {
+            return ResponseEntity.badRequest().build();
+        }
         Optional<Kos> kosUpdated = kosService.updateKos(id, updatedKos);
         if (kosUpdated.isEmpty()) {
             return ResponseEntity.notFound().build();

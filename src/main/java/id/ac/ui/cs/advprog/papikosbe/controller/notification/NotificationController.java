@@ -20,9 +20,7 @@ import java.util.concurrent.CompletableFuture;
 public class NotificationController {
 
     private final NotificationService notificationService;
-
-    @Autowired
-    private NotificationPublisher notificationPublisher;
+    private final NotificationPublisher notificationPublisher;
 
     @Autowired
     public NotificationController(NotificationService notificationService, NotificationPublisher notificationPublisher) {
@@ -75,6 +73,9 @@ public class NotificationController {
             notificationPublisher.publish(notification.get());
 
             return new ResponseEntity<>(notification.get(), HttpStatus.CREATED);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }

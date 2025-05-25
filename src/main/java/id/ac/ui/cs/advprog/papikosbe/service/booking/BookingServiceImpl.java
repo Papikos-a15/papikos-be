@@ -1,13 +1,17 @@
 package id.ac.ui.cs.advprog.papikosbe.service.booking;
 
+import id.ac.ui.cs.advprog.papikosbe.enums.TransactionStatus;
 import id.ac.ui.cs.advprog.papikosbe.model.booking.Booking;
 import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
+import id.ac.ui.cs.advprog.papikosbe.model.booking.PaymentBooking;
+import id.ac.ui.cs.advprog.papikosbe.model.transaction.Payment;
 import id.ac.ui.cs.advprog.papikosbe.repository.booking.BookingRepository;
+import id.ac.ui.cs.advprog.papikosbe.repository.booking.PaymentBookingRepository;
+import id.ac.ui.cs.advprog.papikosbe.repository.transaction.TransactionRepository;
 import id.ac.ui.cs.advprog.papikosbe.service.kos.KosService;
 import id.ac.ui.cs.advprog.papikosbe.service.transaction.TransactionService;
 import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
 import id.ac.ui.cs.advprog.papikosbe.validator.booking.BookingValidator;
-import id.ac.ui.cs.advprog.papikosbe.validator.booking.BookingAccessValidator;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,6 +22,9 @@ import java.util.UUID;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 @Service
 public class BookingServiceImpl implements BookingService {
@@ -26,6 +33,13 @@ public class BookingServiceImpl implements BookingService {
     private final KosService kosService;
     private final TransactionService transactionService;
     private final BookingValidator stateValidator;
+    private static final Logger log = LoggerFactory.getLogger(BookingServiceImpl.class);
+
+    @Autowired
+    private PaymentBookingRepository paymentBookingRepository;
+
+    @Autowired
+    private TransactionRepository transactionRepository;
 
     @Autowired
     public BookingServiceImpl(BookingRepository bookingRepository,
@@ -35,7 +49,8 @@ public class BookingServiceImpl implements BookingService {
         this.bookingRepository = bookingRepository;
         this.kosService = kosService;
         this.transactionService = transactionService;
-        this.stateValidator = stateValidator;}
+        this.stateValidator = stateValidator;
+    }
 
     @Override
     public Booking createBooking(Booking booking) {
@@ -54,7 +69,19 @@ public class BookingServiceImpl implements BookingService {
         // Ensure initial status is PENDING_PAYMENT
         booking.setStatus(BookingStatus.PENDING_PAYMENT);
 
-        return bookingRepository.save(booking);
+        // Save the booking first
+        Booking savedBooking = bookingRepository.save(booking);
+
+        // Create PaymentBooking relationship with null paymentId initially
+        // This will be updated when payment is made
+        PaymentBooking paymentBooking = PaymentBooking.builder()
+                .bookingId(savedBooking.getBookingId())
+                .paymentId(null) // Will be set when payment is created
+                .build();
+
+        paymentBookingRepository.save(paymentBooking);
+
+        return savedBooking;
     }
 
     @Override
@@ -131,9 +158,55 @@ public class BookingServiceImpl implements BookingService {
         // Validate state transition
         stateValidator.validateForCancellation(booking);
 
-        // Update booking status to CANCELLED
-        booking.setStatus(BookingStatus.CANCELLED);
-        bookingRepository.save(booking);
+        // Check if booking is PAID and needs refund
+        if (booking.getStatus() == BookingStatus.PAID) {
+            try {
+                // Find the associated payment
+                PaymentBooking paymentBooking = paymentBookingRepository.findByBookingId(bookingId)
+                        .orElseThrow(() -> new EntityNotFoundException("Payment information not found for this booking"));
+
+                if (paymentBooking.getPaymentId() != null) {
+                    // Get the payment to find the owner (who will process the refund)
+                    Payment payment = transactionRepository.findPaymentById(paymentBooking.getPaymentId())
+                            .orElseThrow(() -> new EntityNotFoundException("Payment not found"));
+
+                    // Call refund function with owner's ID as requester
+                    UUID ownerId = payment.getOwner().getId();
+                    CompletableFuture<Payment> refundFuture = transactionService.refundPayment(
+                            paymentBooking.getPaymentId(),
+                            ownerId
+                    );
+
+                    // Wait for refund to complete
+                    Payment refundPayment = refundFuture.get();
+
+                    if (refundPayment.getStatus() == TransactionStatus.COMPLETED) {
+                        // Refund successful, set status to CANCELLED
+                        booking.setStatus(BookingStatus.CANCELLED);
+                        bookingRepository.save(booking);
+
+                        log.info("Booking {} cancelled and refunded successfully", bookingId);
+                    } else {
+                        throw new RuntimeException("Refund failed with status: " + refundPayment.getStatus());
+                    }
+                } else {
+                    // No payment found, just cancel the booking
+                    booking.setStatus(BookingStatus.CANCELLED);
+                    bookingRepository.save(booking);
+
+                    log.warn("Booking {} cancelled but no payment found to refund", bookingId);
+                }
+            } catch (Exception e) {
+                log.error("Error processing refund for booking {}: {}", bookingId, e.getMessage());
+                throw new RuntimeException("Failed to process refund: " + e.getMessage(), e);
+            }
+        } else {
+            // Booking is not paid, just cancel normally
+            booking.setStatus(BookingStatus.CANCELLED);
+            bookingRepository.save(booking);
+
+            log.info("Booking {} cancelled (no payment to refund)", bookingId);
+        }
     }
 
     @Override

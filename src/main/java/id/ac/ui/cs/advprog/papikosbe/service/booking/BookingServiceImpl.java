@@ -72,7 +72,7 @@ public class BookingServiceImpl implements BookingService {
 
 
         booking.setStatus(BookingStatus.PENDING_PAYMENT);
-
+        kosService.subtractAvailableRoom(kos.getId());
         return bookingRepository.save(booking);
     }
 

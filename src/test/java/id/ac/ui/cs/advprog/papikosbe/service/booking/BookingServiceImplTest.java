@@ -38,35 +38,26 @@
     
     import id.ac.ui.cs.advprog.papikosbe.model.booking.Booking;
     import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
-    
+    import org.springframework.test.util.ReflectionTestUtils;
+
     @ExtendWith(MockitoExtension.class)
     public class BookingServiceImplTest {
-    
-        @Mock
-        private KosService kosService;
-    
-        @Mock
-        private TransactionService transactionService;
 
-        @Mock
-        private TransactionRepository transactionRepository;
+        // Mocks for constructor injection
+        @Mock private BookingRepository bookingRepository;
+        @Mock private KosService kosService;
+        @Mock private TransactionService transactionService;
+        @Mock private BookingValidator stateValidator;
 
-        @Mock
-        private PaymentBookingRepository paymentBookingRepository;
+        // Mocks for field injection
+        @Mock private PaymentBookingRepository paymentBookingRepository;
+        @Mock private TransactionRepository transactionRepository;
 
-        @Mock
-        private WalletRepository walletRepository;
-    
-        @Mock
-        private BookingRepository bookingRepository;
-    
-        @Mock
-        private BookingValidator stateValidator;
-    
-        @Mock
-        private BookingAccessValidator bookingAccessValidator;
+        // Other mocks you might need
+        @Mock private WalletRepository walletRepository;
+        @Mock private BookingAccessValidator bookingAccessValidator;
 
-        @InjectMocks
+        // Don't use @InjectMocks - create manually
         private BookingServiceImpl bookingService;
 
         private double monthlyPrice;
@@ -76,29 +67,38 @@
         private UUID kosId;
         private Kos testKos;
         private UUID userId;
-    
+
         @BeforeEach
         public void setUp() {
-            bookingService = new BookingServiceImpl(bookingRepository, kosService,transactionService, stateValidator);
-    
+            // Create service with constructor dependencies
+            bookingService = new BookingServiceImpl(
+                    bookingRepository,
+                    kosService,
+                    transactionService,
+                    stateValidator
+            );
+
+            // Manually inject field dependencies using reflection
+            ReflectionTestUtils.setField(bookingService, "paymentBookingRepository", paymentBookingRepository);
+            ReflectionTestUtils.setField(bookingService, "transactionRepository", transactionRepository);
+
             monthlyPrice = 1500000.0;
             fullName = "John Doe";
             phoneNumber = "081234567890";
             ownerId = UUID.randomUUID();
             kosId = UUID.randomUUID();
             userId = UUID.randomUUID();
-    
-            // Setup test Kos with all required fields
+
             testKos = Kos.builder()
-            .id(kosId)
-            .ownerId(ownerId)
-            .name("Test Kos")
-            .address("Test Address")
-            .description("Test Description")
-            .price(monthlyPrice)
-            .maxCapacity(10)
-            .build();
-    }
+                    .id(kosId)
+                    .ownerId(ownerId)
+                    .name("Test Kos")
+                    .address("Test Address")
+                    .description("Test Description")
+                    .price(monthlyPrice)
+                    .maxCapacity(10)
+                    .build();
+        }
     
         @Test
         public void testCreateBookingWithPersonalDetails() {
@@ -743,66 +743,51 @@
             UUID kosId = UUID.randomUUID();
             UUID tenantId = UUID.randomUUID();
             UUID ownerId = UUID.randomUUID();
+            UUID paymentId = UUID.randomUUID();
 
-            // Create a Booking object
+            // Create booking
             Booking booking = new Booking(
-                    bookingId,
-                    tenantId,
-                    kosId,
-                    LocalDate.now().plusDays(7),
-                    3,
-                    monthlyPrice,
-                    fullName,
-                    phoneNumber,
-                    BookingStatus.PAID // Set the status to PAID for triggering the refund logic
+                    bookingId, tenantId, kosId, LocalDate.now().plusDays(7),
+                    3, monthlyPrice, fullName, phoneNumber, BookingStatus.PAID
             );
 
-            // Create a PaymentBooking object
+            // Create payment booking
             PaymentBooking paymentBooking = new PaymentBooking();
-            paymentBooking.setPaymentId(UUID.randomUUID());  // Set a valid payment ID
-            paymentBooking.setBookingId(bookingId);  // Set a valid booking ID
+            paymentBooking.setPaymentId(paymentId);
+            paymentBooking.setBookingId(bookingId);
 
-            // Create a Payment object
+            // Create payment with owner
+            Owner owner = new Owner();
+            owner.setId(ownerId);
+
             Payment originalPayment = new Payment();
-            originalPayment.setId(paymentBooking.getPaymentId());
+            originalPayment.setId(paymentId);
             originalPayment.setStatus(TransactionStatus.COMPLETED);
-            originalPayment.setOwner(new Owner());  // Set the owner
-            originalPayment.setUser(new Tenant());  // Set the tenant
+            originalPayment.setOwner(owner);
 
-            // Mock the repositories
-            when(bookingRepository.findById(booking.getBookingId())).thenReturn(Optional.of(booking));
+            // Create refund payment
+            Payment refundPayment = new Payment();
+            refundPayment.setStatus(TransactionStatus.COMPLETED);
+
+            // Mock repositories
+            when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
+            when(paymentBookingRepository.findByBookingId(bookingId)).thenReturn(Optional.of(paymentBooking));
+            when(transactionRepository.findPaymentById(paymentId)).thenReturn(Optional.of(originalPayment));
             when(bookingRepository.save(any(Booking.class))).thenReturn(booking);
 
-            // Mock the paymentBookingRepository to return the PaymentBooking object
-            when(paymentBookingRepository.findByBookingId(bookingId)).thenReturn(Optional.of(paymentBooking));
+            // Mock async refund service
+            CompletableFuture<Payment> completedFuture = CompletableFuture.completedFuture(refundPayment);
+            when(transactionService.refundPayment(paymentId, ownerId)).thenReturn(completedFuture);
 
-            // Mock the transactionRepository to return the Payment object
-            when(transactionRepository.findPaymentById(paymentBooking.getPaymentId())).thenReturn(Optional.of(originalPayment));
+            when(kosService.addAvailableRoom(kosId)).thenReturn(Optional.of(new Kos()));
 
-            // Mock walletRepository to return wallets for tenant and owner
-            Wallet tenantWallet = new Wallet();
-            tenantWallet.setUser(new Tenant());
-            tenantWallet.setBalance(new BigDecimal("10000"));
+            // Execute
+            bookingService.cancelBooking(bookingId);
 
-            Wallet ownerWallet = new Wallet();
-            ownerWallet.setUser(new Owner());
-            ownerWallet.setBalance(new BigDecimal("50000"));
-
-            when(walletRepository.findByUserId(tenantId)).thenReturn(Optional.of(tenantWallet));
-            when(walletRepository.findByUserId(ownerId)).thenReturn(Optional.of(ownerWallet));
-
-            // Mock the kosService.addAvailableRoom method to return a Kos object
-            Kos mockKos = new Kos();  // Mock the Kos object
-            when(kosService.addAvailableRoom(any(UUID.class))).thenReturn(Optional.of(mockKos));
-
-            System.out.println("paymentBookingRepository: " + paymentBookingRepository);  // Add this to check mock status
-
-            // Execute cancelBooking
-            bookingService.cancelBooking(booking.getBookingId());
-
-            // Verify interactions
+            // Verify
             verify(stateValidator).validateForCancellation(booking);
-            verify(kosService).addAvailableRoom(booking.getKosId());  // Ensure addAvailableRoom is called
+            verify(transactionService).refundPayment(paymentId, ownerId);
+            verify(kosService).addAvailableRoom(kosId);
 
             ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
             verify(bookingRepository).save(bookingCaptor.capture());

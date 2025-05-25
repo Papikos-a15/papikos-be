@@ -202,6 +202,9 @@ public class BookingServiceImpl implements BookingService {
                         booking.setStatus(BookingStatus.CANCELLED);
                         bookingRepository.save(booking);
 
+                        // ADD THIS: Make room available again
+                        kosService.addAvailableRoom(booking.getKosId());
+
                         log.info("Booking {} cancelled and refunded successfully", bookingId);
                     } else {
                         throw new RuntimeException("Refund failed with status: " + refundPayment.getStatus());
@@ -210,6 +213,9 @@ public class BookingServiceImpl implements BookingService {
                     // No payment found, just cancel the booking
                     booking.setStatus(BookingStatus.CANCELLED);
                     bookingRepository.save(booking);
+
+                    // ADD THIS: Make room available again
+                    kosService.addAvailableRoom(booking.getKosId());
 
                     log.warn("Booking {} cancelled but no payment found to refund", bookingId);
                 }
@@ -222,10 +228,12 @@ public class BookingServiceImpl implements BookingService {
             booking.setStatus(BookingStatus.CANCELLED);
             bookingRepository.save(booking);
 
+            // ADD THIS: Make room available again
+            kosService.addAvailableRoom(booking.getKosId());
+
             log.info("Booking {} cancelled (no payment to refund)", bookingId);
         }
     }
-
 
     @Override
     public CompletableFuture<List<Booking>> findBookingsByOwnerId(UUID ownerId) {

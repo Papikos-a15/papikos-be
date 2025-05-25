@@ -12,6 +12,9 @@ import id.ac.ui.cs.advprog.papikosbe.model.transaction.TopUp;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Transaction;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Wallet;
 import id.ac.ui.cs.advprog.papikosbe.model.user.User;
+import id.ac.ui.cs.advprog.papikosbe.observer.event.BookingApprovedEvent;
+import id.ac.ui.cs.advprog.papikosbe.observer.event.PaymentRefundedEvent;
+import id.ac.ui.cs.advprog.papikosbe.observer.handler.EventHandlerContext;
 import id.ac.ui.cs.advprog.papikosbe.repository.booking.BookingRepository;
 import id.ac.ui.cs.advprog.papikosbe.repository.booking.PaymentBookingRepository;
 import id.ac.ui.cs.advprog.papikosbe.repository.transaction.TransactionRepository;
@@ -52,6 +55,9 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Autowired
     private WalletService walletService;
+
+    @Autowired
+    private EventHandlerContext eventHandlerContext;
 
     @Override
     public Transaction getTransactionById(UUID userId) {
@@ -265,6 +271,9 @@ public class TransactionServiceImpl implements TransactionService {
 
             // Debugging log: Check if refund payment is saved
             System.out.println("Refund Payment saved: " + savedRefund);
+
+            PaymentRefundedEvent event = new PaymentRefundedEvent(this, savedRefund.getId());
+            eventHandlerContext.handleEvent(event);
 
             return CompletableFuture.completedFuture(savedRefund);
         } else {

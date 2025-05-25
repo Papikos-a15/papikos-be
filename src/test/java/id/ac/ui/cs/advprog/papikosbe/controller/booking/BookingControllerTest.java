@@ -11,7 +11,6 @@ import id.ac.ui.cs.advprog.papikosbe.security.JwtTokenProvider;
 import id.ac.ui.cs.advprog.papikosbe.util.AuthenticationUtils;
 import id.ac.ui.cs.advprog.papikosbe.validator.booking.BookingValidator;
 import id.ac.ui.cs.advprog.papikosbe.validator.booking.BookingAccessValidator;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +24,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 
 import static org.hamcrest.Matchers.hasSize;
 import java.time.LocalDate;

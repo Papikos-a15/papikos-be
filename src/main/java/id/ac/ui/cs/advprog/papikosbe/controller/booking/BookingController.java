@@ -10,7 +10,6 @@ import id.ac.ui.cs.advprog.papikosbe.validator.booking.BookingAccessValidator;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -23,13 +22,20 @@ import java.util.concurrent.CompletableFuture;
 @RestController
 @RequestMapping("/api/bookings")
 public class BookingController {
+    @Autowired
     private AuthenticationUtils authUtils;
 
+    @Autowired
     private BookingService bookingService;
 
+    @Autowired
     private KosService kosService;
 
+    @Autowired
     private BookingAccessValidator bookingAccessValidator;
+
+    @Autowired
+    private BookingValidator stateValidator;
 
     @PostMapping
     public ResponseEntity<Booking> createBooking(@RequestBody Booking booking, Authentication authentication) {
@@ -127,8 +133,8 @@ public class BookingController {
 
             // Return updated booking using async method with .join()
             return bookingService.findBookingById(id).join()
-                    .map(b -> ResponseEntity.status(HttpStatus.OK).body(b))
-                    .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
         } catch (IllegalStateException e) {
             return ResponseEntity.status(403).build();
         } catch (IllegalArgumentException e) {
@@ -155,8 +161,8 @@ public class BookingController {
 
             // Return updated booking using async method with .join()
             return bookingService.findBookingById(id).join()
-                    .map(b -> ResponseEntity.status(HttpStatus.OK).body(b))
-                    .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (IllegalStateException e) {
@@ -184,8 +190,8 @@ public class BookingController {
 
             // Return updated booking using async method with .join()
             return bookingService.findBookingById(id).join()
-                    .map(b -> ResponseEntity.status(HttpStatus.OK).body(b))
-                    .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (IllegalStateException e) {

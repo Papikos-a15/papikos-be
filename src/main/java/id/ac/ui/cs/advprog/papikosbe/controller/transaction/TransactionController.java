@@ -39,6 +39,8 @@ public class TransactionController {
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<TransactionResponse>> getUserTransactions(@PathVariable UUID userId) {
+        System.out.println("FETCH USER TRANSACTIONS");
+        System.out.println("userId = " + userId);
         try {
             List<Transaction> transactions = transactionService.getUserTransactions(userId);
             List<TransactionResponse> responses = transactions.stream()

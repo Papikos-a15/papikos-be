@@ -25,4 +25,4 @@ jobs:
       env:
         KOYEB_API_TOKEN: ${{ secrets.KOYEB_API_TOKEN }}
       run: |
-        koyeb service redeploy papikos-be --app papikos-a15 --token $KOYEB_API_TOKEN
+        koyeb service redeploy papikos-a15 --app papikos-a15 --token $KOYEB_API_TOKEN

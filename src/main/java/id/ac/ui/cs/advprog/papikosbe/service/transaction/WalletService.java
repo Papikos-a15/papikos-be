@@ -13,4 +13,5 @@ public interface WalletService {
     Wallet getOrCreateWallet(User user);
     Wallet edit(UUID id, Wallet wallet);
     void delete(UUID id);
+    Wallet findByUserId(UUID userId);
 }

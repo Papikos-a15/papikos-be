@@ -7,6 +7,7 @@ import id.ac.ui.cs.advprog.papikosbe.model.transaction.TopUp;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Transaction;
 import id.ac.ui.cs.advprog.papikosbe.service.transaction.TransactionService;
 import id.ac.ui.cs.advprog.papikosbe.util.AuthenticationUtils;
+import org.hibernate.LazyInitializationException;
 import org.springframework.security.core.Authentication;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -17,14 +18,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/transactions")
 public class TransactionController {
 
-    AuthenticationUtils authenticationUtils;
-    TransactionService transactionService;
+    private final AuthenticationUtils authenticationUtils;
+    private final TransactionService transactionService;
+
+    @Autowired
+    public TransactionController(AuthenticationUtils authenticationUtils,
+                                 TransactionService transactionService) {
+        this.authenticationUtils = authenticationUtils;
+        this.transactionService = transactionService;
+    }
 
     @GetMapping("/{id}")
     public ResponseEntity<TransactionResponse> getTransactionById(@PathVariable UUID id) {
@@ -39,8 +48,6 @@ public class TransactionController {
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<TransactionResponse>> getUserTransactions(@PathVariable UUID userId) {
-        System.out.println("FETCH USER TRANSACTIONS");
-        System.out.println("userId = " + userId);
         try {
             List<Transaction> transactions = transactionService.getUserTransactions(userId);
             List<TransactionResponse> responses = transactions.stream()
@@ -78,40 +85,67 @@ public class TransactionController {
     }
 
     @GetMapping("/payment/tenant/{tenantId}")
-    public CompletableFuture<ResponseEntity<List<TransactionResponse>>> getPaymentsByTenant(@PathVariable UUID tenantId) {
-        return transactionService.getPaymentsByTenant(tenantId)
-                .thenApply(payments -> payments.stream()
-                        .map(this::mapToTransactionResponse)
-                        .collect(Collectors.toList()))
-                .thenApply(responses -> ResponseEntity.ok(responses))
-                .exceptionally(ex -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(null));
+    public ResponseEntity<List<TransactionResponse>> getPaymentsByTenant(@PathVariable UUID tenantId) {
+        try {
+            List<Payment> payments = transactionService.getPaymentsByTenant(tenantId).get();
+
+            List<TransactionResponse> responses = payments.stream()
+                    .map(this::mapToTransactionResponse)
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(responses);
+
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof IllegalStateException) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+            }
+            if (cause instanceof RuntimeException && cause.getMessage().contains("Tenant not found")) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            }
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
     }
 
+
     @GetMapping("/payment/owner/{ownerId}")
-    public CompletableFuture<ResponseEntity<List<TransactionResponse>>> getPaymentsByOwner(@PathVariable UUID ownerId) {
-        return transactionService.getPaymentsByOwner(ownerId)
-                .thenApply(payments -> payments.stream()
-                        .map(this::mapToTransactionResponse)
-                        .collect(Collectors.toList()))
-                .thenApply(responses -> ResponseEntity.ok(responses))
-                .exceptionally(ex -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(null));
+    public ResponseEntity<List<TransactionResponse>> getPaymentsByOwner(@PathVariable UUID ownerId) {
+        try {
+            List<Payment> payments = transactionService.getPaymentsByOwner(ownerId).join(); // .join() blocks until result is available
+            List<TransactionResponse> responses = payments.stream()
+                    .map(this::mapToTransactionResponse)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(responses);
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
     }
+
 
     @PostMapping("/topup")
     public ResponseEntity<TransactionResponse> createTopUp(
             @RequestBody TopUpRequest topUpRequest,
             Authentication authentication) {
 
-        UUID userId = authenticationUtils.getUserIdFromAuth(authentication);
-
         try {
-            // Wait for the async operation to complete
+            UUID userId = authenticationUtils.getUserIdFromAuth(authentication);
+
             TopUp topUp = transactionService.createTopUp(userId, topUpRequest.getAmount()).get();
             TransactionResponse response = mapToTransactionResponse(topUp);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
         } catch (Exception ex) {
             if (ex instanceof InterruptedException) {
-                Thread.currentThread().interrupt(); // Re-interrupt the thread
+                Thread.currentThread().interrupt();
             }
 
             TransactionResponse errorResponse = new TransactionResponse(
@@ -123,14 +157,18 @@ public class TransactionController {
     }
 
     @GetMapping("/topup/user/{userId}")
-    public CompletableFuture<ResponseEntity<List<TransactionResponse>>> getTopUpsByUser(@PathVariable UUID userId) {
-        return transactionService.getTopUpsByUser(userId)
-                .thenApply(topUps -> topUps.stream()
-                        .map(this::mapToTransactionResponse)
-                        .collect(Collectors.toList()))
-                .thenApply(ResponseEntity::ok)
-                .exceptionally(ex -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(null));
+    public ResponseEntity<List<TransactionResponse>> getTopUpsByUser(@PathVariable UUID userId) {
+        try {
+            List<TopUp> topUps = transactionService.getTopUpsByUser(userId).join();
+            List<TransactionResponse> responses = topUps.stream()
+                    .map(this::mapToTransactionResponse)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(responses);
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
     }
+
 
     @PostMapping("/refund")
     public ResponseEntity<?> refundPayment(@RequestBody RefundRequest request) {
@@ -155,10 +193,17 @@ public class TransactionController {
         response.setCreatedAt(transaction.getCreatedAt());
         response.setUserId(transaction.getUser().getId());
 
-        if (transaction instanceof Payment) {
-            Payment payment = (Payment) transaction;
+        if (transaction instanceof Payment payment) {
             response.setType(TransactionType.PAYMENT);
-            response.setOwnerId(payment.getOwner().getId());
+
+            // Safe way to handle potentially lazy-loaded owner
+            try {
+                if (payment.getOwner() != null) {
+                    response.setOwnerId(payment.getOwner().getId());
+                }
+            } catch (LazyInitializationException e) {
+                // maybe fetch separately or leave null
+            }
         } else if (transaction instanceof TopUp) {
             response.setType(TransactionType.TOP_UP);
         }

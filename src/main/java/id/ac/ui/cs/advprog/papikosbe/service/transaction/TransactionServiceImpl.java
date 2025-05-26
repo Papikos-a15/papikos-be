@@ -23,6 +23,7 @@ import id.ac.ui.cs.advprog.papikosbe.repository.transaction.WalletRepository;
 import id.ac.ui.cs.advprog.papikosbe.repository.user.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -93,6 +94,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     /*** Payment Methods ***/
     @Override
+    @Async
     public CompletableFuture<Payment> createPayment(UUID tenantId, UUID ownerId, BigDecimal amount) throws Exception {
         validatePayment(tenantId, ownerId, amount);
 
@@ -120,6 +122,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     /*** TopUp Methods ***/
     @Override
+    @Async
     public CompletableFuture<TopUp> createTopUp(UUID userId, BigDecimal amount) throws Exception {
         validateTopUp(userId, amount);
 
@@ -182,8 +185,8 @@ public class TransactionServiceImpl implements TransactionService {
             throw new Exception("Minimum top up adalah Rp 10.000");
         }
 
-        Wallet userWallet = walletRepository.findByUserId(userId)
-                .orElseThrow(() -> new Exception("Wallet user tidak ditemukan"));
+        Optional<User> user = userRepository.findById(userId);
+        Wallet userWallet = walletService.getOrCreateWallet(user.get());
 
         if (userWallet.getStatus() != WalletStatus.ACTIVE) {
             throw new InactiveWalletException("Wallet user tidak aktif");
@@ -191,21 +194,27 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
+    @Async
     public CompletableFuture<List<Payment>> getPaymentsByTenant(UUID tenantId) {
-        return CompletableFuture.supplyAsync(() -> transactionRepository.findPaymentsByTenant(tenantId));
+        return CompletableFuture.supplyAsync(() -> {
+            return transactionRepository.findPaymentsByTenant(tenantId);
+        });
     }
 
     @Override
+    @Async
     public CompletableFuture<List<Payment>> getPaymentsByOwner(UUID ownerId) {
         return CompletableFuture.supplyAsync(() -> transactionRepository.findPaymentsByOwner(ownerId));
     }
 
     @Override
+    @Async
     public CompletableFuture<List<TopUp>> getTopUpsByUser(UUID userId) {
         return CompletableFuture.supplyAsync(() -> transactionRepository.findTopUpsByUser(userId));
     }
 
     @Override
+    @Async
     public CompletableFuture<Payment> refundPayment(UUID paymentId, UUID requesterId) throws Exception {
         // Find the original payment
         Payment originalPayment = transactionRepository.findPaymentById(paymentId)

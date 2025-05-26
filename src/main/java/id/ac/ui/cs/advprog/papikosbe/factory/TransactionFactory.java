@@ -23,21 +23,19 @@ public class TransactionFactory {
     }
 
     public Transaction createTransaction(TransactionType type, UUID userId, BigDecimal amount, UUID ownerId) throws Exception {
-        switch (type) {
-            case TOP_UP:
-                return createTopUp(userId, amount);
-            case PAYMENT:
-                System.out.println("CASE PAYMENT");
+        return switch (type) {
+            case TOP_UP -> createTopUp(userId, amount);
+            case PAYMENT -> {
                 if (ownerId == null) {
                     throw new Exception("Owner ID is required for Payment");
                 }
-                return createPayment(userId, ownerId, amount);
-            default:
-                throw new IllegalArgumentException("Unknown transaction type: " + type);
-        }
+                yield createPayment(userId, ownerId, amount);
+            }
+            default -> throw new IllegalArgumentException("Unknown transaction type: " + type);
+        };
     }
 
-    private TopUp createTopUp(UUID userId, BigDecimal amount) throws Exception {
+    TopUp createTopUp(UUID userId, BigDecimal amount) throws Exception {
         TopUp topUp = new TopUp();
         topUp.setAmount(amount);
         User user = userRepository.findById(userId).orElseThrow(() -> new Exception("User not found"));
@@ -45,7 +43,7 @@ public class TransactionFactory {
         return topUp;
     }
 
-    private Payment createPayment(UUID tenantId, UUID ownerId, BigDecimal amount) throws Exception {
+    Payment createPayment(UUID tenantId, UUID ownerId, BigDecimal amount) throws Exception {
         Payment payment = new Payment();
         payment.setAmount(amount);
         User tenant = userRepository.findById(tenantId).orElseThrow(() -> new Exception("Tenant not found"));

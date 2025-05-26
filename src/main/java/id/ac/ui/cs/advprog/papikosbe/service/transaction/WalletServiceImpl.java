@@ -74,6 +74,6 @@ public class WalletServiceImpl implements WalletService {
     @Override
     public Wallet findByUserId(UUID userId) {
         return walletRepository.findByUserId(userId)
-                .orElseThrow(() -> new EntityNotFoundException("Wallet not found for user " + userId));
+                .orElse(null);
     }
 }

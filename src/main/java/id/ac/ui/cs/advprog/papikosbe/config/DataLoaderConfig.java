@@ -14,7 +14,7 @@ public class DataLoaderConfig {
 
     @Bean
     public CommandLineRunner loadData(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-        return (args) -> {
+        return args -> {
             if (userRepository.findByEmail("admin1@example.com").isEmpty()) {
                 User admin = new Admin();
                 admin.setEmail("admin1@example.com");

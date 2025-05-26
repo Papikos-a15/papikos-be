@@ -165,8 +165,8 @@ class WalletServiceImplTest {
         UUID userId = UUID.randomUUID();
 
         when(walletRepository.findByUserId(userId)).thenReturn(Optional.empty());
-
-        assertThrows(EntityNotFoundException.class, () -> walletService.findByUserId(userId));
+        Wallet result = walletService.findByUserId(userId);
+        assertNull(result);
 
         verify(walletRepository).findByUserId(userId);
     }

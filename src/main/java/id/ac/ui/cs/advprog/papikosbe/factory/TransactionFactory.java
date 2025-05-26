@@ -1,55 +1,33 @@
 package id.ac.ui.cs.advprog.papikosbe.factory;
 
 import id.ac.ui.cs.advprog.papikosbe.enums.TransactionType;
-import id.ac.ui.cs.advprog.papikosbe.model.transaction.Payment;
-import id.ac.ui.cs.advprog.papikosbe.model.transaction.TopUp;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Transaction;
-import id.ac.ui.cs.advprog.papikosbe.model.user.Owner;
-import id.ac.ui.cs.advprog.papikosbe.model.user.User;
-import id.ac.ui.cs.advprog.papikosbe.repository.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.UUID;
 
 @Component
 public class TransactionFactory {
-    private final UserRepository userRepository;
+
+    private final Map<TransactionType, TransactionCreator> creators;
 
     @Autowired
-    public TransactionFactory(UserRepository userRepository) {
-        this.userRepository = userRepository;
+    public TransactionFactory(TopUpTransactionCreator topUpCreator,
+                              PaymentTransactionCreator paymentCreator) {
+        this.creators = Map.of(
+                TransactionType.TOP_UP, topUpCreator,
+                TransactionType.PAYMENT, paymentCreator
+        );
     }
 
     public Transaction createTransaction(TransactionType type, UUID userId, BigDecimal amount, UUID ownerId) throws Exception {
-        return switch (type) {
-            case TOP_UP -> createTopUp(userId, amount);
-            case PAYMENT -> {
-                if (ownerId == null) {
-                    throw new Exception("Owner ID is required for Payment");
-                }
-                yield createPayment(userId, ownerId, amount);
-            }
-            default -> throw new IllegalArgumentException("Unknown transaction type: " + type);
-        };
-    }
-
-    TopUp createTopUp(UUID userId, BigDecimal amount) throws Exception {
-        TopUp topUp = new TopUp();
-        topUp.setAmount(amount);
-        User user = userRepository.findById(userId).orElseThrow(() -> new Exception("User not found"));
-        topUp.setUser(user);
-        return topUp;
-    }
-
-    Payment createPayment(UUID tenantId, UUID ownerId, BigDecimal amount) throws Exception {
-        Payment payment = new Payment();
-        payment.setAmount(amount);
-        User tenant = userRepository.findById(tenantId).orElseThrow(() -> new Exception("Tenant not found"));
-        User owner = userRepository.findById(ownerId).orElseThrow(() -> new Exception("Owner not found"));
-        payment.setUser(tenant);
-        payment.setOwner(owner);
-        return payment;
+        TransactionCreator creator = creators.get(type);
+        if (creator == null) {
+            throw new IllegalArgumentException("Unknown transaction type: " + type);
+        }
+        return creator.create(userId, amount, ownerId);
     }
 }

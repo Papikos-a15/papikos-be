@@ -70,4 +70,9 @@ public class WalletServiceImpl implements WalletService {
     public void delete(UUID id) {
         walletRepository.deleteById(id);
     }
+
+    @Override
+    public Wallet findByUserId(UUID userId) {
+        return walletRepository.findByUserId(userId).orElse(null);
+    }
 }

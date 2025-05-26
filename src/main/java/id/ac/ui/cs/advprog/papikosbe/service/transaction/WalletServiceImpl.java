@@ -5,6 +5,7 @@ import id.ac.ui.cs.advprog.papikosbe.model.transaction.Wallet;
 import id.ac.ui.cs.advprog.papikosbe.model.user.User;
 import id.ac.ui.cs.advprog.papikosbe.repository.user.UserRepository;
 import id.ac.ui.cs.advprog.papikosbe.repository.transaction.WalletRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -12,15 +13,19 @@ import java.util.*;
 
 @Service
 public class WalletServiceImpl implements WalletService {
+    private final WalletRepository walletRepository;
+    private final WalletFactory walletFactory;
+    private final UserRepository userRepository;
 
     @Autowired
-    private WalletRepository walletRepository;
-
-    @Autowired
-    private WalletFactory walletFactory;
-
-    @Autowired
-    private UserRepository userRepository;
+    public WalletServiceImpl(
+            WalletRepository walletRepository,
+            WalletFactory walletFactory,
+            UserRepository userRepository) {
+        this.walletRepository = walletRepository;
+        this.walletFactory = walletFactory;
+        this.userRepository = userRepository;
+    }
 
     @Override
     public Wallet create(UUID userId) {
@@ -64,5 +69,11 @@ public class WalletServiceImpl implements WalletService {
     @Override
     public void delete(UUID id) {
         walletRepository.deleteById(id);
+    }
+
+    @Override
+    public Wallet findByUserId(UUID userId) {
+        return walletRepository.findByUserId(userId)
+                .orElse(null);
     }
 }

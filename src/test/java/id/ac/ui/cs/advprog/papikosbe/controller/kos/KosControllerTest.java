@@ -2,10 +2,13 @@ package id.ac.ui.cs.advprog.papikosbe.controller.kos;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import id.ac.ui.cs.advprog.papikosbe.config.SecurityConfig;
+import id.ac.ui.cs.advprog.papikosbe.enums.Role;
 import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
+import id.ac.ui.cs.advprog.papikosbe.model.user.Owner;
 import id.ac.ui.cs.advprog.papikosbe.security.JwtTokenProvider;
 import id.ac.ui.cs.advprog.papikosbe.service.kos.KosSearchService;
 import id.ac.ui.cs.advprog.papikosbe.service.kos.KosService;
+import id.ac.ui.cs.advprog.papikosbe.service.user.OwnerService;
 import id.ac.ui.cs.advprog.papikosbe.util.AuthenticationUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,7 +24,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 
 
 import java.util.*;
@@ -33,7 +35,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(KosController.class)
@@ -46,6 +47,9 @@ public class KosControllerTest {
 
     @MockitoBean
     private KosService kosService;
+
+    @MockitoBean
+    private OwnerService ownerService;
 
     @MockitoBean
     private JwtTokenProvider jwtProvider;
@@ -85,6 +89,7 @@ public class KosControllerTest {
         // Set up test data
         testKos1 = new Kos();
         testKos1.setId(UUID.randomUUID());
+        testKos1.setOwnerId(UUID.randomUUID());
         testKos1.setName("Kos A");
         testKos1.setAddress("Jalan Margonda 10");
         testKos1.setPrice(1000000.0);
@@ -112,6 +117,17 @@ public class KosControllerTest {
 
     @Test
     void addKos_returnsCreated() throws Exception {
+        Owner mockUser = new Owner();
+        mockUser.setEmail("mockUser@gmail.com");
+        mockUser.setApproved(true);
+        mockUser.setRole(Role.OWNER);
+
+        when(jwtProvider.validate("tok")).thenReturn(true);
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                mockUser, null, List.of(new SimpleGrantedAuthority("ROLE_OWNER"))
+        );
+        when(jwtProvider.getAuthentication("tok")).thenReturn(auth);
+
         when(kosService.addKos(any())).thenReturn(dummy);
 
         mockMvc.perform(post("/api/management/add")

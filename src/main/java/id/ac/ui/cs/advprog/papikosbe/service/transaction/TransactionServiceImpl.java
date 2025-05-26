@@ -4,6 +4,7 @@ import id.ac.ui.cs.advprog.papikosbe.enums.BookingStatus;
 import id.ac.ui.cs.advprog.papikosbe.enums.TransactionStatus;
 import id.ac.ui.cs.advprog.papikosbe.enums.TransactionType;
 import id.ac.ui.cs.advprog.papikosbe.enums.WalletStatus;
+import id.ac.ui.cs.advprog.papikosbe.exception.InactiveWalletException;
 import id.ac.ui.cs.advprog.papikosbe.factory.TransactionFactory;
 import id.ac.ui.cs.advprog.papikosbe.model.booking.Booking;
 import id.ac.ui.cs.advprog.papikosbe.model.booking.PaymentBooking;
@@ -22,6 +23,7 @@ import id.ac.ui.cs.advprog.papikosbe.repository.transaction.WalletRepository;
 import id.ac.ui.cs.advprog.papikosbe.repository.user.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -34,30 +36,35 @@ import java.util.stream.Stream;
 
 @Service
 public class TransactionServiceImpl implements TransactionService {
+    private final TransactionRepository transactionRepository;
+    private final PaymentBookingRepository paymentBookingRepository;
+    private final BookingRepository bookingRepository;
+    private final UserRepository userRepository;
+    private final WalletRepository walletRepository;
+    private final TransactionFactory transactionFactory;
+    private final WalletService walletService;
+    private final EventHandlerContext eventHandlerContext;
 
     @Autowired
-    private TransactionRepository transactionRepository;
-
-    @Autowired
-    private PaymentBookingRepository paymentBookingRepository;
-
-    @Autowired
-    private BookingRepository bookingRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private WalletRepository walletRepository;
-
-    @Autowired
-    private TransactionFactory transactionFactory;
-
-    @Autowired
-    private WalletService walletService;
-
-    @Autowired
-    private EventHandlerContext eventHandlerContext;
+    public TransactionServiceImpl(
+            TransactionRepository transactionRepository,
+            PaymentBookingRepository paymentBookingRepository,
+            BookingRepository bookingRepository,
+            UserRepository userRepository,
+            WalletRepository walletRepository,
+            TransactionFactory transactionFactory,
+            WalletService walletService,
+            EventHandlerContext eventHandlerContext
+    ) {
+        this.transactionRepository = transactionRepository;
+        this.paymentBookingRepository = paymentBookingRepository;
+        this.bookingRepository = bookingRepository;
+        this.userRepository = userRepository;
+        this.walletRepository = walletRepository;
+        this.transactionFactory = transactionFactory;
+        this.walletService = walletService;
+        this.eventHandlerContext = eventHandlerContext;
+    }
 
     @Override
     public Transaction getTransactionById(UUID userId) {
@@ -87,6 +94,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     /*** Payment Methods ***/
     @Override
+    @Async
     public CompletableFuture<Payment> createPayment(UUID tenantId, UUID ownerId, BigDecimal amount) throws Exception {
         validatePayment(tenantId, ownerId, amount);
 
@@ -94,8 +102,11 @@ public class TransactionServiceImpl implements TransactionService {
                 TransactionType.PAYMENT, tenantId, amount, ownerId
         );
 
-        Wallet tenantWallet = walletRepository.findByUserId(tenantId).get();
-        Wallet ownerWallet = walletRepository.findByUserId(ownerId).get();
+        Wallet tenantWallet = walletRepository.findByUserId(tenantId)
+                .orElseThrow(() -> new EntityNotFoundException("Tenant wallet not found"));
+
+        Wallet ownerWallet = walletRepository.findByUserId(ownerId)
+                .orElseThrow(() -> new EntityNotFoundException("Owner wallet not found"));
 
         TransactionStatus status = payment.process(tenantWallet, ownerWallet);
 
@@ -111,6 +122,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     /*** TopUp Methods ***/
     @Override
+    @Async
     public CompletableFuture<TopUp> createTopUp(UUID userId, BigDecimal amount) throws Exception {
         validateTopUp(userId, amount);
 
@@ -118,7 +130,8 @@ public class TransactionServiceImpl implements TransactionService {
                 TransactionType.TOP_UP, userId, amount, null
         );
 
-        Wallet userWallet = walletRepository.findByUserId(userId).get();
+        Wallet userWallet = walletRepository.findByUserId(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Wallet for user " + userId + " not found"));
 
         TransactionStatus status = topUp.process(userWallet, null);
 
@@ -172,33 +185,36 @@ public class TransactionServiceImpl implements TransactionService {
             throw new Exception("Minimum top up adalah Rp 10.000");
         }
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new Exception("User tidak ditemukan"));
-
-        Wallet userWallet = walletRepository.findByUserId(userId)
-                .orElseThrow(() -> new Exception("Wallet user tidak ditemukan"));
+        Optional<User> user = userRepository.findById(userId);
+        Wallet userWallet = walletService.getOrCreateWallet(user.get());
 
         if (userWallet.getStatus() != WalletStatus.ACTIVE) {
-            throw new Exception("Wallet user tidak aktif");
+            throw new InactiveWalletException("Wallet user tidak aktif");
         }
     }
 
     @Override
+    @Async
     public CompletableFuture<List<Payment>> getPaymentsByTenant(UUID tenantId) {
-        return CompletableFuture.supplyAsync(() -> transactionRepository.findPaymentsByTenant(tenantId));
+        return CompletableFuture.supplyAsync(() -> {
+            return transactionRepository.findPaymentsByTenant(tenantId);
+        });
     }
 
     @Override
+    @Async
     public CompletableFuture<List<Payment>> getPaymentsByOwner(UUID ownerId) {
         return CompletableFuture.supplyAsync(() -> transactionRepository.findPaymentsByOwner(ownerId));
     }
 
     @Override
+    @Async
     public CompletableFuture<List<TopUp>> getTopUpsByUser(UUID userId) {
         return CompletableFuture.supplyAsync(() -> transactionRepository.findTopUpsByUser(userId));
     }
 
     @Override
+    @Async
     public CompletableFuture<Payment> refundPayment(UUID paymentId, UUID requesterId) throws Exception {
         // Find the original payment
         Payment originalPayment = transactionRepository.findPaymentById(paymentId)
@@ -249,14 +265,8 @@ public class TransactionServiceImpl implements TransactionService {
         refundPayment.setCreatedAt(LocalDateTime.now());
         refundPayment.setPaidDate(LocalDateTime.now());
 
-        // Debugging log: Check if refund payment is populated correctly
-        System.out.println("Refund Payment before save: " + refundPayment);
-
         // Process the refund transaction
         TransactionStatus status = refundPayment.process(ownerWallet, tenantWallet);
-
-        // Debugging log: Check refund status after processing
-        System.out.println("Refund Payment status after processing: " + status);
 
         if (status == TransactionStatus.COMPLETED) {
             originalPayment.setStatus(TransactionStatus.REFUNDED);
@@ -268,9 +278,6 @@ public class TransactionServiceImpl implements TransactionService {
 
             // Save refund payment
             Payment savedRefund = transactionRepository.save(refundPayment);
-
-            // Debugging log: Check if refund payment is saved
-            System.out.println("Refund Payment saved: " + savedRefund);
 
             PaymentRefundedEvent event = new PaymentRefundedEvent(this, savedRefund.getId());
             eventHandlerContext.handleEvent(event);

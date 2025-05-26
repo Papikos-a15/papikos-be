@@ -16,9 +16,9 @@ public class AsyncConfig {
     @Bean(name = "bookingTaskExecutor")
     public Executor bookingTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(2); // Base number of threads
-        executor.setMaxPoolSize(5);  // Maximum number of threads
-        executor.setQueueCapacity(100); // How many tasks can queue up
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(5);
+        executor.setQueueCapacity(100);
         executor.setThreadNamePrefix("Booking-");
         executor.initialize();
         return executor;

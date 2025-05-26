@@ -1,8 +1,11 @@
 package id.ac.ui.cs.advprog.papikosbe.controller.kos;
 
 import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
+import id.ac.ui.cs.advprog.papikosbe.model.user.Owner;
 import id.ac.ui.cs.advprog.papikosbe.service.kos.KosService;
 import id.ac.ui.cs.advprog.papikosbe.service.kos.KosSearchService;
+import id.ac.ui.cs.advprog.papikosbe.service.user.OwnerServiceImpl;
+import id.ac.ui.cs.advprog.papikosbe.service.user.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.Nullable;
 import org.springframework.web.bind.annotation.*;
@@ -15,18 +18,25 @@ import java.util.concurrent.CompletableFuture;
 public class KosController {
     private final KosService kosService;
     private final KosSearchService kosSearchService;
+    private final OwnerServiceImpl ownerService;
 
 
-    public KosController(KosService kosService, KosSearchService kosSearchService) {
+
+    public KosController(KosService kosService, KosSearchService kosSearchService, OwnerServiceImpl ownerServiceImpl) {
         this.kosService = kosService;
         this.kosSearchService = kosSearchService;
-
+        this.ownerService = ownerServiceImpl;
     }
 
     @PostMapping("/add")
     public ResponseEntity<Kos> addKos(@RequestBody Kos kos) {
-        Kos addedKos = kosService.addKos(kos);
-        return ResponseEntity.status(201).body(addedKos);
+        Owner user = ownerService.findOwnerById(kos.getOwnerId());
+        if (user.isApproved()) {
+            Kos addedKos = kosService.addKos(kos);
+            return ResponseEntity.status(201).body(addedKos);
+        } else {
+            return ResponseEntity.status(403).build();
+        }
     }
 
     @GetMapping("/list")

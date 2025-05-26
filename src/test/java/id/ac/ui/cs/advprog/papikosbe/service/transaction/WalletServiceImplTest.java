@@ -6,6 +6,7 @@ import id.ac.ui.cs.advprog.papikosbe.model.user.Tenant;
 import id.ac.ui.cs.advprog.papikosbe.model.user.User;
 import id.ac.ui.cs.advprog.papikosbe.repository.transaction.WalletRepository;
 import id.ac.ui.cs.advprog.papikosbe.repository.user.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -133,10 +134,10 @@ class WalletServiceImplTest {
 
         when(walletRepository.findByUserId(userId)).thenReturn(Optional.empty());
 
-        Wallet result = walletService.findByUserId(userId);
+        assertThrows(EntityNotFoundException.class, () -> walletService.findByUserId(userId));
 
-        assertNull(result);
         verify(walletRepository).findByUserId(userId);
     }
+
 
 }

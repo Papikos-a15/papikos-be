@@ -3,7 +3,6 @@ package id.ac.ui.cs.advprog.papikosbe.observer.handler;
 import id.ac.ui.cs.advprog.papikosbe.enums.NotificationType;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Payment;
 import id.ac.ui.cs.advprog.papikosbe.observer.event.PaymentRefundedEvent;
-import id.ac.ui.cs.advprog.papikosbe.observer.event.PaymentRefundedEvent;
 import id.ac.ui.cs.advprog.papikosbe.service.notification.NotificationService;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.stereotype.Component;

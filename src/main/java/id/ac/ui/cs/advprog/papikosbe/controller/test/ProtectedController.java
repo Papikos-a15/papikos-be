@@ -11,7 +11,6 @@ public class ProtectedController {
 
     @GetMapping("/protected")
     public String protectedEndpoint() {
-        // TODO: ubah menjadi logika bisnis sebenarnya jika perlu
         return "ok";
     }
 }

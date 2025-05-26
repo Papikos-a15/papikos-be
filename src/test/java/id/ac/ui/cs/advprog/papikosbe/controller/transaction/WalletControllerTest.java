@@ -1,9 +1,11 @@
 package id.ac.ui.cs.advprog.papikosbe.controller.transaction;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import id.ac.ui.cs.advprog.papikosbe.enums.WalletStatus;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Wallet;
 import id.ac.ui.cs.advprog.papikosbe.model.user.Tenant;
 import id.ac.ui.cs.advprog.papikosbe.model.user.User;
+import id.ac.ui.cs.advprog.papikosbe.repository.user.UserRepository;
 import id.ac.ui.cs.advprog.papikosbe.service.transaction.WalletService;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,14 +29,11 @@ class WalletControllerTest {
 
     private MockMvc mockMvc;
     private WalletService walletService;
-    private WalletController walletController;
-
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() {
         walletService = Mockito.mock(WalletService.class);
-        walletController = new WalletController(walletService);
+        WalletController walletController = new WalletController(walletService);
         mockMvc = MockMvcBuilders.standaloneSetup(walletController).build();
     }
 
@@ -46,6 +45,7 @@ class WalletControllerTest {
                 .email("dummy@example.com")
                 .password("securepassword")
                 .build();
+        dummyUser.setId(userId);
 
         Wallet wallet = new Wallet(dummyUser, BigDecimal.ZERO);
         wallet.setId(UUID.randomUUID());
@@ -89,6 +89,31 @@ class WalletControllerTest {
         mockMvc.perform(get("/api/wallets/" + wallet.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(wallet.getId().toString()));
+    }
+
+    @Test
+    void testFindWalletByUserId() throws Exception {
+        UUID userId = UUID.randomUUID();
+        User dummyUser = Tenant.builder()
+                .email("dummy@example.com")
+                .password("securepassword")
+                .build();
+        dummyUser.setId(userId);
+
+        Wallet wallet = new Wallet(dummyUser, new BigDecimal("100.00"));
+        wallet.setId(UUID.randomUUID());
+        wallet.setStatus(WalletStatus.ACTIVE);
+
+        when(walletService.findByUserId(userId)).thenReturn(wallet);
+
+        mockMvc.perform(get("/api/wallets/user/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(wallet.getId().toString()))
+                .andExpect(jsonPath("$.balance").value(wallet.getBalance().doubleValue()))
+                .andExpect(jsonPath("$.status").value(wallet.getStatus().toString()))
+                .andExpect(jsonPath("$.userId").value(userId.toString()));
     }
 
     @Test

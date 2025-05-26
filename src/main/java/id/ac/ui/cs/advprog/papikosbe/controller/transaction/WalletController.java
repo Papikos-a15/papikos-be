@@ -5,6 +5,7 @@ import id.ac.ui.cs.advprog.papikosbe.dto.WalletResponse;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Wallet;
 import id.ac.ui.cs.advprog.papikosbe.model.user.Tenant;
 import id.ac.ui.cs.advprog.papikosbe.model.user.User;
+import id.ac.ui.cs.advprog.papikosbe.repository.user.UserRepository;
 import id.ac.ui.cs.advprog.papikosbe.service.transaction.WalletService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -49,6 +50,15 @@ public class WalletController {
         return ResponseEntity.ok(mapToResponse(wallet));
     }
 
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<WalletResponse> findWalletByUserId(@PathVariable UUID userId) {
+        Wallet wallet = walletService.findByUserId(userId);
+        if (wallet == null) {
+            wallet = walletService.create(userId);
+        }
+        return ResponseEntity.ok(mapToResponse(wallet));
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<WalletResponse> editWallet(@PathVariable UUID id, @RequestBody WalletRequest request) {
         User user = new Tenant();
@@ -75,7 +85,8 @@ public class WalletController {
         return new WalletResponse(
                 wallet.getId(),
                 wallet.getBalance(),
-                wallet.getUser() != null ? wallet.getUser().getId() : null
+                wallet.getUser() != null ? wallet.getUser().getId() : null,
+                wallet.getStatus()
         );
     }
 }

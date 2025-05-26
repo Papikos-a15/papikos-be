@@ -32,14 +32,18 @@ public class KosController {
     @PostMapping("/add")
     public ResponseEntity<Kos> addKos(@RequestBody Kos kos) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        Owner owner = (Owner) auth.getPrincipal();
+        List<Owner> unapprovedOwnerList = ownerService.findUnapprovedOwners();
+        String email = auth.getName();
 
-        if (owner.isApproved()) {
-            Kos addedKos = kosService.addKos(kos);
-            return ResponseEntity.status(201).body(addedKos);
-        } else {
-            return ResponseEntity.status(403).build();
+        boolean isUnapproved = unapprovedOwnerList.stream()
+                .anyMatch(owner -> owner.getEmail().equalsIgnoreCase(email));
+
+        if (isUnapproved) {
+            return ResponseEntity.status(403).build(); // Forbidden
         }
+
+        Kos addedKos = kosService.addKos(kos);
+        return ResponseEntity.status(201).body(addedKos);
     }
 
     @GetMapping("/list")

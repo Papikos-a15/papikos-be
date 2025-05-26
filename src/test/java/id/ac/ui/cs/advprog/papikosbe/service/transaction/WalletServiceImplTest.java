@@ -37,10 +37,13 @@ class WalletServiceImplTest {
 
     Wallet wallet;
     User user;
+    UUID walletId;
+    UUID userId;
 
     @BeforeEach
     void setUp() {
-        UUID walletId = UUID.randomUUID();
+        walletId = UUID.randomUUID();
+        userId = UUID.randomUUID();
 
         user = Tenant.builder()
                 .email("nae@example.com")
@@ -111,6 +114,29 @@ class WalletServiceImplTest {
         walletService.delete(walletId);
 
         verify(walletRepository, times(1)).deleteById(walletId);
+    }
+
+    @Test
+    void testFindByUserId_WalletExists() {
+        when(walletRepository.findByUserId(userId)).thenReturn(Optional.of(wallet));
+
+        Wallet result = walletService.findByUserId(userId);
+
+        assertNotNull(result);
+        assertEquals(wallet, result);
+        verify(walletRepository).findByUserId(userId);
+    }
+
+    @Test
+    void testFindByUserId_WalletNotFound() {
+        UUID userId = UUID.randomUUID();
+
+        when(walletRepository.findByUserId(userId)).thenReturn(Optional.empty());
+
+        Wallet result = walletService.findByUserId(userId);
+
+        assertNull(result);
+        verify(walletRepository).findByUserId(userId);
     }
 
 }

@@ -12,7 +12,7 @@ public class WebConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("https://papikos-a15.vercel.app")); // FE Next.js
+        config.setAllowedOrigins(List.of("http://papikos-a15.vercel.app","http://localhost:3000")); // FE Next.js
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

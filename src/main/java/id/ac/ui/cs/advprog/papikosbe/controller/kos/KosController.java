@@ -1,10 +1,14 @@
 package id.ac.ui.cs.advprog.papikosbe.controller.kos;
 
 import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
+import id.ac.ui.cs.advprog.papikosbe.model.user.Owner;
 import id.ac.ui.cs.advprog.papikosbe.service.kos.KosService;
 import id.ac.ui.cs.advprog.papikosbe.service.kos.KosSearchService;
+import id.ac.ui.cs.advprog.papikosbe.service.user.OwnerService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.Nullable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -15,18 +19,27 @@ import java.util.concurrent.CompletableFuture;
 public class KosController {
     private final KosService kosService;
     private final KosSearchService kosSearchService;
+    private final OwnerService ownerService;
 
 
-    public KosController(KosService kosService, KosSearchService kosSearchService) {
+
+    public KosController(KosService kosService, KosSearchService kosSearchService, OwnerService ownerService) {
         this.kosService = kosService;
         this.kosSearchService = kosSearchService;
-
+        this.ownerService = ownerService;
     }
 
     @PostMapping("/add")
     public ResponseEntity<Kos> addKos(@RequestBody Kos kos) {
-        Kos addedKos = kosService.addKos(kos);
-        return ResponseEntity.status(201).body(addedKos);
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Owner owner = (Owner) auth.getPrincipal();
+
+        if (owner.isApproved()) {
+            Kos addedKos = kosService.addKos(kos);
+            return ResponseEntity.status(201).body(addedKos);
+        } else {
+            return ResponseEntity.status(403).build();
+        }
     }
 
     @GetMapping("/list")

@@ -57,6 +57,7 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers(HttpMethod.PATCH, "/api/owners/*/approve").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/owners/unapproved").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/notifications/broadcast").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
 

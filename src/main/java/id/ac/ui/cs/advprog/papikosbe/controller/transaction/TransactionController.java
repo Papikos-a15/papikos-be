@@ -100,11 +100,13 @@ public class TransactionController {
 
         } catch (ExecutionException e) {
             Throwable cause = e.getCause();
+            if (cause instanceof IllegalStateException) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+            }
             if (cause instanceof RuntimeException && cause.getMessage().contains("Tenant not found")) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
             }
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);

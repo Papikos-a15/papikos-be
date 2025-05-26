@@ -20,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -192,6 +193,72 @@ class TransactionControllerTest {
         assertEquals(1, response.getBody().size());
         assertEquals(TransactionType.PAYMENT, response.getBody().get(0).getType());
         assertEquals(tenantId, response.getBody().get(0).getUserId());
+    }
+
+    @Test
+    void getPaymentsByTenant_IllegalStateException() {
+        CompletableFuture<List<Payment>> failedFuture = new CompletableFuture<>();
+        failedFuture.completeExceptionally(new IllegalStateException("Unauthorized access"));
+
+        when(transactionService.getPaymentsByTenant(tenantId)).thenReturn(failedFuture);
+
+        ResponseEntity<List<TransactionResponse>> response = transactionController.getPaymentsByTenant(tenantId);
+
+        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+        assertNull(response.getBody());
+    }
+
+    @Test
+    void getPaymentsByTenant_ThrowsDirectIllegalStateException() throws Exception {
+        CompletableFuture<List<Payment>> future = mock(CompletableFuture.class);
+        when(future.get()).thenThrow(new IllegalStateException("Unauthorized access"));
+        when(transactionService.getPaymentsByTenant(tenantId)).thenReturn(future);
+
+        ResponseEntity<List<TransactionResponse>> response = transactionController.getPaymentsByTenant(tenantId);
+
+        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+        assertNull(response.getBody());
+    }
+
+    @Test
+    void getPaymentsByTenant_InterruptedException() throws Exception {
+        CompletableFuture<List<Payment>> mockFuture = mock(CompletableFuture.class);
+        when(mockFuture.get()).thenThrow(new InterruptedException("Interrupted"));
+
+        when(transactionService.getPaymentsByTenant(tenantId)).thenReturn(mockFuture);
+
+        ResponseEntity<List<TransactionResponse>> response = transactionController.getPaymentsByTenant(tenantId);
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        assertNull(response.getBody());
+    }
+
+    @Test
+    void getPaymentsByTenant_ThrowsUnexpectedRuntimeException() throws Exception {
+        CompletableFuture<List<Payment>> future = mock(CompletableFuture.class);
+        when(future.get()).thenThrow(new IllegalArgumentException("Unexpected error"));
+        when(transactionService.getPaymentsByTenant(tenantId)).thenReturn(future);
+
+        ResponseEntity<List<TransactionResponse>> response = transactionController.getPaymentsByTenant(tenantId);
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        assertNull(response.getBody());
+    }
+
+    @Test
+    void getPaymentsByTenant_UnknownExecutionException() {
+        Throwable unknownCause = new RuntimeException("Some other error");
+        ExecutionException exception = new ExecutionException(unknownCause);
+
+        CompletableFuture<List<Payment>> failedFuture = new CompletableFuture<>();
+        failedFuture.completeExceptionally(exception);
+
+        when(transactionService.getPaymentsByTenant(tenantId)).thenReturn(failedFuture);
+
+        ResponseEntity<List<TransactionResponse>> response = transactionController.getPaymentsByTenant(tenantId);
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        assertNull(response.getBody());
     }
 
 

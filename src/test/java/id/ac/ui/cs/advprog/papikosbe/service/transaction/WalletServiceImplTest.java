@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
@@ -43,18 +44,19 @@ class WalletServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        walletId = UUID.randomUUID();
         userId = UUID.randomUUID();
+        walletId = UUID.randomUUID();
 
         user = Tenant.builder()
                 .email("nae@example.com")
                 .password("securepass123")
                 .build();
-        user.setId(walletId);
+        user.setId(userId);
 
         wallet = new Wallet(user, new BigDecimal("100.00"));
         wallet.setId(walletId);
     }
+
 
     @Test
     void testCreateWallet() {
@@ -67,6 +69,22 @@ class WalletServiceImplTest {
         assertNotNull(createdWallet);
         assertEquals(user, createdWallet.getUser());
     }
+
+    @Test
+    void testCreateWallet_UserNotFound() {
+        UUID unknownUserId = UUID.randomUUID();
+
+        when(userRepository.findById(unknownUserId)).thenReturn(Optional.empty());
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            walletService.create(unknownUserId);
+        });
+
+        assertEquals("User not found", exception.getMessage());
+        verify(userRepository).findById(unknownUserId);
+        verify(walletRepository, never()).save(any(Wallet.class));
+    }
+
 
     @Test
     void testFindAllWallets() {
@@ -105,6 +123,20 @@ class WalletServiceImplTest {
         assertEquals(new BigDecimal("500.00"), editedWallet.getBalance());
     }
 
+    @Test
+    void testEditWallet_WalletNotFound() {
+        UUID walletId = UUID.randomUUID();
+        Wallet updatedWallet = new Wallet(user, new BigDecimal("500.00"));
+        updatedWallet.setId(walletId);
+
+        when(walletRepository.findById(walletId)).thenReturn(Optional.empty());
+
+        Wallet result = walletService.edit(walletId, updatedWallet);
+
+        assertNull(result);
+        verify(walletRepository).findById(walletId);
+        verify(walletRepository, never()).save(any(Wallet.class));
+    }
 
     @Test
     void testDeleteWallet() {
@@ -139,5 +171,33 @@ class WalletServiceImplTest {
         verify(walletRepository).findByUserId(userId);
     }
 
+    @Test
+    void testGetOrCreateWallet_WalletExists() {
+        when(walletRepository.findByUserId(userId)).thenReturn(Optional.of(wallet));
 
+        Wallet result = walletService.getOrCreateWallet(user);
+
+        assertNotNull(result);
+        assertEquals(wallet, result);
+        verify(walletRepository).findByUserId(userId);
+        verifyNoMoreInteractions(walletRepository);
+    }
+
+    @Test
+    void testGetOrCreateWallet_WalletDoesNotExist() {
+        when(walletRepository.findByUserId(userId)).thenReturn(Optional.empty());
+
+        Wallet newWallet = new Wallet(user, BigDecimal.ZERO);
+
+        // Override create behavior
+        WalletService walletServiceSpy = Mockito.spy(walletService);
+        doReturn(newWallet).when(walletServiceSpy).create(userId);
+
+        Wallet result = walletServiceSpy.getOrCreateWallet(user);
+
+        assertNotNull(result);
+        assertEquals(newWallet, result);
+        verify(walletServiceSpy).create(userId);
+        verify(walletRepository).findByUserId(userId);
+    }
 }

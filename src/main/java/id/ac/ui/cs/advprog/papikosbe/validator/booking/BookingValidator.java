@@ -1,12 +1,10 @@
 package id.ac.ui.cs.advprog.papikosbe.validator.booking;
 
-import id.ac.ui.cs.advprog.papikosbe.exception.ValidationException;
 import id.ac.ui.cs.advprog.papikosbe.model.booking.Booking;
 import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.Comparator;
 import java.util.List;
 
 @Component

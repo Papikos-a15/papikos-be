@@ -33,7 +33,7 @@ public class JwtTokenProvider {
     private final Set<String> invalidatedTokens = ConcurrentHashMap.newKeySet();
 
     public JwtTokenProvider(
-            @Value("${jwt.secret:defaultSecretKeyChangeMe1234567890}") String secret,
+            @Value("${jwt.secret}") String secret,
             @Value("${jwt.validity:3600000}") long validityInMs
     ) {
         this.secret = secret;

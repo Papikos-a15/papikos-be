@@ -5,7 +5,6 @@ import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
 import id.ac.ui.cs.advprog.papikosbe.service.booking.BookingService;
 import id.ac.ui.cs.advprog.papikosbe.service.kos.KosService;
 import id.ac.ui.cs.advprog.papikosbe.util.AuthenticationUtils;
-import id.ac.ui.cs.advprog.papikosbe.validator.booking.BookingValidator;
 import id.ac.ui.cs.advprog.papikosbe.validator.booking.BookingAccessValidator;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
-@Slf4j  // Add this annotation
+@Slf4j
 @RestController
 @RequestMapping("/api/bookings")
 public class BookingController {

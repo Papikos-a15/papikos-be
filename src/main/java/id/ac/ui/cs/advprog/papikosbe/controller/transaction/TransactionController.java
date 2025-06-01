@@ -172,8 +172,6 @@ public class TransactionController {
         }
     }
 
-
-    // Helper method to map Transaction to TransactionResponse
     private TransactionResponse mapToTransactionResponse(Transaction transaction) {
         TransactionResponse response = new TransactionResponse();
         response.setId(transaction.getId());

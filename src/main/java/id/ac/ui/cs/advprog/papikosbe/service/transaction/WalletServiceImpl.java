@@ -1,29 +1,25 @@
 package id.ac.ui.cs.advprog.papikosbe.service.transaction;
 
-import id.ac.ui.cs.advprog.papikosbe.factory.WalletFactory;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Wallet;
 import id.ac.ui.cs.advprog.papikosbe.model.user.User;
 import id.ac.ui.cs.advprog.papikosbe.repository.user.UserRepository;
 import id.ac.ui.cs.advprog.papikosbe.repository.transaction.WalletRepository;
-import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.*;
 
 @Service
 public class WalletServiceImpl implements WalletService {
     private final WalletRepository walletRepository;
-    private final WalletFactory walletFactory;
     private final UserRepository userRepository;
 
     @Autowired
     public WalletServiceImpl(
             WalletRepository walletRepository,
-            WalletFactory walletFactory,
             UserRepository userRepository) {
         this.walletRepository = walletRepository;
-        this.walletFactory = walletFactory;
         this.userRepository = userRepository;
     }
 
@@ -32,7 +28,7 @@ public class WalletServiceImpl implements WalletService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Wallet wallet = walletFactory.createWallet(user);
+        Wallet wallet = new Wallet(user, BigDecimal.ZERO);
         return walletRepository.save(wallet);
     }
 

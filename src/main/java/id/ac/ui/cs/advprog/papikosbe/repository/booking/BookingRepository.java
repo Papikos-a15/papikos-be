@@ -13,9 +13,7 @@ import java.util.UUID;
 
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, UUID> {
-    /**
-     * Cari semua booking milik user tertentu.
-     */
+
     List<Booking> findByUserId(UUID userId);
 
     List<Booking> findByStatus(BookingStatus status);

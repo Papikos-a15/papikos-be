@@ -109,7 +109,7 @@ public class BookingServiceImpl implements BookingService {
         Booking existingBooking = findBookingByIdSync(booking.getBookingId())
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 
-        // Validate state allows update
+
         stateValidator.validateForUpdate(existingBooking);
 
         bookingRepository.save(booking);
@@ -120,29 +120,27 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = findBookingByIdSync(bookingId)
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 
-        // Validate state transition
+
         stateValidator.validateForPayment(booking);
 
-        // Get kos to get owner ID
+
         Kos kos = kosService.getKosById(booking.getKosId())
                 .orElseThrow(() -> new EntityNotFoundException("Kos not found"));
 
-        // Create payment and get the result
         CompletableFuture<Payment> paymentFuture = transactionService.createPayment(
                 booking.getUserId(),
                 kos.getOwnerId(),
                 BigDecimal.valueOf(booking.getTotalPrice())
         );
 
-        // Wait for the payment to complete and retrieve the savedPayment
-        Payment savedPayment = paymentFuture.get();  // This will block until the payment is completed
 
-        // Now you can get the savedPayment's ID
+        Payment savedPayment = paymentFuture.get();
+
         UUID paymentId = savedPayment.getId();
 
         transactionService.processBookingPayment(bookingId, paymentId);
 
-        // Update booking status to PAID
+
         booking.setStatus(BookingStatus.PAID);
         bookingRepository.save(booking);
     }
@@ -152,10 +150,8 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = findBookingByIdSync(bookingId)
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 
-        // Validate state transition
         stateValidator.validateForApproval(booking);
 
-        // Update booking status to APPROVED
         booking.setStatus(BookingStatus.APPROVED);
         bookingRepository.save(booking);
 
@@ -168,37 +164,29 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 
-        // Validate state transition
         stateValidator.validateForCancellation(booking);
 
-        // Check if booking is PAID and needs refund
         if (booking.getStatus() == BookingStatus.PAID) {
             try {
-                // Find the associated payment (might not exist if booking was never paid)
                 Optional<PaymentBooking> paymentBookingOpt = paymentBookingRepository.findByBookingId(bookingId);
 
                 if (paymentBookingOpt.isPresent() && paymentBookingOpt.get().getPaymentId() != null) {
                     PaymentBooking paymentBooking = paymentBookingOpt.get();
-                    // Get the payment to find the owner (who will process the refund)
                     Payment payment = transactionRepository.findPaymentById(paymentBooking.getPaymentId())
                             .orElseThrow(() -> new EntityNotFoundException("Payment not found"));
 
-                    // Call refund function with owner's ID as requester
                     UUID ownerId = payment.getOwner().getId();
                     CompletableFuture<Payment> refundFuture = transactionService.refundPayment(
                             paymentBooking.getPaymentId(),
                             ownerId
                     );
 
-                    // Wait for refund to complete
                     Payment refundPayment = refundFuture.get();
 
                     if (refundPayment.getStatus() == TransactionStatus.COMPLETED) {
-                        // Refund successful, set status to CANCELLED
                         booking.setStatus(BookingStatus.CANCELLED);
                         bookingRepository.save(booking);
 
-                        // ADD THIS: Make room available again
                         kosService.addAvailableRoom(booking.getKosId());
 
                         log.info("Booking {} cancelled and refunded successfully", bookingId);
@@ -206,11 +194,9 @@ public class BookingServiceImpl implements BookingService {
                         throw new RuntimeException("Refund failed with status: " + refundPayment.getStatus());
                     }
                 } else {
-                    // No payment found, just cancel the booking
                     booking.setStatus(BookingStatus.CANCELLED);
                     bookingRepository.save(booking);
 
-                    // ADD THIS: Make room available again
                     kosService.addAvailableRoom(booking.getKosId());
 
                     log.warn("Booking {} cancelled but no payment found to refund", bookingId);
@@ -226,11 +212,9 @@ public class BookingServiceImpl implements BookingService {
                 throw new RuntimeException("Failed to process refund: " + e.getMessage(), e);
             }
         } else {
-            // Booking is not paid, just cancel normally
             booking.setStatus(BookingStatus.CANCELLED);
             bookingRepository.save(booking);
 
-            // ADD THIS: Make room available again
             kosService.addAvailableRoom(booking.getKosId());
 
             log.info("Booking {} cancelled (no payment to refund)", bookingId);
@@ -250,7 +234,6 @@ public class BookingServiceImpl implements BookingService {
                             .map(Kos::getId)
                             .toList();
 
-                    // Booking repo is synchronous; if needed, make it async too.
                     return bookingRepository.findAll().stream()
                             .filter(booking -> ownerKosIds.contains(booking.getKosId()))
                             .collect(Collectors.toList());

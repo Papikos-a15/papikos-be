@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 @RestController
@@ -52,7 +51,7 @@ public class TransactionController {
             List<Transaction> transactions = transactionService.getUserTransactions(userId);
             List<TransactionResponse> responses = transactions.stream()
                     .map(this::mapToTransactionResponse)
-                    .toList(); // cleaner and more idiomatic
+                    .toList();
             return ResponseEntity.ok(responses);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
@@ -62,7 +61,6 @@ public class TransactionController {
     @PostMapping("/payment")
     public ResponseEntity<TransactionResponse> createPayment(@RequestBody PaymentRequest paymentRequest) {
         try {
-            // Wait for the async service operation to complete
             Payment payment = transactionService.createPayment(
                     paymentRequest.getTenantId(),
                     paymentRequest.getOwnerId(),
@@ -87,7 +85,7 @@ public class TransactionController {
     @GetMapping("/payment/tenant/{tenantId}")
     public ResponseEntity<List<TransactionResponse>> getPaymentsByTenant(@PathVariable UUID tenantId) {
         try {
-            List<Payment> payments = transactionService.getPaymentsByTenant(tenantId).get();
+            List<Payment> payments = transactionService.getPaymentsByTenant(tenantId);
 
             List<TransactionResponse> responses = payments.stream()
                     .map(this::mapToTransactionResponse)
@@ -98,18 +96,8 @@ public class TransactionController {
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
 
-        } catch (ExecutionException e) {
-            Throwable cause = e.getCause();
-            if (cause instanceof IllegalStateException) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
-            }
-            if (cause instanceof RuntimeException && cause.getMessage().contains("Tenant not found")) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-            }
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
@@ -120,7 +108,7 @@ public class TransactionController {
     @GetMapping("/payment/owner/{ownerId}")
     public ResponseEntity<List<TransactionResponse>> getPaymentsByOwner(@PathVariable UUID ownerId) {
         try {
-            List<Payment> payments = transactionService.getPaymentsByOwner(ownerId).join(); // .join() blocks until result is available
+            List<Payment> payments = transactionService.getPaymentsByOwner(ownerId);
             List<TransactionResponse> responses = payments.stream()
                     .map(this::mapToTransactionResponse)
                     .collect(Collectors.toList());
@@ -159,13 +147,13 @@ public class TransactionController {
     @GetMapping("/topup/user/{userId}")
     public ResponseEntity<List<TransactionResponse>> getTopUpsByUser(@PathVariable UUID userId) {
         try {
-            List<TopUp> topUps = transactionService.getTopUpsByUser(userId).join();
+            List<TopUp> topUps = transactionService.getTopUpsByUser(userId);
             List<TransactionResponse> responses = topUps.stream()
                     .map(this::mapToTransactionResponse)
                     .collect(Collectors.toList());
             return ResponseEntity.ok(responses);
         } catch (Exception ex) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -184,6 +172,7 @@ public class TransactionController {
         }
     }
 
+
     // Helper method to map Transaction to TransactionResponse
     private TransactionResponse mapToTransactionResponse(Transaction transaction) {
         TransactionResponse response = new TransactionResponse();
@@ -196,7 +185,6 @@ public class TransactionController {
         if (transaction instanceof Payment payment) {
             response.setType(TransactionType.PAYMENT);
 
-            // Safe way to handle potentially lazy-loaded owner
             try {
                 if (payment.getOwner() != null) {
                     response.setOwnerId(payment.getOwner().getId());

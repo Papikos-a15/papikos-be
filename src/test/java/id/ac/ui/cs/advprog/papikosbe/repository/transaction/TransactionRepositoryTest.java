@@ -46,22 +46,6 @@ public class TransactionRepositoryTest {
     }
 
     @Test
-    void testFindByDate() {
-        Payment payment = new Payment();
-        payment.setUser(tenant);
-        payment.setOwner(owner);
-        payment.setAmount(new BigDecimal("10000"));
-        payment.setStatus(TransactionStatus.COMPLETED);
-        payment.setCreatedAt(LocalDateTime.now());
-
-        transactionRepository.save(payment);
-
-        List<Transaction> transactions = transactionRepository.findByDate(LocalDate.now());
-        assertFalse(transactions.isEmpty());
-        assertEquals(1, transactions.size());
-    }
-
-    @Test
     void testFindPaymentsByUser() {
         Payment payment = new Payment();
         payment.setUser(tenant);

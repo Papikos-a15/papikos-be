@@ -13,7 +13,6 @@ import id.ac.ui.cs.advprog.papikosbe.model.transaction.TopUp;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Transaction;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Wallet;
 import id.ac.ui.cs.advprog.papikosbe.model.user.User;
-import id.ac.ui.cs.advprog.papikosbe.observer.event.BookingApprovedEvent;
 import id.ac.ui.cs.advprog.papikosbe.observer.event.PaymentRefundedEvent;
 import id.ac.ui.cs.advprog.papikosbe.observer.handler.EventHandlerContext;
 import id.ac.ui.cs.advprog.papikosbe.repository.booking.BookingRepository;
@@ -27,7 +26,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -68,28 +66,18 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public Transaction getTransactionById(UUID userId) {
-        // Synchronous method for fetching transaction by ID
         return transactionRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Transaction not found"));
     }
 
     @Override
     public List<Transaction> getUserTransactions(UUID userId) {
-        // Synchronous method for fetching user transactions (both payments and top-ups)
         List<Payment> payments = transactionRepository.findPaymentsByUser(userId);
         List<TopUp> topUps = transactionRepository.findTopUpsByUser(userId);
 
-        List<Transaction> all = Stream.concat(payments.stream(), topUps.stream())
+        return Stream.concat(payments.stream(), topUps.stream())
                 .sorted(Comparator.comparing(Transaction::getCreatedAt).reversed())
                 .collect(Collectors.toList());
-
-        return all;
-    }
-
-    @Override
-    public List<Transaction> getTransactionByDate(LocalDateTime date) {
-        // Synchronous method to fetch transactions by date
-        return transactionRepository.findByDate(LocalDate.from(date));
     }
 
     /*** Payment Methods ***/
@@ -185,8 +173,9 @@ public class TransactionServiceImpl implements TransactionService {
             throw new Exception("Minimum top up adalah Rp 10.000");
         }
 
-        Optional<User> user = userRepository.findById(userId);
-        Wallet userWallet = walletService.getOrCreateWallet(user.get());
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new Exception("User tidak ditemukan"));
+        Wallet userWallet = walletService.getOrCreateWallet(user);
 
         if (userWallet.getStatus() != WalletStatus.ACTIVE) {
             throw new InactiveWalletException("Wallet user tidak aktif");
@@ -194,23 +183,18 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    @Async
-    public CompletableFuture<List<Payment>> getPaymentsByTenant(UUID tenantId) {
-        return CompletableFuture.supplyAsync(() -> {
-            return transactionRepository.findPaymentsByTenant(tenantId);
-        });
+    public List<Payment> getPaymentsByTenant(UUID tenantId) {
+        return transactionRepository.findPaymentsByTenant(tenantId);
     }
 
     @Override
-    @Async
-    public CompletableFuture<List<Payment>> getPaymentsByOwner(UUID ownerId) {
-        return CompletableFuture.supplyAsync(() -> transactionRepository.findPaymentsByOwner(ownerId));
+    public List<Payment> getPaymentsByOwner(UUID ownerId) {
+        return transactionRepository.findPaymentsByOwner(ownerId);
     }
 
     @Override
-    @Async
-    public CompletableFuture<List<TopUp>> getTopUpsByUser(UUID userId) {
-        return CompletableFuture.supplyAsync(() -> transactionRepository.findTopUpsByUser(userId));
+    public List<TopUp> getTopUpsByUser(UUID userId) {
+        return transactionRepository.findTopUpsByUser(userId);
     }
 
     @Override
@@ -228,11 +212,9 @@ public class TransactionServiceImpl implements TransactionService {
             throw new Exception("Hanya pemilik kos (owner) yang dapat melakukan refund");
         }
 
-        // Find the associated booking through payment_booking table
         PaymentBooking paymentBooking = paymentBookingRepository.findByPaymentId(paymentId)
                 .orElseThrow(() -> new Exception("Booking terkait dengan pembayaran tidak ditemukan"));
 
-        // Get the booking and update its status
         Booking booking = bookingRepository.findById(paymentBooking.getBookingId())
                 .orElseThrow(() -> new Exception("Booking tidak ditemukan"));
 
@@ -240,7 +222,6 @@ public class TransactionServiceImpl implements TransactionService {
             throw new Exception("Booking sudah dibatalkan atau sudah direfund");
         }
 
-        // Proceed with wallet operations
         UUID tenantId = originalPayment.getUser().getId();
         UUID ownerId = originalPayment.getOwner().getId();
         BigDecimal amount = originalPayment.getAmount();
@@ -255,7 +236,6 @@ public class TransactionServiceImpl implements TransactionService {
             throw new Exception("Saldo owner tidak mencukupi untuk refund");
         }
 
-        // Create refund payment
         Payment refundPayment = new Payment();
         refundPayment.setUser(originalPayment.getOwner());
         refundPayment.setOwner(originalPayment.getUser());
@@ -265,7 +245,6 @@ public class TransactionServiceImpl implements TransactionService {
         refundPayment.setCreatedAt(LocalDateTime.now());
         refundPayment.setPaidDate(LocalDateTime.now());
 
-        // Process the refund transaction
         TransactionStatus status = refundPayment.process(ownerWallet, tenantWallet);
 
         if (status == TransactionStatus.COMPLETED) {

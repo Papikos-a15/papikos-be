@@ -5,7 +5,6 @@ import id.ac.ui.cs.advprog.papikosbe.model.kos.Kos;
 import id.ac.ui.cs.advprog.papikosbe.service.booking.BookingService;
 import id.ac.ui.cs.advprog.papikosbe.service.kos.KosService;
 import id.ac.ui.cs.advprog.papikosbe.util.AuthenticationUtils;
-import id.ac.ui.cs.advprog.papikosbe.validator.booking.BookingValidator;
 import id.ac.ui.cs.advprog.papikosbe.validator.booking.BookingAccessValidator;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
@@ -17,9 +16,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
-@Slf4j  // Add this annotation
+@Slf4j
 @RestController
 @RequestMapping("/api/bookings")
 public class BookingController {
@@ -27,38 +25,32 @@ public class BookingController {
     private final BookingService bookingService;
     private final KosService kosService;
     private final BookingAccessValidator bookingAccessValidator;
-    private final BookingValidator stateValidator;
 
     @Autowired
     public BookingController(
             AuthenticationUtils authUtils,
             BookingService bookingService,
             KosService kosService,
-            BookingAccessValidator bookingAccessValidator,
-            BookingValidator stateValidator
+            BookingAccessValidator bookingAccessValidator
     ){
         this.authUtils = authUtils;
         this.bookingService = bookingService;
         this.kosService = kosService;
         this.bookingAccessValidator = bookingAccessValidator;
-        this.stateValidator = stateValidator;
     }
 
     @PostMapping
     public ResponseEntity<Booking> createBooking(@RequestBody Booking booking, Authentication authentication) {
         try {
-            // Validate authenticated user is the booking user
             UUID requesterId = authUtils.getUserIdFromAuth(authentication);
             if (booking.getUserId() != null && !booking.getUserId().equals(requesterId)) {
                 return ResponseEntity.status(403).build(); // Cannot create booking for someone else
             }
 
-            // Set userId from authentication if not provided
             if (booking.getUserId() == null) {
                 booking.setUserId(requesterId);
             }
 
-            // Create booking (service handles data validation)
             Booking createdBooking = bookingService.createBooking(booking);
             return ResponseEntity.ok(createdBooking);
         } catch (IllegalArgumentException e) {
@@ -76,7 +68,6 @@ public class BookingController {
         try {
             UUID userId = authUtils.getUserIdFromAuth(authentication);
 
-            // Use .join() to get result from async method synchronously
             List<Booking> bookings = bookingService.findBookingsByUserId(userId).join();
             return ResponseEntity.ok(bookings);
         } catch (Exception e) {
@@ -88,13 +79,11 @@ public class BookingController {
     @GetMapping("/{id}")
     public ResponseEntity<Booking> getBookingById(@PathVariable UUID id, Authentication authentication) {
         try {
-            // Use .join() to get result from async method synchronously
             Booking booking = bookingService.findBookingById(id).join()
                     .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 
             UUID requesterId = authUtils.getUserIdFromAuth(authentication);
 
-            // Check if requester is the booking user or the kos owner
             try {
                 bookingAccessValidator.validateUserAccess(requesterId, booking.getUserId());
                 // User is the booking owner, allow access
@@ -129,7 +118,6 @@ public class BookingController {
         }
 
         try {
-            // Use .join() to get result from async method synchronously
             Booking existingBooking = bookingService.findBookingById(id).join()
                     .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 
@@ -138,9 +126,8 @@ public class BookingController {
 
             bookingService.updateBooking(booking);
 
-            // FIX: Return updated booking (b) instead of input booking
             return bookingService.findBookingById(id).join()
-                    .map(b -> ResponseEntity.status(HttpStatus.OK).body(b)) // ← FIXED: use 'b' not 'booking'
+                    .map(b -> ResponseEntity.status(HttpStatus.OK).body(b))
                     .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
         } catch (IllegalStateException e) {
             return ResponseEntity.status(403).build();
@@ -157,7 +144,6 @@ public class BookingController {
     @PostMapping("/{id}/pay")
     public ResponseEntity<Booking> payBooking(@PathVariable UUID id, Authentication authentication) {
         try {
-            // Use .join() to get result from async method synchronously
             Booking booking = bookingService.findBookingById(id).join()
                     .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 
@@ -166,9 +152,8 @@ public class BookingController {
 
             bookingService.payBooking(id);
 
-            // FIX: Return the updated booking (b) instead of the old booking
             return bookingService.findBookingById(id).join()
-                    .map(b -> ResponseEntity.status(HttpStatus.OK).body(b)) // ← FIXED: use 'b' not 'booking'
+                    .map(b -> ResponseEntity.status(HttpStatus.OK).body(b))
                     .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
@@ -183,7 +168,6 @@ public class BookingController {
     @PostMapping("/{id}/approve")
     public ResponseEntity<Booking> approveBooking(@PathVariable UUID id, Authentication authentication) {
         try {
-            // Use .join() to get result from async method synchronously
             Booking booking = bookingService.findBookingById(id).join()
                     .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 
@@ -195,7 +179,6 @@ public class BookingController {
 
             bookingService.approveBooking(id);
 
-            // FIX: Return updated booking (b) instead of old booking
             return bookingService.findBookingById(id).join()
                     .map(b -> ResponseEntity.status(HttpStatus.OK).body(b)) // ← FIXED: use 'b' not 'booking'
                     .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
@@ -215,9 +198,7 @@ public class BookingController {
             List<Booking> bookings = bookingService.findBookingsByOwnerId(ownerId).join();
             return ResponseEntity.ok(bookings);
         } catch (Exception e) {
-            // Log the exception and return an appropriate error response
             log.error("Error getting bookings for owner {}: {}", ownerId, e.getMessage());
-            // Consider more specific exception handling if needed
             return ResponseEntity.status(500).build();
         }
     }
@@ -225,7 +206,6 @@ public class BookingController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancelBooking(@PathVariable UUID id) {
         try {
-            // State validation - handled by service
             bookingService.cancelBooking(id);
             return ResponseEntity.noContent().build();
         } catch (EntityNotFoundException e) {

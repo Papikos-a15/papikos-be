@@ -33,8 +33,6 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -794,27 +792,6 @@ class TransactionServiceImplTest {
     }
 
     @Test
-    void testGetTransactionByDate() {
-        // Arrange
-        LocalDateTime now = LocalDateTime.of(2025, 5, 25, 10, 30); // bebas waktu
-        LocalDate dateOnly = LocalDate.from(now); // yang dikirim ke repo
-        Payment transaction1 = new Payment();
-        TopUp transaction2 = new TopUp();
-        List<Transaction> expected = List.of(transaction1, transaction2);
-
-        when(transactionRepository.findByDate(dateOnly)).thenReturn(expected);
-
-        // Act
-        List<Transaction> result = transactionService.getTransactionByDate(now);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        assertEquals(expected, result);
-        verify(transactionRepository).findByDate(dateOnly);
-    }
-
-    @Test
     void testRefundPayment_Success() throws Exception {
         UUID paymentId = UUID.randomUUID();
         UUID tenantId = UUID.randomUUID();
@@ -1092,8 +1069,7 @@ class TransactionServiceImplTest {
 
         when(transactionRepository.findPaymentsByTenant(tenantId)).thenReturn(mockPayments);
 
-        CompletableFuture<List<Payment>> future = transactionService.getPaymentsByTenant(tenantId);
-        List<Payment> result = future.get(); // Waits for the async result
+        List<Payment> result = transactionService.getPaymentsByTenant(tenantId);
 
         assertEquals(mockPayments, result);
         verify(transactionRepository).findPaymentsByTenant(tenantId);
@@ -1106,8 +1082,7 @@ class TransactionServiceImplTest {
 
         when(transactionRepository.findPaymentsByOwner(ownerId)).thenReturn(mockPayments);
 
-        CompletableFuture<List<Payment>> future = transactionService.getPaymentsByOwner(ownerId);
-        List<Payment> result = future.get();
+        List<Payment> result = transactionService.getPaymentsByOwner(ownerId);
 
         assertEquals(mockPayments, result);
         verify(transactionRepository).findPaymentsByOwner(ownerId);
@@ -1120,8 +1095,7 @@ class TransactionServiceImplTest {
 
         when(transactionRepository.findTopUpsByUser(userId)).thenReturn(mockTopUps);
 
-        CompletableFuture<List<TopUp>> future = transactionService.getTopUpsByUser(userId);
-        List<TopUp> result = future.get();
+        List<TopUp> result = transactionService.getTopUpsByUser(userId);
 
         assertEquals(mockTopUps, result);
         verify(transactionRepository).findTopUpsByUser(userId);

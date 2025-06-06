@@ -1,12 +1,10 @@
 package id.ac.ui.cs.advprog.papikosbe.service.transaction;
 
-import id.ac.ui.cs.advprog.papikosbe.factory.WalletFactory;
 import id.ac.ui.cs.advprog.papikosbe.model.transaction.Wallet;
 import id.ac.ui.cs.advprog.papikosbe.model.user.Tenant;
 import id.ac.ui.cs.advprog.papikosbe.model.user.User;
 import id.ac.ui.cs.advprog.papikosbe.repository.transaction.WalletRepository;
 import id.ac.ui.cs.advprog.papikosbe.repository.user.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,9 +28,6 @@ class WalletServiceImplTest {
 
     @Mock
     WalletRepository walletRepository;
-
-    @Mock
-    WalletFactory walletFactory;
 
     @Mock
     UserRepository userRepository;
@@ -61,7 +56,6 @@ class WalletServiceImplTest {
     @Test
     void testCreateWallet() {
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
-        when(walletFactory.createWallet(user)).thenReturn(wallet);
         when(walletRepository.save(any(Wallet.class))).thenReturn(wallet);
 
         Wallet createdWallet = walletService.create(user.getId());

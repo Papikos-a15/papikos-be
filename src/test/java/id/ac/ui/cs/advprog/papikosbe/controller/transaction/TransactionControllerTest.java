@@ -23,10 +23,7 @@ import org.springframework.security.core.Authentication;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -182,25 +179,23 @@ class TransactionControllerTest {
 
     @Test
     void getPaymentsByTenant_Success() {
-        List<Payment> payments = Arrays.asList(payment);
+        List<Payment> payments = Collections.singletonList(payment);
         when(transactionService.getPaymentsByTenant(tenantId))
-                .thenReturn(CompletableFuture.completedFuture(payments));
+                .thenReturn(payments);
 
         ResponseEntity<List<TransactionResponse>> response = transactionController.getPaymentsByTenant(tenantId);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(1, response.getBody().size());
-        assertEquals(TransactionType.PAYMENT, response.getBody().get(0).getType());
-        assertEquals(tenantId, response.getBody().get(0).getUserId());
+        assertEquals(TransactionType.PAYMENT, response.getBody().getFirst().getType());
+        assertEquals(tenantId, response.getBody().getFirst().getUserId());
     }
 
     @Test
-    void getPaymentsByTenant_IllegalStateException() {
-        CompletableFuture<List<Payment>> failedFuture = new CompletableFuture<>();
-        failedFuture.completeExceptionally(new IllegalStateException("Unauthorized access"));
-
-        when(transactionService.getPaymentsByTenant(tenantId)).thenReturn(failedFuture);
+    void getPaymentsByTenant_ThrowsIllegalStateException() {
+        when(transactionService.getPaymentsByTenant(tenantId))
+                .thenThrow(new IllegalStateException("Unauthorized access"));
 
         ResponseEntity<List<TransactionResponse>> response = transactionController.getPaymentsByTenant(tenantId);
 
@@ -209,65 +204,9 @@ class TransactionControllerTest {
     }
 
     @Test
-    void getPaymentsByTenant_ThrowsDirectIllegalStateException() throws Exception {
-        CompletableFuture<List<Payment>> future = mock(CompletableFuture.class);
-        when(future.get()).thenThrow(new IllegalStateException("Unauthorized access"));
-        when(transactionService.getPaymentsByTenant(tenantId)).thenReturn(future);
-
-        ResponseEntity<List<TransactionResponse>> response = transactionController.getPaymentsByTenant(tenantId);
-
-        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
-        assertNull(response.getBody());
-    }
-
-    @Test
-    void getPaymentsByTenant_InterruptedException() throws Exception {
-        CompletableFuture<List<Payment>> mockFuture = mock(CompletableFuture.class);
-        when(mockFuture.get()).thenThrow(new InterruptedException("Interrupted"));
-
-        when(transactionService.getPaymentsByTenant(tenantId)).thenReturn(mockFuture);
-
-        ResponseEntity<List<TransactionResponse>> response = transactionController.getPaymentsByTenant(tenantId);
-
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        assertNull(response.getBody());
-    }
-
-    @Test
-    void getPaymentsByTenant_ThrowsUnexpectedRuntimeException() throws Exception {
-        CompletableFuture<List<Payment>> future = mock(CompletableFuture.class);
-        when(future.get()).thenThrow(new IllegalArgumentException("Unexpected error"));
-        when(transactionService.getPaymentsByTenant(tenantId)).thenReturn(future);
-
-        ResponseEntity<List<TransactionResponse>> response = transactionController.getPaymentsByTenant(tenantId);
-
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        assertNull(response.getBody());
-    }
-
-    @Test
-    void getPaymentsByTenant_UnknownExecutionException() {
-        Throwable unknownCause = new RuntimeException("Some other error");
-        ExecutionException exception = new ExecutionException(unknownCause);
-
-        CompletableFuture<List<Payment>> failedFuture = new CompletableFuture<>();
-        failedFuture.completeExceptionally(exception);
-
-        when(transactionService.getPaymentsByTenant(tenantId)).thenReturn(failedFuture);
-
-        ResponseEntity<List<TransactionResponse>> response = transactionController.getPaymentsByTenant(tenantId);
-
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        assertNull(response.getBody());
-    }
-
-
-    @Test
-    void getPaymentsByTenant_Error() {
-        CompletableFuture<List<Payment>> failedFuture = new CompletableFuture<>();
-        failedFuture.completeExceptionally(new RuntimeException("Tenant not found"));
-
-        when(transactionService.getPaymentsByTenant(tenantId)).thenReturn(failedFuture);
+    void getPaymentsByTenant_ThrowsRuntimeException() {
+        when(transactionService.getPaymentsByTenant(tenantId))
+                .thenThrow(new RuntimeException("Tenant not found"));
 
         ResponseEntity<List<TransactionResponse>> response = transactionController.getPaymentsByTenant(tenantId);
 
@@ -277,26 +216,23 @@ class TransactionControllerTest {
 
     @Test
     void getPaymentsByOwner_Success() {
-        List<Payment> payments = Arrays.asList(payment);
+        List<Payment> payments = Collections.singletonList(payment);
         when(transactionService.getPaymentsByOwner(ownerId))
-                .thenReturn(CompletableFuture.completedFuture(payments));
+                .thenReturn(payments);
 
         ResponseEntity<List<TransactionResponse>> response = transactionController.getPaymentsByOwner(ownerId);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(1, response.getBody().size());
-        assertEquals(TransactionType.PAYMENT, response.getBody().get(0).getType());
-        assertEquals(ownerId, response.getBody().get(0).getOwnerId());
+        assertEquals(TransactionType.PAYMENT, response.getBody().getFirst().getType());
+        assertEquals(ownerId, response.getBody().getFirst().getOwnerId());
     }
 
-
     @Test
-    void getPaymentsByOwner_Error() throws ExecutionException, InterruptedException {
-        CompletableFuture<List<Payment>> failedFuture = new CompletableFuture<>();
-        failedFuture.completeExceptionally(new RuntimeException("Owner not found"));
-
-        when(transactionService.getPaymentsByOwner(ownerId)).thenReturn(failedFuture);
+    void getPaymentsByOwner_Error() {
+        when(transactionService.getPaymentsByOwner(ownerId))
+                .thenThrow(new RuntimeException("Owner not found"));
 
         ResponseEntity<List<TransactionResponse>> response =
                 transactionController.getPaymentsByOwner(ownerId);
@@ -370,10 +306,10 @@ class TransactionControllerTest {
     }
 
     @Test
-    void getTopUpsByUser_Success() throws ExecutionException, InterruptedException {
-        List<TopUp> topUps = Arrays.asList(topUp);
+    void getTopUpsByUser_Success() {
+        List<TopUp> topUps = Collections.singletonList(topUp);
         when(transactionService.getTopUpsByUser(tenantId))
-                .thenReturn(CompletableFuture.completedFuture(topUps));
+                .thenReturn(topUps);
 
         ResponseEntity<List<TransactionResponse>> response =
                 transactionController.getTopUpsByUser(tenantId);
@@ -381,24 +317,10 @@ class TransactionControllerTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(1, response.getBody().size());
-        assertEquals(TransactionType.TOP_UP, response.getBody().get(0).getType());
+        assertEquals(TransactionType.TOP_UP, response.getBody().getFirst().getType());
         System.out.println("User ID: " + tenantId);
         System.out.println("Response: " + response.getBody());
-        assertEquals(tenantId, response.getBody().get(0).getUserId());
-    }
-
-    @Test
-    void getTopUpsByUser_Error() throws ExecutionException, InterruptedException {
-        CompletableFuture<List<TopUp>> failedFuture = new CompletableFuture<>();
-        failedFuture.completeExceptionally(new RuntimeException("User not found"));
-
-        when(transactionService.getTopUpsByUser(tenantId)).thenReturn(failedFuture);
-
-        ResponseEntity<List<TransactionResponse>> response =
-                transactionController.getTopUpsByUser(tenantId);
-
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-        assertNull(response.getBody());
+        assertEquals(tenantId, response.getBody().getFirst().getUserId());
     }
 
     @Test
